@@ -50,19 +50,19 @@
           <p>Tier 0 is the floor — it asks only whether anything is home. Each tier above maps to a class of model capability. Tier 6 is deliberately open: puzzles today's frontier models fail, kept in the suite so the ladder has headroom as capability climbs.</p>
           <table class="ladder-table">
             <thead>
-              <tr><th scope="col">Tier</th><th scope="col">Reads as</th><th scope="col">Example families</th></tr>
+              <tr><th scope="col">Tier</th><th scope="col">Reads as</th><th scope="col">Families in the v1 suite</th></tr>
             </thead>
             <tbody>
-              <tr><td class="tier">0</td><td>floor — is anything there</td><td>echo and transform text, single-step arithmetic</td></tr>
-              <tr><td class="tier">1</td><td>weak chatbots, tiny models</td><td>multi-step arithmetic, string surgery, single-hop extraction</td></tr>
-              <tr><td class="tier">2</td><td>small local models</td><td>sequence completion, anagrams, Caesar shifts, 3×3 grid rules</td></tr>
-              <tr><td class="tier">3</td><td>mid-tier assistants</td><td>4×4 sudoku, shortest path, 3-entity logic, register-VM traces</td></tr>
-              <tr><td class="tier">4</td><td>strong general models</td><td>6×6 sudoku, cryptarithms, knights and knaves, 8-puzzle, cellular automata</td></tr>
-              <tr><td class="tier">5</td><td>frontier</td><td>hard 9×9 sudoku, zebra puzzles, multi-hop combinatorics, program synthesis</td></tr>
-              <tr><td class="tier">6+</td><td>beyond today's models</td><td>novel-rule grids, hidden-function induction, adversarial composition</td></tr>
+              <tr><td class="tier">0</td><td>floor — is anything there</td><td>echo/transform text, one-step arithmetic</td></tr>
+              <tr><td class="tier">1</td><td>weak chatbots, tiny models</td><td>multi-step arithmetic, string surgery</td></tr>
+              <tr><td class="tier">2</td><td>small local models</td><td>nested arithmetic, sequence completion, Caesar ciphers, anagrams</td></tr>
+              <tr><td class="tier">3</td><td>mid-tier assistants</td><td>4×4 sudoku, shortest path, 3-person knights and knaves, register-VM traces, weighted ordering</td></tr>
+              <tr><td class="tier">4</td><td>strong general models</td><td>6×6 sudoku, cryptarithms, 4-person knights and knaves, cellular automata</td></tr>
+              <tr><td class="tier">5</td><td>frontier</td><td>9×9 sudoku, harder cryptarithms, multi-step automata, hidden-function induction, grid transforms</td></tr>
+              <tr><td class="tier">6+</td><td>beyond today's models</td><td>harder hidden functions, composed grid transforms</td></tr>
             </tbody>
           </table>
-          <p class="note">Labels are design intent until a published calibration run verifies them.</p>
+          <p class="note">Fourteen families span the seven tiers in v1. Labels are design intent until a published calibration run verifies them.</p>
         </section>
 
         <section class="doc-section" aria-labelledby="method-title">
@@ -78,21 +78,21 @@
 
         <section class="doc-section" aria-labelledby="results-title">
           <h2 id="results-title">Results.</h2>
-          <p>No calibration run is published yet. When runs land, each reports the model, harness version, suite hash, seed range, and per-cell pass rates — enough for anyone to regenerate the suite and check the numbers.</p>
-          <pre class="code"><code>{
-  "model": "…",
-  "harness": "botcaptcha-bench 0.x",
-  "suite": "sha256:…",
-  "seeds": "1..64",
-  "cells": { "sudoku:t4": { "n": 64, "pass_at_1": 0.91 } }
-}</code></pre>
+          <p>No calibration run is published yet. Each run writes one JSONL row per attempted instance — model, family, tier, seed, prompt, expected and actual answer, normalized verdict, latency — and closes with a summary record of pass rates per tier and per family:</p>
+          <pre class="code"><code>{"adapter":"openai:gpt-x","family":"sudoku","tier":4,"seed":17,
+ "prompt":"…","expected":"…","response":"…","pass":true,"latencyMs":2311}
+{"type":"summary","adapter":"openai:gpt-x","total":320,"passed":271,"rate":0.85,
+ "byTier":{"4":{"n":64,"passed":58,"rate":0.91}, …}, "byFamily":{ … }}</code></pre>
+          <p class="note">Deterministic seeds make every published row reproducible: regenerate the suite, replay the prompts, check the verdicts.</p>
         </section>
 
         <section class="doc-section" aria-labelledby="run-title">
           <h2 id="run-title">Run it.</h2>
-          <p>The reference harness ships with the ladder generators. The planned interface:</p>
-          <pre class="code"><code>botcaptcha bench --suite v1 --tier 0..4 --seeds 1..64 --model &lt;adapter&gt;</code></pre>
-          <p class="note">Planned — the harness and adapters are in design. Protocol details live in the <a href="/docs/">docs</a>.</p>
+          <p>The reference harness ships in this repo — fourteen seeded families, an oracle and an echo adapter for bounds checking, and an OpenAI-compatible adapter that points at any conforming endpoint:</p>
+          <pre class="code"><code>bun bench --adapter oracle --seeds 1-64 --out results/oracle.jsonl
+bun bench --adapter openai:gpt-4o-mini --tiers 0-3 --seeds 1-32
+OPENAI_BASE_URL=http://localhost:8000/v1 bun bench --adapter openai:local-model</code></pre>
+          <p class="note">Shipped and tested — <code>bun test</code> re-derives every family's answer from its own prompt text across the seed range. Protocol details live in the <a href="/docs/">docs</a>.</p>
         </section>
       </main>
       <div class="project-footer">

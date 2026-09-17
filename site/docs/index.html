@@ -87,7 +87,7 @@
           <h3>Witness</h3>
           <p>The verifier supplies a fresh task manifest and deterministic inputs. The candidate submits a bounded program in the admitted instruction subset plus its output and replay receipt. Verification reruns the task inside fuel and memory limits and checks the declared work ledger — a contract property like “all cases pass with at least N charged operations,” never “the program looks complex.” <span class="tag">specified</span></p>
           <h3>Ladder</h3>
-          <p>The verifier draws a secret seed, generates a puzzle from <code>(family, tier)</code>, and signs only the answer commitment into the challenge. The subject returns a normalized answer; verification is hash equality against the commitment. The declared tier sets the capability floor a key must demonstrate access to. <span class="tag">specified</span></p>
+          <p>The verifier draws a secret seed, generates a puzzle from <code>(family, tier)</code>, and signs only the answer commitment into the challenge. The subject returns a normalized answer; verification is hash equality against the commitment. The declared tier sets the capability floor a key must demonstrate access to. The reference generator and commitment live in this repository; signed-challenge integration is pending. <span class="tag">reference implemented</span></p>
         </section>
 
         <section class="doc-section" id="verification" aria-labelledby="verification-title">
@@ -138,6 +138,8 @@ verify(challenge, response)   → H(domain ‖ challenge_id ‖ normalize(answer
         <section class="doc-section" id="source" aria-labelledby="source-title">
           <h2 id="source-title">Source.</h2>
           <ul class="doc-list">
+            <li><a href="https://github.com/hraness/botcaptcha/tree/main/ladder">ladder/</a> — the reference puzzle suite: fourteen seeded families across tiers 0–6, plus answer normalization and commitment hashing, in TypeScript.</li>
+            <li><a href="https://github.com/hraness/botcaptcha/tree/main/bench">bench/</a> — the benchmark harness: adapters, JSONL results, per-tier and per-family pass rates.</li>
             <li><a href="https://github.com/hraness/valhalla/tree/main/prototypes/botcaptcha">prototypes/botcaptcha</a> — signed challenge + hashcash + one-use replay guard, in Rust.</li>
             <li><a href="https://github.com/hraness/valhalla/tree/main/prototypes/witness">prototypes/witness</a> — the bounded witness VM and work receipt.</li>
             <li><a href="https://github.com/hraness/valhalla/blob/main/kb/plans/valhalla-botcaptcha-ledger-games.md">Design plan</a> — the full proposal: receipts, anti-grinding rules, evidence tiers, and what Botcaptcha must never become.</li>

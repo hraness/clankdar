@@ -10,6 +10,29 @@ and
 [hraness/valhalla](https://github.com/hraness/valhalla/tree/main/prototypes/witness)
 pending extraction.
 
+## Benchmark
+
+The capability ladder lives in `ladder/`: fourteen seeded puzzle families
+across tiers 0–6, deterministic generation, answer normalization, and
+answer-commitment hashing (`sha256(domain ‖ challenge_id ‖ norm(answer))`) for
+admission mode. `bench/` runs adapters against a suite slice and writes one
+JSONL row per instance plus a summary record.
+
+```console
+bun test                                        # determinism + answer verification
+bun bench --list                                # families and their tiers
+bun bench --adapter oracle --seeds 1-64 --out results/oracle.jsonl
+bun bench --adapter openai:gpt-4o-mini --tiers 0-3 --seeds 1-32
+OPENAI_BASE_URL=http://localhost:8000/v1 bun bench --adapter openai:local-model
+```
+
+Adapters: `oracle` (upper bound — returns the canonical answer), `echo`
+(lower bound — returns the prompt), and `openai:<model>` (any
+OpenAI-compatible chat endpoint; key from `OPENAI_API_KEY` or
+`BOTCAPTCHA_API_KEY`, base URL from `OPENAI_BASE_URL` or
+`BOTCAPTCHA_BASE_URL`). Tier labels are hypotheses until a published
+calibration run verifies them; results land in `results/` (gitignored).
+
 ## Preview
 
 ```console
