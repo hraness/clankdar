@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="theme-color" content="#f8f7f4">
     <title>The ladder — Clankdar</title>
-    <meta name="description" content="Inspect Clankdar's twelve-model pilot: 3,000 recorded attempts, reproducible scoring, explicit exclusions, and a corrected fourteen-family benchmark suite.">
+    <meta name="description" content="Inspect Clankdar's held-out v2 calibration: 2,500 recorded attempts across five models, reproducible scoring, uncertainty, and downloadable evidence.">
     <meta property="og:title" content="The Clankdar ladder">
     <meta property="og:description" content="The first pilot, the flaws it exposed, and the corrected suite. Real records, not invented capability tiers.">
     <meta property="og:image" content="https://clankdar.com/icon.png">
@@ -47,7 +47,16 @@
           <h1 id="title">The ladder.</h1>
           <p class="doc-lede">Fourteen families. Seven parameter tiers. One question: under these conditions, what can a model actually solve?</p>
         </header>
-        <nav class="contents" aria-label="Contents"><a href="#pilot-results">The pilot</a><a href="#findings">What we learned</a><a href="#tiers">The corrected suite</a><a href="#method">Method</a><a href="#run">Run it</a></nav>
+        <nav class="contents" aria-label="Contents"><a href="#v2-results">V2 calibration</a><a href="#findings">What we learned</a><a href="#pilot-results">Legacy pilot</a><a href="#tiers">The suite</a><a href="#method">Method</a><a href="#run">Run it</a></nav>
+
+        <section class="doc-section" id="v2-results" aria-labelledby="v2-title">
+          <h2 id="v2-title">V2 calibration 0: the clanks separate.</h2>
+          <p>Recorded September 17, 2026 through Vercel AI Gateway: five requested model aliases, all 25 family/tier cells, and held-out seeds 101–120. That is 2,500 attempts: 2,499 model responses and one timeout. One user prompt per instance, no tools, requested temperature 0, and a 4,096-token completion budget.</p>
+          <div class="callout"><strong>Separation: yes. One-dimensional ladder: no.</strong><p>Strict scores span 9.4% to 87.6%, so these deterministic tasks distinguish the tested systems sharply. But tier aggregates are not monotone because each tier mixes different families. Clankdar reports family/tier profiles; it does not assign a single intelligence level.</p></div>
+          {{V2_RESULTS}}
+          <p><b>Strict</b> is the benchmark result. <b>Final block</b> is a formatting diagnostic only. The five requested aliases are not independent attestations of model identity; inspect the <a href="/benchmark/v2-calibration-0/manifest.json">manifest</a>, <a href="/benchmark/v2-calibration-0/report.json" download>full report</a>, per-cell results, source state, usage, and limitations.</p>
+          <p class="note">Twenty seeds per cell narrow uncertainty but do not certify a threshold. Public generators and seeds are reproducible, not contamination-proof. The run is unaided and does not predict a tool-using agent's performance.</p>
+        </section>
 
         <section class="doc-section" id="pilot-results" aria-labelledby="results-title">
           <h2 id="results-title">Pilot 0: test the test.</h2>
@@ -66,7 +75,7 @@
             <li><b>The scorer needs tests, too.</b> The original normalizer erased minus signs and boundaries. A suffix-based diagnostic could match “14” to “4.” Typed comparison and answer-independent extraction now replace both.</li>
             <li><b>A hard-looking puzzle can be trivial.</b> The old shortest-path family always had a ten-move route. It was removed from the screened pilot; v2 requires real detours and tests answer diversity.</li>
             <li><b>Ambiguity is not difficulty.</b> Legacy sequence and induction prompts left the hypothesis class open. The geometric sequence branch also displayed one fewer term. V2 states finite rule grammars and checks agreement on the query before emitting an induction puzzle.</li>
-            <li><b>Names do not calibrate rungs.</b> We removed “small,” “frontier,” and “beyond today’s models” as asserted tier labels. Fresh held-out runs must establish difficulty, variance, and useful thresholds.</li>
+            <li><b>Profiles beat a fake intelligence number.</b> V2 separates the tested systems, but pooled tier scores are not monotone because the family mix changes by tier. Thresholds belong to stable family/tier cells under declared conditions—not to one universal “model level.”</li>
           </ul>
         </section>
 

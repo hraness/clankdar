@@ -1,0 +1,4920 @@
+{
+  "schemaVersion": 2,
+  "scorerVersion": "clankdar-score-v2",
+  "provenance": "versioned",
+  "suiteHash": "608d81e3473fa321783e5d77a56b8cb0210a6a2493cbb3f85a68eb319b4789df",
+  "seeds": [
+    101,
+    102,
+    103,
+    104,
+    105,
+    106,
+    107,
+    108,
+    109,
+    110,
+    111,
+    112,
+    113,
+    114,
+    115,
+    116,
+    117,
+    118,
+    119,
+    120
+  ],
+  "cells": [
+    "arithmetic:t0",
+    "arithmetic:t1",
+    "arithmetic:t2",
+    "automata:t4",
+    "automata:t5",
+    "cipher:t2",
+    "cryptarithm:t4",
+    "cryptarithm:t5",
+    "echo:t0",
+    "gridpath:t3",
+    "gridxf:t5",
+    "gridxf:t6",
+    "hiddenfn:t5",
+    "hiddenfn:t6",
+    "knights:t3",
+    "knights:t4",
+    "ordering:t3",
+    "registervm:t3",
+    "registervm:t4",
+    "sequence:t2",
+    "strings:t1",
+    "strings:t2",
+    "sudoku:t3",
+    "sudoku:t4",
+    "sudoku:t5"
+  ],
+  "excludedFamilies": [],
+  "sources": [
+    {
+      "file": "google_gemini-2.5-pro-962e7b87ec69.jsonl.gz",
+      "sha256": "797f322893166f4d4cb77a03c85e06dde388e8353fab0d64e8cb68b89a0f745f"
+    },
+    {
+      "file": "meta_llama-3.1-8b-9c3e6009a3b5.jsonl.gz",
+      "sha256": "a90ce1321284d7b216e34567681268ef9fa977c1069a125f01b78a259b78e22b"
+    },
+    {
+      "file": "openai_gpt-4.1-c8893463e7ce.jsonl.gz",
+      "sha256": "e516ab72c344611f1e1d2920b18585286857e4670acadb44ec691ec8143fc0d1"
+    },
+    {
+      "file": "openai_gpt-4o-mini-94d9f0da9727.jsonl.gz",
+      "sha256": "4df07505f79567fed9b234cfbca58916d4701d02687cce54fb4460bd241c8c7b"
+    },
+    {
+      "file": "openai_gpt-5-mini-020751dc92eb.jsonl.gz",
+      "sha256": "0639a29550be41edecd465a0f153817174047e52adac30480d3a58bf1f25056a"
+    }
+  ],
+  "models": [
+    {
+      "model": "openai/gpt-5-mini",
+      "all": {
+        "total": 500,
+        "n": 499,
+        "errors": 1,
+        "passed": 437,
+        "strict": 0.875751503006012,
+        "interval95": [
+          0.8439068119557106,
+          0.9018550846060435
+        ],
+        "finalAnswerMatches": 437,
+        "finalAnswer": 0.875751503006012,
+        "formatOnly": 0
+      },
+      "eligible": {
+        "total": 500,
+        "n": 499,
+        "errors": 1,
+        "passed": 437,
+        "strict": 0.875751503006012,
+        "interval95": [
+          0.8439068119557106,
+          0.9018550846060435
+        ],
+        "finalAnswerMatches": 437,
+        "finalAnswer": 0.875751503006012,
+        "formatOnly": 0
+      },
+      "excluded": 0,
+      "byTier": {
+        "0": {
+          "total": 40,
+          "n": 40,
+          "errors": 0,
+          "passed": 40,
+          "strict": 1,
+          "interval95": [
+            0.9123783988027135,
+            1
+          ],
+          "finalAnswerMatches": 40,
+          "finalAnswer": 1,
+          "formatOnly": 0
+        },
+        "1": {
+          "total": 40,
+          "n": 40,
+          "errors": 0,
+          "passed": 40,
+          "strict": 1,
+          "interval95": [
+            0.9123783988027135,
+            1
+          ],
+          "finalAnswerMatches": 40,
+          "finalAnswer": 1,
+          "formatOnly": 0
+        },
+        "2": {
+          "total": 80,
+          "n": 80,
+          "errors": 0,
+          "passed": 79,
+          "strict": 0.9875,
+          "interval95": [
+            0.9325372992233133,
+            0.9977900244795476
+          ],
+          "finalAnswerMatches": 79,
+          "finalAnswer": 0.9875,
+          "formatOnly": 0
+        },
+        "3": {
+          "total": 100,
+          "n": 100,
+          "errors": 0,
+          "passed": 100,
+          "strict": 1,
+          "interval95": [
+            0.9630065017930143,
+            1
+          ],
+          "finalAnswerMatches": 100,
+          "finalAnswer": 1,
+          "formatOnly": 0
+        },
+        "4": {
+          "total": 100,
+          "n": 100,
+          "errors": 0,
+          "passed": 82,
+          "strict": 0.82,
+          "interval95": [
+            0.7333264161369926,
+            0.8829977450105364
+          ],
+          "finalAnswerMatches": 82,
+          "finalAnswer": 0.82,
+          "formatOnly": 0
+        },
+        "5": {
+          "total": 100,
+          "n": 99,
+          "errors": 1,
+          "passed": 63,
+          "strict": 0.6363636363636364,
+          "interval95": [
+            0.5381589889509573,
+            0.7243810441214535
+          ],
+          "finalAnswerMatches": 63,
+          "finalAnswer": 0.6363636363636364,
+          "formatOnly": 0
+        },
+        "6": {
+          "total": 40,
+          "n": 40,
+          "errors": 0,
+          "passed": 33,
+          "strict": 0.825,
+          "interval95": [
+            0.6805000966821229,
+            0.9125458625396408
+          ],
+          "finalAnswerMatches": 33,
+          "finalAnswer": 0.825,
+          "formatOnly": 0
+        }
+      },
+      "byFamily": {
+        "arithmetic": {
+          "total": 60,
+          "n": 60,
+          "errors": 0,
+          "passed": 60,
+          "strict": 1,
+          "interval95": [
+            0.93982814785791,
+            0.9999999999999998
+          ],
+          "finalAnswerMatches": 60,
+          "finalAnswer": 1,
+          "formatOnly": 0
+        },
+        "automata": {
+          "total": 40,
+          "n": 39,
+          "errors": 1,
+          "passed": 25,
+          "strict": 0.6410256410256411,
+          "interval95": [
+            0.4841814855954854,
+            0.7725791454100714
+          ],
+          "finalAnswerMatches": 25,
+          "finalAnswer": 0.6410256410256411,
+          "formatOnly": 0
+        },
+        "cipher": {
+          "total": 20,
+          "n": 20,
+          "errors": 0,
+          "passed": 20,
+          "strict": 1,
+          "interval95": [
+            0.8388748419471806,
+            1
+          ],
+          "finalAnswerMatches": 20,
+          "finalAnswer": 1,
+          "formatOnly": 0
+        },
+        "cryptarithm": {
+          "total": 40,
+          "n": 40,
+          "errors": 0,
+          "passed": 39,
+          "strict": 0.975,
+          "interval95": [
+            0.8711863103652591,
+            0.9955731684973186
+          ],
+          "finalAnswerMatches": 39,
+          "finalAnswer": 0.975,
+          "formatOnly": 0
+        },
+        "echo": {
+          "total": 20,
+          "n": 20,
+          "errors": 0,
+          "passed": 20,
+          "strict": 1,
+          "interval95": [
+            0.8388748419471806,
+            1
+          ],
+          "finalAnswerMatches": 20,
+          "finalAnswer": 1,
+          "formatOnly": 0
+        },
+        "gridpath": {
+          "total": 20,
+          "n": 20,
+          "errors": 0,
+          "passed": 20,
+          "strict": 1,
+          "interval95": [
+            0.8388748419471806,
+            1
+          ],
+          "finalAnswerMatches": 20,
+          "finalAnswer": 1,
+          "formatOnly": 0
+        },
+        "gridxf": {
+          "total": 40,
+          "n": 40,
+          "errors": 0,
+          "passed": 31,
+          "strict": 0.775,
+          "interval95": [
+            0.6249690325768998,
+            0.8768390867645927
+          ],
+          "finalAnswerMatches": 31,
+          "finalAnswer": 0.775,
+          "formatOnly": 0
+        },
+        "hiddenfn": {
+          "total": 40,
+          "n": 40,
+          "errors": 0,
+          "passed": 40,
+          "strict": 1,
+          "interval95": [
+            0.9123783988027135,
+            1
+          ],
+          "finalAnswerMatches": 40,
+          "finalAnswer": 1,
+          "formatOnly": 0
+        },
+        "knights": {
+          "total": 40,
+          "n": 40,
+          "errors": 0,
+          "passed": 40,
+          "strict": 1,
+          "interval95": [
+            0.9123783988027135,
+            1
+          ],
+          "finalAnswerMatches": 40,
+          "finalAnswer": 1,
+          "formatOnly": 0
+        },
+        "ordering": {
+          "total": 20,
+          "n": 20,
+          "errors": 0,
+          "passed": 20,
+          "strict": 1,
+          "interval95": [
+            0.8388748419471806,
+            1
+          ],
+          "finalAnswerMatches": 20,
+          "finalAnswer": 1,
+          "formatOnly": 0
+        },
+        "registervm": {
+          "total": 40,
+          "n": 40,
+          "errors": 0,
+          "passed": 40,
+          "strict": 1,
+          "interval95": [
+            0.9123783988027135,
+            1
+          ],
+          "finalAnswerMatches": 40,
+          "finalAnswer": 1,
+          "formatOnly": 0
+        },
+        "sequence": {
+          "total": 20,
+          "n": 20,
+          "errors": 0,
+          "passed": 20,
+          "strict": 1,
+          "interval95": [
+            0.8388748419471806,
+            1
+          ],
+          "finalAnswerMatches": 20,
+          "finalAnswer": 1,
+          "formatOnly": 0
+        },
+        "strings": {
+          "total": 40,
+          "n": 40,
+          "errors": 0,
+          "passed": 39,
+          "strict": 0.975,
+          "interval95": [
+            0.8711863103652591,
+            0.9955731684973186
+          ],
+          "finalAnswerMatches": 39,
+          "finalAnswer": 0.975,
+          "formatOnly": 0
+        },
+        "sudoku": {
+          "total": 60,
+          "n": 60,
+          "errors": 0,
+          "passed": 23,
+          "strict": 0.38333333333333336,
+          "interval95": [
+            0.27088272374082023,
+            0.5098240417590008
+          ],
+          "finalAnswerMatches": 23,
+          "finalAnswer": 0.38333333333333336,
+          "formatOnly": 0
+        }
+      },
+      "byCell": {
+        "arithmetic:t0": {
+          "total": 20,
+          "n": 20,
+          "errors": 0,
+          "passed": 20,
+          "strict": 1,
+          "interval95": [
+            0.8388748419471806,
+            1
+          ],
+          "finalAnswerMatches": 20,
+          "finalAnswer": 1,
+          "formatOnly": 0
+        },
+        "arithmetic:t1": {
+          "total": 20,
+          "n": 20,
+          "errors": 0,
+          "passed": 20,
+          "strict": 1,
+          "interval95": [
+            0.8388748419471806,
+            1
+          ],
+          "finalAnswerMatches": 20,
+          "finalAnswer": 1,
+          "formatOnly": 0
+        },
+        "arithmetic:t2": {
+          "total": 20,
+          "n": 20,
+          "errors": 0,
+          "passed": 20,
+          "strict": 1,
+          "interval95": [
+            0.8388748419471806,
+            1
+          ],
+          "finalAnswerMatches": 20,
+          "finalAnswer": 1,
+          "formatOnly": 0
+        },
+        "automata:t4": {
+          "total": 20,
+          "n": 20,
+          "errors": 0,
+          "passed": 19,
+          "strict": 0.95,
+          "interval95": [
+            0.763868806553258,
+            0.9911185511992047
+          ],
+          "finalAnswerMatches": 19,
+          "finalAnswer": 0.95,
+          "formatOnly": 0
+        },
+        "automata:t5": {
+          "total": 20,
+          "n": 19,
+          "errors": 1,
+          "passed": 6,
+          "strict": 0.3157894736842105,
+          "interval95": [
+            0.1536437908779228,
+            0.5398959232467253
+          ],
+          "finalAnswerMatches": 6,
+          "finalAnswer": 0.3157894736842105,
+          "formatOnly": 0
+        },
+        "cipher:t2": {
+          "total": 20,
+          "n": 20,
+          "errors": 0,
+          "passed": 20,
+          "strict": 1,
+          "interval95": [
+            0.8388748419471806,
+            1
+          ],
+          "finalAnswerMatches": 20,
+          "finalAnswer": 1,
+          "formatOnly": 0
+        },
+        "cryptarithm:t4": {
+          "total": 20,
+          "n": 20,
+          "errors": 0,
+          "passed": 20,
+          "strict": 1,
+          "interval95": [
+            0.8388748419471806,
+            1
+          ],
+          "finalAnswerMatches": 20,
+          "finalAnswer": 1,
+          "formatOnly": 0
+        },
+        "cryptarithm:t5": {
+          "total": 20,
+          "n": 20,
+          "errors": 0,
+          "passed": 19,
+          "strict": 0.95,
+          "interval95": [
+            0.763868806553258,
+            0.9911185511992047
+          ],
+          "finalAnswerMatches": 19,
+          "finalAnswer": 0.95,
+          "formatOnly": 0
+        },
+        "echo:t0": {
+          "total": 20,
+          "n": 20,
+          "errors": 0,
+          "passed": 20,
+          "strict": 1,
+          "interval95": [
+            0.8388748419471806,
+            1
+          ],
+          "finalAnswerMatches": 20,
+          "finalAnswer": 1,
+          "formatOnly": 0
+        },
+        "gridpath:t3": {
+          "total": 20,
+          "n": 20,
+          "errors": 0,
+          "passed": 20,
+          "strict": 1,
+          "interval95": [
+            0.8388748419471806,
+            1
+          ],
+          "finalAnswerMatches": 20,
+          "finalAnswer": 1,
+          "formatOnly": 0
+        },
+        "gridxf:t5": {
+          "total": 20,
+          "n": 20,
+          "errors": 0,
+          "passed": 18,
+          "strict": 0.9,
+          "interval95": [
+            0.6989663547715128,
+            0.9721335187862319
+          ],
+          "finalAnswerMatches": 18,
+          "finalAnswer": 0.9,
+          "formatOnly": 0
+        },
+        "gridxf:t6": {
+          "total": 20,
+          "n": 20,
+          "errors": 0,
+          "passed": 13,
+          "strict": 0.65,
+          "interval95": [
+            0.43285427668523624,
+            0.818808175898918
+          ],
+          "finalAnswerMatches": 13,
+          "finalAnswer": 0.65,
+          "formatOnly": 0
+        },
+        "hiddenfn:t5": {
+          "total": 20,
+          "n": 20,
+          "errors": 0,
+          "passed": 20,
+          "strict": 1,
+          "interval95": [
+            0.8388748419471806,
+            1
+          ],
+          "finalAnswerMatches": 20,
+          "finalAnswer": 1,
+          "formatOnly": 0
+        },
+        "hiddenfn:t6": {
+          "total": 20,
+          "n": 20,
+          "errors": 0,
+          "passed": 20,
+          "strict": 1,
+          "interval95": [
+            0.8388748419471806,
+            1
+          ],
+          "finalAnswerMatches": 20,
+          "finalAnswer": 1,
+          "formatOnly": 0
+        },
+        "knights:t3": {
+          "total": 20,
+          "n": 20,
+          "errors": 0,
+          "passed": 20,
+          "strict": 1,
+          "interval95": [
+            0.8388748419471806,
+            1
+          ],
+          "finalAnswerMatches": 20,
+          "finalAnswer": 1,
+          "formatOnly": 0
+        },
+        "knights:t4": {
+          "total": 20,
+          "n": 20,
+          "errors": 0,
+          "passed": 20,
+          "strict": 1,
+          "interval95": [
+            0.8388748419471806,
+            1
+          ],
+          "finalAnswerMatches": 20,
+          "finalAnswer": 1,
+          "formatOnly": 0
+        },
+        "ordering:t3": {
+          "total": 20,
+          "n": 20,
+          "errors": 0,
+          "passed": 20,
+          "strict": 1,
+          "interval95": [
+            0.8388748419471806,
+            1
+          ],
+          "finalAnswerMatches": 20,
+          "finalAnswer": 1,
+          "formatOnly": 0
+        },
+        "registervm:t3": {
+          "total": 20,
+          "n": 20,
+          "errors": 0,
+          "passed": 20,
+          "strict": 1,
+          "interval95": [
+            0.8388748419471806,
+            1
+          ],
+          "finalAnswerMatches": 20,
+          "finalAnswer": 1,
+          "formatOnly": 0
+        },
+        "registervm:t4": {
+          "total": 20,
+          "n": 20,
+          "errors": 0,
+          "passed": 20,
+          "strict": 1,
+          "interval95": [
+            0.8388748419471806,
+            1
+          ],
+          "finalAnswerMatches": 20,
+          "finalAnswer": 1,
+          "formatOnly": 0
+        },
+        "sequence:t2": {
+          "total": 20,
+          "n": 20,
+          "errors": 0,
+          "passed": 20,
+          "strict": 1,
+          "interval95": [
+            0.8388748419471806,
+            1
+          ],
+          "finalAnswerMatches": 20,
+          "finalAnswer": 1,
+          "formatOnly": 0
+        },
+        "strings:t1": {
+          "total": 20,
+          "n": 20,
+          "errors": 0,
+          "passed": 20,
+          "strict": 1,
+          "interval95": [
+            0.8388748419471806,
+            1
+          ],
+          "finalAnswerMatches": 20,
+          "finalAnswer": 1,
+          "formatOnly": 0
+        },
+        "strings:t2": {
+          "total": 20,
+          "n": 20,
+          "errors": 0,
+          "passed": 19,
+          "strict": 0.95,
+          "interval95": [
+            0.763868806553258,
+            0.9911185511992047
+          ],
+          "finalAnswerMatches": 19,
+          "finalAnswer": 0.95,
+          "formatOnly": 0
+        },
+        "sudoku:t3": {
+          "total": 20,
+          "n": 20,
+          "errors": 0,
+          "passed": 20,
+          "strict": 1,
+          "interval95": [
+            0.8388748419471806,
+            1
+          ],
+          "finalAnswerMatches": 20,
+          "finalAnswer": 1,
+          "formatOnly": 0
+        },
+        "sudoku:t4": {
+          "total": 20,
+          "n": 20,
+          "errors": 0,
+          "passed": 3,
+          "strict": 0.15,
+          "interval95": [
+            0.052368745896216595,
+            0.36041886474075696
+          ],
+          "finalAnswerMatches": 3,
+          "finalAnswer": 0.15,
+          "formatOnly": 0
+        },
+        "sudoku:t5": {
+          "total": 20,
+          "n": 20,
+          "errors": 0,
+          "passed": 0,
+          "strict": 0,
+          "interval95": [
+            0,
+            0.16112515805281938
+          ],
+          "finalAnswerMatches": 0,
+          "finalAnswer": 0,
+          "formatOnly": 0
+        }
+      },
+      "bySeed": {
+        "101": {
+          "total": 25,
+          "n": 25,
+          "errors": 0,
+          "passed": 23,
+          "strict": 0.92,
+          "interval95": [
+            0.7503389104960468,
+            0.9777795987151524
+          ],
+          "finalAnswerMatches": 23,
+          "finalAnswer": 0.92,
+          "formatOnly": 0
+        },
+        "102": {
+          "total": 25,
+          "n": 25,
+          "errors": 0,
+          "passed": 22,
+          "strict": 0.88,
+          "interval95": [
+            0.7004420607907267,
+            0.9583318284955964
+          ],
+          "finalAnswerMatches": 22,
+          "finalAnswer": 0.88,
+          "formatOnly": 0
+        },
+        "103": {
+          "total": 25,
+          "n": 25,
+          "errors": 0,
+          "passed": 22,
+          "strict": 0.88,
+          "interval95": [
+            0.7004420607907267,
+            0.9583318284955964
+          ],
+          "finalAnswerMatches": 22,
+          "finalAnswer": 0.88,
+          "formatOnly": 0
+        },
+        "104": {
+          "total": 25,
+          "n": 25,
+          "errors": 0,
+          "passed": 23,
+          "strict": 0.92,
+          "interval95": [
+            0.7503389104960468,
+            0.9777795987151524
+          ],
+          "finalAnswerMatches": 23,
+          "finalAnswer": 0.92,
+          "formatOnly": 0
+        },
+        "105": {
+          "total": 25,
+          "n": 25,
+          "errors": 0,
+          "passed": 23,
+          "strict": 0.92,
+          "interval95": [
+            0.7503389104960468,
+            0.9777795987151524
+          ],
+          "finalAnswerMatches": 23,
+          "finalAnswer": 0.92,
+          "formatOnly": 0
+        },
+        "106": {
+          "total": 25,
+          "n": 25,
+          "errors": 0,
+          "passed": 22,
+          "strict": 0.88,
+          "interval95": [
+            0.7004420607907267,
+            0.9583318284955964
+          ],
+          "finalAnswerMatches": 22,
+          "finalAnswer": 0.88,
+          "formatOnly": 0
+        },
+        "107": {
+          "total": 25,
+          "n": 25,
+          "errors": 0,
+          "passed": 23,
+          "strict": 0.92,
+          "interval95": [
+            0.7503389104960468,
+            0.9777795987151524
+          ],
+          "finalAnswerMatches": 23,
+          "finalAnswer": 0.92,
+          "formatOnly": 0
+        },
+        "108": {
+          "total": 25,
+          "n": 25,
+          "errors": 0,
+          "passed": 19,
+          "strict": 0.76,
+          "interval95": [
+            0.5657031664457093,
+            0.8850368630659855
+          ],
+          "finalAnswerMatches": 19,
+          "finalAnswer": 0.76,
+          "formatOnly": 0
+        },
+        "109": {
+          "total": 25,
+          "n": 24,
+          "errors": 1,
+          "passed": 22,
+          "strict": 0.9166666666666666,
+          "interval95": [
+            0.741511978067893,
+            0.9768411847029567
+          ],
+          "finalAnswerMatches": 22,
+          "finalAnswer": 0.9166666666666666,
+          "formatOnly": 0
+        },
+        "110": {
+          "total": 25,
+          "n": 25,
+          "errors": 0,
+          "passed": 22,
+          "strict": 0.88,
+          "interval95": [
+            0.7004420607907267,
+            0.9583318284955964
+          ],
+          "finalAnswerMatches": 22,
+          "finalAnswer": 0.88,
+          "formatOnly": 0
+        },
+        "111": {
+          "total": 25,
+          "n": 25,
+          "errors": 0,
+          "passed": 21,
+          "strict": 0.84,
+          "interval95": [
+            0.6534637839282114,
+            0.9359654854332355
+          ],
+          "finalAnswerMatches": 21,
+          "finalAnswer": 0.84,
+          "formatOnly": 0
+        },
+        "112": {
+          "total": 25,
+          "n": 25,
+          "errors": 0,
+          "passed": 21,
+          "strict": 0.84,
+          "interval95": [
+            0.6534637839282114,
+            0.9359654854332355
+          ],
+          "finalAnswerMatches": 21,
+          "finalAnswer": 0.84,
+          "formatOnly": 0
+        },
+        "113": {
+          "total": 25,
+          "n": 25,
+          "errors": 0,
+          "passed": 22,
+          "strict": 0.88,
+          "interval95": [
+            0.7004420607907267,
+            0.9583318284955964
+          ],
+          "finalAnswerMatches": 22,
+          "finalAnswer": 0.88,
+          "formatOnly": 0
+        },
+        "114": {
+          "total": 25,
+          "n": 25,
+          "errors": 0,
+          "passed": 21,
+          "strict": 0.84,
+          "interval95": [
+            0.6534637839282114,
+            0.9359654854332355
+          ],
+          "finalAnswerMatches": 21,
+          "finalAnswer": 0.84,
+          "formatOnly": 0
+        },
+        "115": {
+          "total": 25,
+          "n": 25,
+          "errors": 0,
+          "passed": 21,
+          "strict": 0.84,
+          "interval95": [
+            0.6534637839282114,
+            0.9359654854332355
+          ],
+          "finalAnswerMatches": 21,
+          "finalAnswer": 0.84,
+          "formatOnly": 0
+        },
+        "116": {
+          "total": 25,
+          "n": 25,
+          "errors": 0,
+          "passed": 23,
+          "strict": 0.92,
+          "interval95": [
+            0.7503389104960468,
+            0.9777795987151524
+          ],
+          "finalAnswerMatches": 23,
+          "finalAnswer": 0.92,
+          "formatOnly": 0
+        },
+        "117": {
+          "total": 25,
+          "n": 25,
+          "errors": 0,
+          "passed": 21,
+          "strict": 0.84,
+          "interval95": [
+            0.6534637839282114,
+            0.9359654854332355
+          ],
+          "finalAnswerMatches": 21,
+          "finalAnswer": 0.84,
+          "formatOnly": 0
+        },
+        "118": {
+          "total": 25,
+          "n": 25,
+          "errors": 0,
+          "passed": 21,
+          "strict": 0.84,
+          "interval95": [
+            0.6534637839282114,
+            0.9359654854332355
+          ],
+          "finalAnswerMatches": 21,
+          "finalAnswer": 0.84,
+          "formatOnly": 0
+        },
+        "119": {
+          "total": 25,
+          "n": 25,
+          "errors": 0,
+          "passed": 23,
+          "strict": 0.92,
+          "interval95": [
+            0.7503389104960468,
+            0.9777795987151524
+          ],
+          "finalAnswerMatches": 23,
+          "finalAnswer": 0.92,
+          "formatOnly": 0
+        },
+        "120": {
+          "total": 25,
+          "n": 25,
+          "errors": 0,
+          "passed": 22,
+          "strict": 0.88,
+          "interval95": [
+            0.7004420607907267,
+            0.9583318284955964
+          ],
+          "finalAnswerMatches": 22,
+          "finalAnswer": 0.88,
+          "formatOnly": 0
+        }
+      },
+      "rescored": {
+        "lostPasses": 0,
+        "gainedPasses": 0
+      }
+    },
+    {
+      "model": "google/gemini-2.5-pro",
+      "all": {
+        "total": 500,
+        "n": 500,
+        "errors": 0,
+        "passed": 403,
+        "strict": 0.806,
+        "interval95": [
+          0.7690603702807669,
+          0.8382735333567634
+        ],
+        "finalAnswerMatches": 415,
+        "finalAnswer": 0.83,
+        "formatOnly": 12
+      },
+      "eligible": {
+        "total": 500,
+        "n": 500,
+        "errors": 0,
+        "passed": 403,
+        "strict": 0.806,
+        "interval95": [
+          0.7690603702807669,
+          0.8382735333567634
+        ],
+        "finalAnswerMatches": 415,
+        "finalAnswer": 0.83,
+        "formatOnly": 12
+      },
+      "excluded": 0,
+      "byTier": {
+        "0": {
+          "total": 40,
+          "n": 40,
+          "errors": 0,
+          "passed": 40,
+          "strict": 1,
+          "interval95": [
+            0.9123783988027135,
+            1
+          ],
+          "finalAnswerMatches": 40,
+          "finalAnswer": 1,
+          "formatOnly": 0
+        },
+        "1": {
+          "total": 40,
+          "n": 40,
+          "errors": 0,
+          "passed": 33,
+          "strict": 0.825,
+          "interval95": [
+            0.6805000966821229,
+            0.9125458625396408
+          ],
+          "finalAnswerMatches": 33,
+          "finalAnswer": 0.825,
+          "formatOnly": 0
+        },
+        "2": {
+          "total": 80,
+          "n": 80,
+          "errors": 0,
+          "passed": 78,
+          "strict": 0.975,
+          "interval95": [
+            0.9133556701442198,
+            0.9931171067970292
+          ],
+          "finalAnswerMatches": 78,
+          "finalAnswer": 0.975,
+          "formatOnly": 0
+        },
+        "3": {
+          "total": 100,
+          "n": 100,
+          "errors": 0,
+          "passed": 90,
+          "strict": 0.9,
+          "interval95": [
+            0.8256343384950865,
+            0.9447708629393249
+          ],
+          "finalAnswerMatches": 93,
+          "finalAnswer": 0.93,
+          "formatOnly": 3
+        },
+        "4": {
+          "total": 100,
+          "n": 100,
+          "errors": 0,
+          "passed": 67,
+          "strict": 0.67,
+          "interval95": [
+            0.5730534379509052,
+            0.7543687726587197
+          ],
+          "finalAnswerMatches": 75,
+          "finalAnswer": 0.75,
+          "formatOnly": 8
+        },
+        "5": {
+          "total": 100,
+          "n": 100,
+          "errors": 0,
+          "passed": 71,
+          "strict": 0.71,
+          "interval95": [
+            0.6146110882442888,
+            0.7898516425087772
+          ],
+          "finalAnswerMatches": 71,
+          "finalAnswer": 0.71,
+          "formatOnly": 0
+        },
+        "6": {
+          "total": 40,
+          "n": 40,
+          "errors": 0,
+          "passed": 24,
+          "strict": 0.6,
+          "interval95": [
+            0.44595893660346186,
+            0.7365167431570808
+          ],
+          "finalAnswerMatches": 25,
+          "finalAnswer": 0.625,
+          "formatOnly": 1
+        }
+      },
+      "byFamily": {
+        "arithmetic": {
+          "total": 60,
+          "n": 60,
+          "errors": 0,
+          "passed": 60,
+          "strict": 1,
+          "interval95": [
+            0.93982814785791,
+            0.9999999999999998
+          ],
+          "finalAnswerMatches": 60,
+          "finalAnswer": 1,
+          "formatOnly": 0
+        },
+        "automata": {
+          "total": 40,
+          "n": 40,
+          "errors": 0,
+          "passed": 29,
+          "strict": 0.725,
+          "interval95": [
+            0.5716504419378943,
+            0.8389198375233267
+          ],
+          "finalAnswerMatches": 29,
+          "finalAnswer": 0.725,
+          "formatOnly": 0
+        },
+        "cipher": {
+          "total": 20,
+          "n": 20,
+          "errors": 0,
+          "passed": 20,
+          "strict": 1,
+          "interval95": [
+            0.8388748419471806,
+            1
+          ],
+          "finalAnswerMatches": 20,
+          "finalAnswer": 1,
+          "formatOnly": 0
+        },
+        "cryptarithm": {
+          "total": 40,
+          "n": 40,
+          "errors": 0,
+          "passed": 40,
+          "strict": 1,
+          "interval95": [
+            0.9123783988027135,
+            1
+          ],
+          "finalAnswerMatches": 40,
+          "finalAnswer": 1,
+          "formatOnly": 0
+        },
+        "echo": {
+          "total": 20,
+          "n": 20,
+          "errors": 0,
+          "passed": 20,
+          "strict": 1,
+          "interval95": [
+            0.8388748419471806,
+            1
+          ],
+          "finalAnswerMatches": 20,
+          "finalAnswer": 1,
+          "formatOnly": 0
+        },
+        "gridpath": {
+          "total": 20,
+          "n": 20,
+          "errors": 0,
+          "passed": 13,
+          "strict": 0.65,
+          "interval95": [
+            0.43285427668523624,
+            0.818808175898918
+          ],
+          "finalAnswerMatches": 13,
+          "finalAnswer": 0.65,
+          "formatOnly": 0
+        },
+        "gridxf": {
+          "total": 40,
+          "n": 40,
+          "errors": 0,
+          "passed": 23,
+          "strict": 0.575,
+          "interval95": [
+            0.42195068541991065,
+            0.7149060744004962
+          ],
+          "finalAnswerMatches": 24,
+          "finalAnswer": 0.6,
+          "formatOnly": 1
+        },
+        "hiddenfn": {
+          "total": 40,
+          "n": 40,
+          "errors": 0,
+          "passed": 39,
+          "strict": 0.975,
+          "interval95": [
+            0.8711863103652591,
+            0.9955731684973186
+          ],
+          "finalAnswerMatches": 39,
+          "finalAnswer": 0.975,
+          "formatOnly": 0
+        },
+        "knights": {
+          "total": 40,
+          "n": 40,
+          "errors": 0,
+          "passed": 28,
+          "strict": 0.7,
+          "interval95": [
+            0.5456998118185507,
+            0.8192515477025347
+          ],
+          "finalAnswerMatches": 39,
+          "finalAnswer": 0.975,
+          "formatOnly": 11
+        },
+        "ordering": {
+          "total": 20,
+          "n": 20,
+          "errors": 0,
+          "passed": 20,
+          "strict": 1,
+          "interval95": [
+            0.8388748419471806,
+            1
+          ],
+          "finalAnswerMatches": 20,
+          "finalAnswer": 1,
+          "formatOnly": 0
+        },
+        "registervm": {
+          "total": 40,
+          "n": 40,
+          "errors": 0,
+          "passed": 40,
+          "strict": 1,
+          "interval95": [
+            0.9123783988027135,
+            1
+          ],
+          "finalAnswerMatches": 40,
+          "finalAnswer": 1,
+          "formatOnly": 0
+        },
+        "sequence": {
+          "total": 20,
+          "n": 20,
+          "errors": 0,
+          "passed": 20,
+          "strict": 1,
+          "interval95": [
+            0.8388748419471806,
+            1
+          ],
+          "finalAnswerMatches": 20,
+          "finalAnswer": 1,
+          "formatOnly": 0
+        },
+        "strings": {
+          "total": 40,
+          "n": 40,
+          "errors": 0,
+          "passed": 31,
+          "strict": 0.775,
+          "interval95": [
+            0.6249690325768998,
+            0.8768390867645927
+          ],
+          "finalAnswerMatches": 31,
+          "finalAnswer": 0.775,
+          "formatOnly": 0
+        },
+        "sudoku": {
+          "total": 60,
+          "n": 60,
+          "errors": 0,
+          "passed": 20,
+          "strict": 0.3333333333333333,
+          "interval95": [
+            0.2272926152352268,
+            0.4594313354788031
+          ],
+          "finalAnswerMatches": 20,
+          "finalAnswer": 0.3333333333333333,
+          "formatOnly": 0
+        }
+      },
+      "byCell": {
+        "arithmetic:t0": {
+          "total": 20,
+          "n": 20,
+          "errors": 0,
+          "passed": 20,
+          "strict": 1,
+          "interval95": [
+            0.8388748419471806,
+            1
+          ],
+          "finalAnswerMatches": 20,
+          "finalAnswer": 1,
+          "formatOnly": 0
+        },
+        "arithmetic:t1": {
+          "total": 20,
+          "n": 20,
+          "errors": 0,
+          "passed": 20,
+          "strict": 1,
+          "interval95": [
+            0.8388748419471806,
+            1
+          ],
+          "finalAnswerMatches": 20,
+          "finalAnswer": 1,
+          "formatOnly": 0
+        },
+        "arithmetic:t2": {
+          "total": 20,
+          "n": 20,
+          "errors": 0,
+          "passed": 20,
+          "strict": 1,
+          "interval95": [
+            0.8388748419471806,
+            1
+          ],
+          "finalAnswerMatches": 20,
+          "finalAnswer": 1,
+          "formatOnly": 0
+        },
+        "automata:t4": {
+          "total": 20,
+          "n": 20,
+          "errors": 0,
+          "passed": 16,
+          "strict": 0.8,
+          "interval95": [
+            0.5839825677481064,
+            0.919342337420202
+          ],
+          "finalAnswerMatches": 16,
+          "finalAnswer": 0.8,
+          "formatOnly": 0
+        },
+        "automata:t5": {
+          "total": 20,
+          "n": 20,
+          "errors": 0,
+          "passed": 13,
+          "strict": 0.65,
+          "interval95": [
+            0.43285427668523624,
+            0.818808175898918
+          ],
+          "finalAnswerMatches": 13,
+          "finalAnswer": 0.65,
+          "formatOnly": 0
+        },
+        "cipher:t2": {
+          "total": 20,
+          "n": 20,
+          "errors": 0,
+          "passed": 20,
+          "strict": 1,
+          "interval95": [
+            0.8388748419471806,
+            1
+          ],
+          "finalAnswerMatches": 20,
+          "finalAnswer": 1,
+          "formatOnly": 0
+        },
+        "cryptarithm:t4": {
+          "total": 20,
+          "n": 20,
+          "errors": 0,
+          "passed": 20,
+          "strict": 1,
+          "interval95": [
+            0.8388748419471806,
+            1
+          ],
+          "finalAnswerMatches": 20,
+          "finalAnswer": 1,
+          "formatOnly": 0
+        },
+        "cryptarithm:t5": {
+          "total": 20,
+          "n": 20,
+          "errors": 0,
+          "passed": 20,
+          "strict": 1,
+          "interval95": [
+            0.8388748419471806,
+            1
+          ],
+          "finalAnswerMatches": 20,
+          "finalAnswer": 1,
+          "formatOnly": 0
+        },
+        "echo:t0": {
+          "total": 20,
+          "n": 20,
+          "errors": 0,
+          "passed": 20,
+          "strict": 1,
+          "interval95": [
+            0.8388748419471806,
+            1
+          ],
+          "finalAnswerMatches": 20,
+          "finalAnswer": 1,
+          "formatOnly": 0
+        },
+        "gridpath:t3": {
+          "total": 20,
+          "n": 20,
+          "errors": 0,
+          "passed": 13,
+          "strict": 0.65,
+          "interval95": [
+            0.43285427668523624,
+            0.818808175898918
+          ],
+          "finalAnswerMatches": 13,
+          "finalAnswer": 0.65,
+          "formatOnly": 0
+        },
+        "gridxf:t5": {
+          "total": 20,
+          "n": 20,
+          "errors": 0,
+          "passed": 18,
+          "strict": 0.9,
+          "interval95": [
+            0.6989663547715128,
+            0.9721335187862319
+          ],
+          "finalAnswerMatches": 18,
+          "finalAnswer": 0.9,
+          "formatOnly": 0
+        },
+        "gridxf:t6": {
+          "total": 20,
+          "n": 20,
+          "errors": 0,
+          "passed": 5,
+          "strict": 0.25,
+          "interval95": [
+            0.11186170140766569,
+            0.468700877618744
+          ],
+          "finalAnswerMatches": 6,
+          "finalAnswer": 0.3,
+          "formatOnly": 1
+        },
+        "hiddenfn:t5": {
+          "total": 20,
+          "n": 20,
+          "errors": 0,
+          "passed": 20,
+          "strict": 1,
+          "interval95": [
+            0.8388748419471806,
+            1
+          ],
+          "finalAnswerMatches": 20,
+          "finalAnswer": 1,
+          "formatOnly": 0
+        },
+        "hiddenfn:t6": {
+          "total": 20,
+          "n": 20,
+          "errors": 0,
+          "passed": 19,
+          "strict": 0.95,
+          "interval95": [
+            0.763868806553258,
+            0.9911185511992047
+          ],
+          "finalAnswerMatches": 19,
+          "finalAnswer": 0.95,
+          "formatOnly": 0
+        },
+        "knights:t3": {
+          "total": 20,
+          "n": 20,
+          "errors": 0,
+          "passed": 17,
+          "strict": 0.85,
+          "interval95": [
+            0.6395811352592431,
+            0.9476312541037835
+          ],
+          "finalAnswerMatches": 20,
+          "finalAnswer": 1,
+          "formatOnly": 3
+        },
+        "knights:t4": {
+          "total": 20,
+          "n": 20,
+          "errors": 0,
+          "passed": 11,
+          "strict": 0.55,
+          "interval95": [
+            0.34208534245034233,
+            0.7418021417443759
+          ],
+          "finalAnswerMatches": 19,
+          "finalAnswer": 0.95,
+          "formatOnly": 8
+        },
+        "ordering:t3": {
+          "total": 20,
+          "n": 20,
+          "errors": 0,
+          "passed": 20,
+          "strict": 1,
+          "interval95": [
+            0.8388748419471806,
+            1
+          ],
+          "finalAnswerMatches": 20,
+          "finalAnswer": 1,
+          "formatOnly": 0
+        },
+        "registervm:t3": {
+          "total": 20,
+          "n": 20,
+          "errors": 0,
+          "passed": 20,
+          "strict": 1,
+          "interval95": [
+            0.8388748419471806,
+            1
+          ],
+          "finalAnswerMatches": 20,
+          "finalAnswer": 1,
+          "formatOnly": 0
+        },
+        "registervm:t4": {
+          "total": 20,
+          "n": 20,
+          "errors": 0,
+          "passed": 20,
+          "strict": 1,
+          "interval95": [
+            0.8388748419471806,
+            1
+          ],
+          "finalAnswerMatches": 20,
+          "finalAnswer": 1,
+          "formatOnly": 0
+        },
+        "sequence:t2": {
+          "total": 20,
+          "n": 20,
+          "errors": 0,
+          "passed": 20,
+          "strict": 1,
+          "interval95": [
+            0.8388748419471806,
+            1
+          ],
+          "finalAnswerMatches": 20,
+          "finalAnswer": 1,
+          "formatOnly": 0
+        },
+        "strings:t1": {
+          "total": 20,
+          "n": 20,
+          "errors": 0,
+          "passed": 13,
+          "strict": 0.65,
+          "interval95": [
+            0.43285427668523624,
+            0.818808175898918
+          ],
+          "finalAnswerMatches": 13,
+          "finalAnswer": 0.65,
+          "formatOnly": 0
+        },
+        "strings:t2": {
+          "total": 20,
+          "n": 20,
+          "errors": 0,
+          "passed": 18,
+          "strict": 0.9,
+          "interval95": [
+            0.6989663547715128,
+            0.9721335187862319
+          ],
+          "finalAnswerMatches": 18,
+          "finalAnswer": 0.9,
+          "formatOnly": 0
+        },
+        "sudoku:t3": {
+          "total": 20,
+          "n": 20,
+          "errors": 0,
+          "passed": 20,
+          "strict": 1,
+          "interval95": [
+            0.8388748419471806,
+            1
+          ],
+          "finalAnswerMatches": 20,
+          "finalAnswer": 1,
+          "formatOnly": 0
+        },
+        "sudoku:t4": {
+          "total": 20,
+          "n": 20,
+          "errors": 0,
+          "passed": 0,
+          "strict": 0,
+          "interval95": [
+            0,
+            0.16112515805281938
+          ],
+          "finalAnswerMatches": 0,
+          "finalAnswer": 0,
+          "formatOnly": 0
+        },
+        "sudoku:t5": {
+          "total": 20,
+          "n": 20,
+          "errors": 0,
+          "passed": 0,
+          "strict": 0,
+          "interval95": [
+            0,
+            0.16112515805281938
+          ],
+          "finalAnswerMatches": 0,
+          "finalAnswer": 0,
+          "formatOnly": 0
+        }
+      },
+      "bySeed": {
+        "101": {
+          "total": 25,
+          "n": 25,
+          "errors": 0,
+          "passed": 20,
+          "strict": 0.8,
+          "interval95": [
+            0.6086904963045967,
+            0.9113941531319742
+          ],
+          "finalAnswerMatches": 21,
+          "finalAnswer": 0.84,
+          "formatOnly": 1
+        },
+        "102": {
+          "total": 25,
+          "n": 25,
+          "errors": 0,
+          "passed": 17,
+          "strict": 0.68,
+          "interval95": [
+            0.48410269273102247,
+            0.8279480969309202
+          ],
+          "finalAnswerMatches": 19,
+          "finalAnswer": 0.76,
+          "formatOnly": 2
+        },
+        "103": {
+          "total": 25,
+          "n": 25,
+          "errors": 0,
+          "passed": 22,
+          "strict": 0.88,
+          "interval95": [
+            0.7004420607907267,
+            0.9583318284955964
+          ],
+          "finalAnswerMatches": 22,
+          "finalAnswer": 0.88,
+          "formatOnly": 0
+        },
+        "104": {
+          "total": 25,
+          "n": 25,
+          "errors": 0,
+          "passed": 20,
+          "strict": 0.8,
+          "interval95": [
+            0.6086904963045967,
+            0.9113941531319742
+          ],
+          "finalAnswerMatches": 21,
+          "finalAnswer": 0.84,
+          "formatOnly": 1
+        },
+        "105": {
+          "total": 25,
+          "n": 25,
+          "errors": 0,
+          "passed": 22,
+          "strict": 0.88,
+          "interval95": [
+            0.7004420607907267,
+            0.9583318284955964
+          ],
+          "finalAnswerMatches": 22,
+          "finalAnswer": 0.88,
+          "formatOnly": 0
+        },
+        "106": {
+          "total": 25,
+          "n": 25,
+          "errors": 0,
+          "passed": 20,
+          "strict": 0.8,
+          "interval95": [
+            0.6086904963045967,
+            0.9113941531319742
+          ],
+          "finalAnswerMatches": 20,
+          "finalAnswer": 0.8,
+          "formatOnly": 0
+        },
+        "107": {
+          "total": 25,
+          "n": 25,
+          "errors": 0,
+          "passed": 22,
+          "strict": 0.88,
+          "interval95": [
+            0.7004420607907267,
+            0.9583318284955964
+          ],
+          "finalAnswerMatches": 22,
+          "finalAnswer": 0.88,
+          "formatOnly": 0
+        },
+        "108": {
+          "total": 25,
+          "n": 25,
+          "errors": 0,
+          "passed": 19,
+          "strict": 0.76,
+          "interval95": [
+            0.5657031664457093,
+            0.8850368630659855
+          ],
+          "finalAnswerMatches": 20,
+          "finalAnswer": 0.8,
+          "formatOnly": 1
+        },
+        "109": {
+          "total": 25,
+          "n": 25,
+          "errors": 0,
+          "passed": 20,
+          "strict": 0.8,
+          "interval95": [
+            0.6086904963045967,
+            0.9113941531319742
+          ],
+          "finalAnswerMatches": 21,
+          "finalAnswer": 0.84,
+          "formatOnly": 1
+        },
+        "110": {
+          "total": 25,
+          "n": 25,
+          "errors": 0,
+          "passed": 19,
+          "strict": 0.76,
+          "interval95": [
+            0.5657031664457093,
+            0.8850368630659855
+          ],
+          "finalAnswerMatches": 20,
+          "finalAnswer": 0.8,
+          "formatOnly": 1
+        },
+        "111": {
+          "total": 25,
+          "n": 25,
+          "errors": 0,
+          "passed": 18,
+          "strict": 0.72,
+          "interval95": [
+            0.5242339480963842,
+            0.8571614614904344
+          ],
+          "finalAnswerMatches": 19,
+          "finalAnswer": 0.76,
+          "formatOnly": 1
+        },
+        "112": {
+          "total": 25,
+          "n": 25,
+          "errors": 0,
+          "passed": 21,
+          "strict": 0.84,
+          "interval95": [
+            0.6534637839282114,
+            0.9359654854332355
+          ],
+          "finalAnswerMatches": 21,
+          "finalAnswer": 0.84,
+          "formatOnly": 0
+        },
+        "113": {
+          "total": 25,
+          "n": 25,
+          "errors": 0,
+          "passed": 21,
+          "strict": 0.84,
+          "interval95": [
+            0.6534637839282114,
+            0.9359654854332355
+          ],
+          "finalAnswerMatches": 21,
+          "finalAnswer": 0.84,
+          "formatOnly": 0
+        },
+        "114": {
+          "total": 25,
+          "n": 25,
+          "errors": 0,
+          "passed": 21,
+          "strict": 0.84,
+          "interval95": [
+            0.6534637839282114,
+            0.9359654854332355
+          ],
+          "finalAnswerMatches": 21,
+          "finalAnswer": 0.84,
+          "formatOnly": 0
+        },
+        "115": {
+          "total": 25,
+          "n": 25,
+          "errors": 0,
+          "passed": 21,
+          "strict": 0.84,
+          "interval95": [
+            0.6534637839282114,
+            0.9359654854332355
+          ],
+          "finalAnswerMatches": 21,
+          "finalAnswer": 0.84,
+          "formatOnly": 0
+        },
+        "116": {
+          "total": 25,
+          "n": 25,
+          "errors": 0,
+          "passed": 19,
+          "strict": 0.76,
+          "interval95": [
+            0.5657031664457093,
+            0.8850368630659855
+          ],
+          "finalAnswerMatches": 20,
+          "finalAnswer": 0.8,
+          "formatOnly": 1
+        },
+        "117": {
+          "total": 25,
+          "n": 25,
+          "errors": 0,
+          "passed": 18,
+          "strict": 0.72,
+          "interval95": [
+            0.5242339480963842,
+            0.8571614614904344
+          ],
+          "finalAnswerMatches": 19,
+          "finalAnswer": 0.76,
+          "formatOnly": 1
+        },
+        "118": {
+          "total": 25,
+          "n": 25,
+          "errors": 0,
+          "passed": 21,
+          "strict": 0.84,
+          "interval95": [
+            0.6534637839282114,
+            0.9359654854332355
+          ],
+          "finalAnswerMatches": 21,
+          "finalAnswer": 0.84,
+          "formatOnly": 0
+        },
+        "119": {
+          "total": 25,
+          "n": 25,
+          "errors": 0,
+          "passed": 21,
+          "strict": 0.84,
+          "interval95": [
+            0.6534637839282114,
+            0.9359654854332355
+          ],
+          "finalAnswerMatches": 22,
+          "finalAnswer": 0.88,
+          "formatOnly": 1
+        },
+        "120": {
+          "total": 25,
+          "n": 25,
+          "errors": 0,
+          "passed": 21,
+          "strict": 0.84,
+          "interval95": [
+            0.6534637839282114,
+            0.9359654854332355
+          ],
+          "finalAnswerMatches": 22,
+          "finalAnswer": 0.88,
+          "formatOnly": 1
+        }
+      },
+      "rescored": {
+        "lostPasses": 0,
+        "gainedPasses": 0
+      }
+    },
+    {
+      "model": "openai/gpt-4.1",
+      "all": {
+        "total": 500,
+        "n": 500,
+        "errors": 0,
+        "passed": 205,
+        "strict": 0.41,
+        "interval95": [
+          0.3677350694076764,
+          0.453637311875403
+        ],
+        "finalAnswerMatches": 246,
+        "finalAnswer": 0.492,
+        "formatOnly": 41
+      },
+      "eligible": {
+        "total": 500,
+        "n": 500,
+        "errors": 0,
+        "passed": 205,
+        "strict": 0.41,
+        "interval95": [
+          0.3677350694076764,
+          0.453637311875403
+        ],
+        "finalAnswerMatches": 246,
+        "finalAnswer": 0.492,
+        "formatOnly": 41
+      },
+      "excluded": 0,
+      "byTier": {
+        "0": {
+          "total": 40,
+          "n": 40,
+          "errors": 0,
+          "passed": 40,
+          "strict": 1,
+          "interval95": [
+            0.9123783988027135,
+            1
+          ],
+          "finalAnswerMatches": 40,
+          "finalAnswer": 1,
+          "formatOnly": 0
+        },
+        "1": {
+          "total": 40,
+          "n": 40,
+          "errors": 0,
+          "passed": 33,
+          "strict": 0.825,
+          "interval95": [
+            0.6805000966821229,
+            0.9125458625396408
+          ],
+          "finalAnswerMatches": 33,
+          "finalAnswer": 0.825,
+          "formatOnly": 0
+        },
+        "2": {
+          "total": 80,
+          "n": 80,
+          "errors": 0,
+          "passed": 33,
+          "strict": 0.4125,
+          "interval95": [
+            0.3110585761276188,
+            0.5219595965410984
+          ],
+          "finalAnswerMatches": 33,
+          "finalAnswer": 0.4125,
+          "formatOnly": 0
+        },
+        "3": {
+          "total": 100,
+          "n": 100,
+          "errors": 0,
+          "passed": 58,
+          "strict": 0.58,
+          "interval95": [
+            0.4820648670304296,
+            0.6720161732564526
+          ],
+          "finalAnswerMatches": 78,
+          "finalAnswer": 0.78,
+          "formatOnly": 20
+        },
+        "4": {
+          "total": 100,
+          "n": 100,
+          "errors": 0,
+          "passed": 16,
+          "strict": 0.16,
+          "interval95": [
+            0.10095288488804782,
+            0.24420269389270244
+          ],
+          "finalAnswerMatches": 36,
+          "finalAnswer": 0.36,
+          "formatOnly": 20
+        },
+        "5": {
+          "total": 100,
+          "n": 100,
+          "errors": 0,
+          "passed": 18,
+          "strict": 0.18,
+          "interval95": [
+            0.1170022549894635,
+            0.2666735838630073
+          ],
+          "finalAnswerMatches": 19,
+          "finalAnswer": 0.19,
+          "formatOnly": 1
+        },
+        "6": {
+          "total": 40,
+          "n": 40,
+          "errors": 0,
+          "passed": 7,
+          "strict": 0.175,
+          "interval95": [
+            0.0874541374603592,
+            0.31949990331787714
+          ],
+          "finalAnswerMatches": 7,
+          "finalAnswer": 0.175,
+          "formatOnly": 0
+        }
+      },
+      "byFamily": {
+        "arithmetic": {
+          "total": 60,
+          "n": 60,
+          "errors": 0,
+          "passed": 41,
+          "strict": 0.6833333333333333,
+          "interval95": [
+            0.5576623297382323,
+            0.7869413244763347
+          ],
+          "finalAnswerMatches": 41,
+          "finalAnswer": 0.6833333333333333,
+          "formatOnly": 0
+        },
+        "automata": {
+          "total": 40,
+          "n": 40,
+          "errors": 0,
+          "passed": 5,
+          "strict": 0.125,
+          "interval95": [
+            0.05459500250945401,
+            0.261121198388511
+          ],
+          "finalAnswerMatches": 6,
+          "finalAnswer": 0.15,
+          "formatOnly": 1
+        },
+        "cipher": {
+          "total": 20,
+          "n": 20,
+          "errors": 0,
+          "passed": 2,
+          "strict": 0.1,
+          "interval95": [
+            0.027866481213768224,
+            0.3010336452284873
+          ],
+          "finalAnswerMatches": 2,
+          "finalAnswer": 0.1,
+          "formatOnly": 0
+        },
+        "cryptarithm": {
+          "total": 40,
+          "n": 40,
+          "errors": 0,
+          "passed": 1,
+          "strict": 0.025,
+          "interval95": [
+            0.0044268315026814095,
+            0.1288136896347409
+          ],
+          "finalAnswerMatches": 1,
+          "finalAnswer": 0.025,
+          "formatOnly": 0
+        },
+        "echo": {
+          "total": 20,
+          "n": 20,
+          "errors": 0,
+          "passed": 20,
+          "strict": 1,
+          "interval95": [
+            0.8388748419471806,
+            1
+          ],
+          "finalAnswerMatches": 20,
+          "finalAnswer": 1,
+          "formatOnly": 0
+        },
+        "gridpath": {
+          "total": 20,
+          "n": 20,
+          "errors": 0,
+          "passed": 11,
+          "strict": 0.55,
+          "interval95": [
+            0.34208534245034233,
+            0.7418021417443759
+          ],
+          "finalAnswerMatches": 11,
+          "finalAnswer": 0.55,
+          "formatOnly": 0
+        },
+        "gridxf": {
+          "total": 40,
+          "n": 40,
+          "errors": 0,
+          "passed": 13,
+          "strict": 0.325,
+          "interval95": [
+            0.200845022317827,
+            0.47982253810122333
+          ],
+          "finalAnswerMatches": 13,
+          "finalAnswer": 0.325,
+          "formatOnly": 0
+        },
+        "hiddenfn": {
+          "total": 40,
+          "n": 40,
+          "errors": 0,
+          "passed": 8,
+          "strict": 0.2,
+          "interval95": [
+            0.10499989725437704,
+            0.347573063463995
+          ],
+          "finalAnswerMatches": 8,
+          "finalAnswer": 0.2,
+          "formatOnly": 0
+        },
+        "knights": {
+          "total": 40,
+          "n": 40,
+          "errors": 0,
+          "passed": 0,
+          "strict": 0,
+          "interval95": [
+            0,
+            0.08762160119728664
+          ],
+          "finalAnswerMatches": 40,
+          "finalAnswer": 1,
+          "formatOnly": 40
+        },
+        "ordering": {
+          "total": 20,
+          "n": 20,
+          "errors": 0,
+          "passed": 19,
+          "strict": 0.95,
+          "interval95": [
+            0.763868806553258,
+            0.9911185511992047
+          ],
+          "finalAnswerMatches": 19,
+          "finalAnswer": 0.95,
+          "formatOnly": 0
+        },
+        "registervm": {
+          "total": 40,
+          "n": 40,
+          "errors": 0,
+          "passed": 31,
+          "strict": 0.775,
+          "interval95": [
+            0.6249690325768998,
+            0.8768390867645927
+          ],
+          "finalAnswerMatches": 31,
+          "finalAnswer": 0.775,
+          "formatOnly": 0
+        },
+        "sequence": {
+          "total": 20,
+          "n": 20,
+          "errors": 0,
+          "passed": 20,
+          "strict": 1,
+          "interval95": [
+            0.8388748419471806,
+            1
+          ],
+          "finalAnswerMatches": 20,
+          "finalAnswer": 1,
+          "formatOnly": 0
+        },
+        "strings": {
+          "total": 40,
+          "n": 40,
+          "errors": 0,
+          "passed": 23,
+          "strict": 0.575,
+          "interval95": [
+            0.42195068541991065,
+            0.7149060744004962
+          ],
+          "finalAnswerMatches": 23,
+          "finalAnswer": 0.575,
+          "formatOnly": 0
+        },
+        "sudoku": {
+          "total": 60,
+          "n": 60,
+          "errors": 0,
+          "passed": 11,
+          "strict": 0.18333333333333332,
+          "interval95": [
+            0.10557796889197638,
+            0.2991975374646805
+          ],
+          "finalAnswerMatches": 11,
+          "finalAnswer": 0.18333333333333332,
+          "formatOnly": 0
+        }
+      },
+      "byCell": {
+        "arithmetic:t0": {
+          "total": 20,
+          "n": 20,
+          "errors": 0,
+          "passed": 20,
+          "strict": 1,
+          "interval95": [
+            0.8388748419471806,
+            1
+          ],
+          "finalAnswerMatches": 20,
+          "finalAnswer": 1,
+          "formatOnly": 0
+        },
+        "arithmetic:t1": {
+          "total": 20,
+          "n": 20,
+          "errors": 0,
+          "passed": 16,
+          "strict": 0.8,
+          "interval95": [
+            0.5839825677481064,
+            0.919342337420202
+          ],
+          "finalAnswerMatches": 16,
+          "finalAnswer": 0.8,
+          "formatOnly": 0
+        },
+        "arithmetic:t2": {
+          "total": 20,
+          "n": 20,
+          "errors": 0,
+          "passed": 5,
+          "strict": 0.25,
+          "interval95": [
+            0.11186170140766569,
+            0.468700877618744
+          ],
+          "finalAnswerMatches": 5,
+          "finalAnswer": 0.25,
+          "formatOnly": 0
+        },
+        "automata:t4": {
+          "total": 20,
+          "n": 20,
+          "errors": 0,
+          "passed": 2,
+          "strict": 0.1,
+          "interval95": [
+            0.027866481213768224,
+            0.3010336452284873
+          ],
+          "finalAnswerMatches": 2,
+          "finalAnswer": 0.1,
+          "formatOnly": 0
+        },
+        "automata:t5": {
+          "total": 20,
+          "n": 20,
+          "errors": 0,
+          "passed": 3,
+          "strict": 0.15,
+          "interval95": [
+            0.052368745896216595,
+            0.36041886474075696
+          ],
+          "finalAnswerMatches": 4,
+          "finalAnswer": 0.2,
+          "formatOnly": 1
+        },
+        "cipher:t2": {
+          "total": 20,
+          "n": 20,
+          "errors": 0,
+          "passed": 2,
+          "strict": 0.1,
+          "interval95": [
+            0.027866481213768224,
+            0.3010336452284873
+          ],
+          "finalAnswerMatches": 2,
+          "finalAnswer": 0.1,
+          "formatOnly": 0
+        },
+        "cryptarithm:t4": {
+          "total": 20,
+          "n": 20,
+          "errors": 0,
+          "passed": 0,
+          "strict": 0,
+          "interval95": [
+            0,
+            0.16112515805281938
+          ],
+          "finalAnswerMatches": 0,
+          "finalAnswer": 0,
+          "formatOnly": 0
+        },
+        "cryptarithm:t5": {
+          "total": 20,
+          "n": 20,
+          "errors": 0,
+          "passed": 1,
+          "strict": 0.05,
+          "interval95": [
+            0.008881448800795402,
+            0.23613119344674205
+          ],
+          "finalAnswerMatches": 1,
+          "finalAnswer": 0.05,
+          "formatOnly": 0
+        },
+        "echo:t0": {
+          "total": 20,
+          "n": 20,
+          "errors": 0,
+          "passed": 20,
+          "strict": 1,
+          "interval95": [
+            0.8388748419471806,
+            1
+          ],
+          "finalAnswerMatches": 20,
+          "finalAnswer": 1,
+          "formatOnly": 0
+        },
+        "gridpath:t3": {
+          "total": 20,
+          "n": 20,
+          "errors": 0,
+          "passed": 11,
+          "strict": 0.55,
+          "interval95": [
+            0.34208534245034233,
+            0.7418021417443759
+          ],
+          "finalAnswerMatches": 11,
+          "finalAnswer": 0.55,
+          "formatOnly": 0
+        },
+        "gridxf:t5": {
+          "total": 20,
+          "n": 20,
+          "errors": 0,
+          "passed": 9,
+          "strict": 0.45,
+          "interval95": [
+            0.2581978582556243,
+            0.6579146575496577
+          ],
+          "finalAnswerMatches": 9,
+          "finalAnswer": 0.45,
+          "formatOnly": 0
+        },
+        "gridxf:t6": {
+          "total": 20,
+          "n": 20,
+          "errors": 0,
+          "passed": 4,
+          "strict": 0.2,
+          "interval95": [
+            0.08065766257979806,
+            0.41601743225189364
+          ],
+          "finalAnswerMatches": 4,
+          "finalAnswer": 0.2,
+          "formatOnly": 0
+        },
+        "hiddenfn:t5": {
+          "total": 20,
+          "n": 20,
+          "errors": 0,
+          "passed": 5,
+          "strict": 0.25,
+          "interval95": [
+            0.11186170140766569,
+            0.468700877618744
+          ],
+          "finalAnswerMatches": 5,
+          "finalAnswer": 0.25,
+          "formatOnly": 0
+        },
+        "hiddenfn:t6": {
+          "total": 20,
+          "n": 20,
+          "errors": 0,
+          "passed": 3,
+          "strict": 0.15,
+          "interval95": [
+            0.052368745896216595,
+            0.36041886474075696
+          ],
+          "finalAnswerMatches": 3,
+          "finalAnswer": 0.15,
+          "formatOnly": 0
+        },
+        "knights:t3": {
+          "total": 20,
+          "n": 20,
+          "errors": 0,
+          "passed": 0,
+          "strict": 0,
+          "interval95": [
+            0,
+            0.16112515805281938
+          ],
+          "finalAnswerMatches": 20,
+          "finalAnswer": 1,
+          "formatOnly": 20
+        },
+        "knights:t4": {
+          "total": 20,
+          "n": 20,
+          "errors": 0,
+          "passed": 0,
+          "strict": 0,
+          "interval95": [
+            0,
+            0.16112515805281938
+          ],
+          "finalAnswerMatches": 20,
+          "finalAnswer": 1,
+          "formatOnly": 20
+        },
+        "ordering:t3": {
+          "total": 20,
+          "n": 20,
+          "errors": 0,
+          "passed": 19,
+          "strict": 0.95,
+          "interval95": [
+            0.763868806553258,
+            0.9911185511992047
+          ],
+          "finalAnswerMatches": 19,
+          "finalAnswer": 0.95,
+          "formatOnly": 0
+        },
+        "registervm:t3": {
+          "total": 20,
+          "n": 20,
+          "errors": 0,
+          "passed": 17,
+          "strict": 0.85,
+          "interval95": [
+            0.6395811352592431,
+            0.9476312541037835
+          ],
+          "finalAnswerMatches": 17,
+          "finalAnswer": 0.85,
+          "formatOnly": 0
+        },
+        "registervm:t4": {
+          "total": 20,
+          "n": 20,
+          "errors": 0,
+          "passed": 14,
+          "strict": 0.7,
+          "interval95": [
+            0.4810271816464765,
+            0.8545227551323956
+          ],
+          "finalAnswerMatches": 14,
+          "finalAnswer": 0.7,
+          "formatOnly": 0
+        },
+        "sequence:t2": {
+          "total": 20,
+          "n": 20,
+          "errors": 0,
+          "passed": 20,
+          "strict": 1,
+          "interval95": [
+            0.8388748419471806,
+            1
+          ],
+          "finalAnswerMatches": 20,
+          "finalAnswer": 1,
+          "formatOnly": 0
+        },
+        "strings:t1": {
+          "total": 20,
+          "n": 20,
+          "errors": 0,
+          "passed": 17,
+          "strict": 0.85,
+          "interval95": [
+            0.6395811352592431,
+            0.9476312541037835
+          ],
+          "finalAnswerMatches": 17,
+          "finalAnswer": 0.85,
+          "formatOnly": 0
+        },
+        "strings:t2": {
+          "total": 20,
+          "n": 20,
+          "errors": 0,
+          "passed": 6,
+          "strict": 0.3,
+          "interval95": [
+            0.1454772448676043,
+            0.5189728183535235
+          ],
+          "finalAnswerMatches": 6,
+          "finalAnswer": 0.3,
+          "formatOnly": 0
+        },
+        "sudoku:t3": {
+          "total": 20,
+          "n": 20,
+          "errors": 0,
+          "passed": 11,
+          "strict": 0.55,
+          "interval95": [
+            0.34208534245034233,
+            0.7418021417443759
+          ],
+          "finalAnswerMatches": 11,
+          "finalAnswer": 0.55,
+          "formatOnly": 0
+        },
+        "sudoku:t4": {
+          "total": 20,
+          "n": 20,
+          "errors": 0,
+          "passed": 0,
+          "strict": 0,
+          "interval95": [
+            0,
+            0.16112515805281938
+          ],
+          "finalAnswerMatches": 0,
+          "finalAnswer": 0,
+          "formatOnly": 0
+        },
+        "sudoku:t5": {
+          "total": 20,
+          "n": 20,
+          "errors": 0,
+          "passed": 0,
+          "strict": 0,
+          "interval95": [
+            0,
+            0.16112515805281938
+          ],
+          "finalAnswerMatches": 0,
+          "finalAnswer": 0,
+          "formatOnly": 0
+        }
+      },
+      "bySeed": {
+        "101": {
+          "total": 25,
+          "n": 25,
+          "errors": 0,
+          "passed": 11,
+          "strict": 0.44,
+          "interval95": [
+            0.26665638881067344,
+            0.6293266813020123
+          ],
+          "finalAnswerMatches": 13,
+          "finalAnswer": 0.52,
+          "formatOnly": 2
+        },
+        "102": {
+          "total": 25,
+          "n": 25,
+          "errors": 0,
+          "passed": 8,
+          "strict": 0.32,
+          "interval95": [
+            0.17205190306907978,
+            0.5158973072689775
+          ],
+          "finalAnswerMatches": 10,
+          "finalAnswer": 0.4,
+          "formatOnly": 2
+        },
+        "103": {
+          "total": 25,
+          "n": 25,
+          "errors": 0,
+          "passed": 10,
+          "strict": 0.4,
+          "interval95": [
+            0.23403302377747973,
+            0.5926054264103301
+          ],
+          "finalAnswerMatches": 12,
+          "finalAnswer": 0.48,
+          "formatOnly": 2
+        },
+        "104": {
+          "total": 25,
+          "n": 25,
+          "errors": 0,
+          "passed": 9,
+          "strict": 0.36,
+          "interval95": [
+            0.20247880774458224,
+            0.5548150225183514
+          ],
+          "finalAnswerMatches": 11,
+          "finalAnswer": 0.44,
+          "formatOnly": 2
+        },
+        "105": {
+          "total": 25,
+          "n": 25,
+          "errors": 0,
+          "passed": 13,
+          "strict": 0.52,
+          "interval95": [
+            0.3349851695035678,
+            0.6996871404588704
+          ],
+          "finalAnswerMatches": 15,
+          "finalAnswer": 0.6,
+          "formatOnly": 2
+        },
+        "106": {
+          "total": 25,
+          "n": 25,
+          "errors": 0,
+          "passed": 10,
+          "strict": 0.4,
+          "interval95": [
+            0.23403302377747973,
+            0.5926054264103301
+          ],
+          "finalAnswerMatches": 12,
+          "finalAnswer": 0.48,
+          "formatOnly": 2
+        },
+        "107": {
+          "total": 25,
+          "n": 25,
+          "errors": 0,
+          "passed": 7,
+          "strict": 0.28,
+          "interval95": [
+            0.14283853850956563,
+            0.47576605190361576
+          ],
+          "finalAnswerMatches": 9,
+          "finalAnswer": 0.36,
+          "formatOnly": 2
+        },
+        "108": {
+          "total": 25,
+          "n": 25,
+          "errors": 0,
+          "passed": 10,
+          "strict": 0.4,
+          "interval95": [
+            0.23403302377747973,
+            0.5926054264103301
+          ],
+          "finalAnswerMatches": 12,
+          "finalAnswer": 0.48,
+          "formatOnly": 2
+        },
+        "109": {
+          "total": 25,
+          "n": 25,
+          "errors": 0,
+          "passed": 11,
+          "strict": 0.44,
+          "interval95": [
+            0.26665638881067344,
+            0.6293266813020123
+          ],
+          "finalAnswerMatches": 13,
+          "finalAnswer": 0.52,
+          "formatOnly": 2
+        },
+        "110": {
+          "total": 25,
+          "n": 25,
+          "errors": 0,
+          "passed": 11,
+          "strict": 0.44,
+          "interval95": [
+            0.26665638881067344,
+            0.6293266813020123
+          ],
+          "finalAnswerMatches": 13,
+          "finalAnswer": 0.52,
+          "formatOnly": 2
+        },
+        "111": {
+          "total": 25,
+          "n": 25,
+          "errors": 0,
+          "passed": 10,
+          "strict": 0.4,
+          "interval95": [
+            0.23403302377747973,
+            0.5926054264103301
+          ],
+          "finalAnswerMatches": 12,
+          "finalAnswer": 0.48,
+          "formatOnly": 2
+        },
+        "112": {
+          "total": 25,
+          "n": 25,
+          "errors": 0,
+          "passed": 8,
+          "strict": 0.32,
+          "interval95": [
+            0.17205190306907978,
+            0.5158973072689775
+          ],
+          "finalAnswerMatches": 10,
+          "finalAnswer": 0.4,
+          "formatOnly": 2
+        },
+        "113": {
+          "total": 25,
+          "n": 25,
+          "errors": 0,
+          "passed": 11,
+          "strict": 0.44,
+          "interval95": [
+            0.26665638881067344,
+            0.6293266813020123
+          ],
+          "finalAnswerMatches": 13,
+          "finalAnswer": 0.52,
+          "formatOnly": 2
+        },
+        "114": {
+          "total": 25,
+          "n": 25,
+          "errors": 0,
+          "passed": 11,
+          "strict": 0.44,
+          "interval95": [
+            0.26665638881067344,
+            0.6293266813020123
+          ],
+          "finalAnswerMatches": 13,
+          "finalAnswer": 0.52,
+          "formatOnly": 2
+        },
+        "115": {
+          "total": 25,
+          "n": 25,
+          "errors": 0,
+          "passed": 11,
+          "strict": 0.44,
+          "interval95": [
+            0.26665638881067344,
+            0.6293266813020123
+          ],
+          "finalAnswerMatches": 13,
+          "finalAnswer": 0.52,
+          "formatOnly": 2
+        },
+        "116": {
+          "total": 25,
+          "n": 25,
+          "errors": 0,
+          "passed": 13,
+          "strict": 0.52,
+          "interval95": [
+            0.3349851695035678,
+            0.6996871404588704
+          ],
+          "finalAnswerMatches": 16,
+          "finalAnswer": 0.64,
+          "formatOnly": 3
+        },
+        "117": {
+          "total": 25,
+          "n": 25,
+          "errors": 0,
+          "passed": 9,
+          "strict": 0.36,
+          "interval95": [
+            0.20247880774458224,
+            0.5548150225183514
+          ],
+          "finalAnswerMatches": 11,
+          "finalAnswer": 0.44,
+          "formatOnly": 2
+        },
+        "118": {
+          "total": 25,
+          "n": 25,
+          "errors": 0,
+          "passed": 10,
+          "strict": 0.4,
+          "interval95": [
+            0.23403302377747973,
+            0.5926054264103301
+          ],
+          "finalAnswerMatches": 12,
+          "finalAnswer": 0.48,
+          "formatOnly": 2
+        },
+        "119": {
+          "total": 25,
+          "n": 25,
+          "errors": 0,
+          "passed": 11,
+          "strict": 0.44,
+          "interval95": [
+            0.26665638881067344,
+            0.6293266813020123
+          ],
+          "finalAnswerMatches": 13,
+          "finalAnswer": 0.52,
+          "formatOnly": 2
+        },
+        "120": {
+          "total": 25,
+          "n": 25,
+          "errors": 0,
+          "passed": 11,
+          "strict": 0.44,
+          "interval95": [
+            0.26665638881067344,
+            0.6293266813020123
+          ],
+          "finalAnswerMatches": 13,
+          "finalAnswer": 0.52,
+          "formatOnly": 2
+        }
+      },
+      "rescored": {
+        "lostPasses": 0,
+        "gainedPasses": 0
+      }
+    },
+    {
+      "model": "openai/gpt-4o-mini",
+      "all": {
+        "total": 500,
+        "n": 500,
+        "errors": 0,
+        "passed": 140,
+        "strict": 0.28,
+        "interval95": [
+          0.2424360430412755,
+          0.3209186667618076
+        ],
+        "finalAnswerMatches": 167,
+        "finalAnswer": 0.334,
+        "formatOnly": 27
+      },
+      "eligible": {
+        "total": 500,
+        "n": 500,
+        "errors": 0,
+        "passed": 140,
+        "strict": 0.28,
+        "interval95": [
+          0.2424360430412755,
+          0.3209186667618076
+        ],
+        "finalAnswerMatches": 167,
+        "finalAnswer": 0.334,
+        "formatOnly": 27
+      },
+      "excluded": 0,
+      "byTier": {
+        "0": {
+          "total": 40,
+          "n": 40,
+          "errors": 0,
+          "passed": 37,
+          "strict": 0.925,
+          "interval95": [
+            0.8013576647568946,
+            0.9741639742254119
+          ],
+          "finalAnswerMatches": 37,
+          "finalAnswer": 0.925,
+          "formatOnly": 0
+        },
+        "1": {
+          "total": 40,
+          "n": 40,
+          "errors": 0,
+          "passed": 26,
+          "strict": 0.65,
+          "interval95": [
+            0.49505880837257693,
+            0.7786547112682372
+          ],
+          "finalAnswerMatches": 26,
+          "finalAnswer": 0.65,
+          "formatOnly": 0
+        },
+        "2": {
+          "total": 80,
+          "n": 80,
+          "errors": 0,
+          "passed": 29,
+          "strict": 0.3625,
+          "interval95": [
+            0.2657079306444915,
+            0.4718920549777783
+          ],
+          "finalAnswerMatches": 29,
+          "finalAnswer": 0.3625,
+          "formatOnly": 0
+        },
+        "3": {
+          "total": 100,
+          "n": 100,
+          "errors": 0,
+          "passed": 37,
+          "strict": 0.37,
+          "interval95": [
+            0.28182360534324524,
+            0.4677947041905709
+          ],
+          "finalAnswerMatches": 46,
+          "finalAnswer": 0.46,
+          "formatOnly": 9
+        },
+        "4": {
+          "total": 100,
+          "n": 100,
+          "errors": 0,
+          "passed": 9,
+          "strict": 0.09,
+          "interval95": [
+            0.04807254000256516,
+            0.1622621285271631
+          ],
+          "finalAnswerMatches": 22,
+          "finalAnswer": 0.22,
+          "formatOnly": 13
+        },
+        "5": {
+          "total": 100,
+          "n": 100,
+          "errors": 0,
+          "passed": 1,
+          "strict": 0.01,
+          "interval95": [
+            0.0017674320641406505,
+            0.054486196178705315
+          ],
+          "finalAnswerMatches": 4,
+          "finalAnswer": 0.04,
+          "formatOnly": 3
+        },
+        "6": {
+          "total": 40,
+          "n": 40,
+          "errors": 0,
+          "passed": 1,
+          "strict": 0.025,
+          "interval95": [
+            0.0044268315026814095,
+            0.1288136896347409
+          ],
+          "finalAnswerMatches": 3,
+          "finalAnswer": 0.075,
+          "formatOnly": 2
+        }
+      },
+      "byFamily": {
+        "arithmetic": {
+          "total": 60,
+          "n": 60,
+          "errors": 0,
+          "passed": 32,
+          "strict": 0.5333333333333333,
+          "interval95": [
+            0.4089342702715789,
+            0.6537209395856151
+          ],
+          "finalAnswerMatches": 32,
+          "finalAnswer": 0.5333333333333333,
+          "formatOnly": 0
+        },
+        "automata": {
+          "total": 40,
+          "n": 40,
+          "errors": 0,
+          "passed": 0,
+          "strict": 0,
+          "interval95": [
+            0,
+            0.08762160119728664
+          ],
+          "finalAnswerMatches": 2,
+          "finalAnswer": 0.05,
+          "formatOnly": 2
+        },
+        "cipher": {
+          "total": 20,
+          "n": 20,
+          "errors": 0,
+          "passed": 1,
+          "strict": 0.05,
+          "interval95": [
+            0.008881448800795402,
+            0.23613119344674205
+          ],
+          "finalAnswerMatches": 1,
+          "finalAnswer": 0.05,
+          "formatOnly": 0
+        },
+        "cryptarithm": {
+          "total": 40,
+          "n": 40,
+          "errors": 0,
+          "passed": 0,
+          "strict": 0,
+          "interval95": [
+            0,
+            0.08762160119728664
+          ],
+          "finalAnswerMatches": 0,
+          "finalAnswer": 0,
+          "formatOnly": 0
+        },
+        "echo": {
+          "total": 20,
+          "n": 20,
+          "errors": 0,
+          "passed": 17,
+          "strict": 0.85,
+          "interval95": [
+            0.6395811352592431,
+            0.9476312541037835
+          ],
+          "finalAnswerMatches": 17,
+          "finalAnswer": 0.85,
+          "formatOnly": 0
+        },
+        "gridpath": {
+          "total": 20,
+          "n": 20,
+          "errors": 0,
+          "passed": 13,
+          "strict": 0.65,
+          "interval95": [
+            0.43285427668523624,
+            0.818808175898918
+          ],
+          "finalAnswerMatches": 13,
+          "finalAnswer": 0.65,
+          "formatOnly": 0
+        },
+        "gridxf": {
+          "total": 40,
+          "n": 40,
+          "errors": 0,
+          "passed": 1,
+          "strict": 0.025,
+          "interval95": [
+            0.0044268315026814095,
+            0.1288136896347409
+          ],
+          "finalAnswerMatches": 5,
+          "finalAnswer": 0.125,
+          "formatOnly": 4
+        },
+        "hiddenfn": {
+          "total": 40,
+          "n": 40,
+          "errors": 0,
+          "passed": 1,
+          "strict": 0.025,
+          "interval95": [
+            0.0044268315026814095,
+            0.1288136896347409
+          ],
+          "finalAnswerMatches": 1,
+          "finalAnswer": 0.025,
+          "formatOnly": 0
+        },
+        "knights": {
+          "total": 40,
+          "n": 40,
+          "errors": 0,
+          "passed": 0,
+          "strict": 0,
+          "interval95": [
+            0,
+            0.08762160119728664
+          ],
+          "finalAnswerMatches": 21,
+          "finalAnswer": 0.525,
+          "formatOnly": 21
+        },
+        "ordering": {
+          "total": 20,
+          "n": 20,
+          "errors": 0,
+          "passed": 7,
+          "strict": 0.35,
+          "interval95": [
+            0.18119182410108206,
+            0.5671457233147638
+          ],
+          "finalAnswerMatches": 7,
+          "finalAnswer": 0.35,
+          "formatOnly": 0
+        },
+        "registervm": {
+          "total": 40,
+          "n": 40,
+          "errors": 0,
+          "passed": 18,
+          "strict": 0.45,
+          "interval95": [
+            0.3070530781090492,
+            0.6017090820106794
+          ],
+          "finalAnswerMatches": 18,
+          "finalAnswer": 0.45,
+          "formatOnly": 0
+        },
+        "sequence": {
+          "total": 20,
+          "n": 20,
+          "errors": 0,
+          "passed": 20,
+          "strict": 1,
+          "interval95": [
+            0.8388748419471806,
+            1
+          ],
+          "finalAnswerMatches": 20,
+          "finalAnswer": 1,
+          "formatOnly": 0
+        },
+        "strings": {
+          "total": 40,
+          "n": 40,
+          "errors": 0,
+          "passed": 22,
+          "strict": 0.55,
+          "interval95": [
+            0.39829091798932054,
+            0.6929469218909508
+          ],
+          "finalAnswerMatches": 22,
+          "finalAnswer": 0.55,
+          "formatOnly": 0
+        },
+        "sudoku": {
+          "total": 60,
+          "n": 60,
+          "errors": 0,
+          "passed": 8,
+          "strict": 0.13333333333333333,
+          "interval95": [
+            0.06914109480586972,
+            0.24165159676499615
+          ],
+          "finalAnswerMatches": 8,
+          "finalAnswer": 0.13333333333333333,
+          "formatOnly": 0
+        }
+      },
+      "byCell": {
+        "arithmetic:t0": {
+          "total": 20,
+          "n": 20,
+          "errors": 0,
+          "passed": 20,
+          "strict": 1,
+          "interval95": [
+            0.8388748419471806,
+            1
+          ],
+          "finalAnswerMatches": 20,
+          "finalAnswer": 1,
+          "formatOnly": 0
+        },
+        "arithmetic:t1": {
+          "total": 20,
+          "n": 20,
+          "errors": 0,
+          "passed": 9,
+          "strict": 0.45,
+          "interval95": [
+            0.2581978582556243,
+            0.6579146575496577
+          ],
+          "finalAnswerMatches": 9,
+          "finalAnswer": 0.45,
+          "formatOnly": 0
+        },
+        "arithmetic:t2": {
+          "total": 20,
+          "n": 20,
+          "errors": 0,
+          "passed": 3,
+          "strict": 0.15,
+          "interval95": [
+            0.052368745896216595,
+            0.36041886474075696
+          ],
+          "finalAnswerMatches": 3,
+          "finalAnswer": 0.15,
+          "formatOnly": 0
+        },
+        "automata:t4": {
+          "total": 20,
+          "n": 20,
+          "errors": 0,
+          "passed": 0,
+          "strict": 0,
+          "interval95": [
+            0,
+            0.16112515805281938
+          ],
+          "finalAnswerMatches": 1,
+          "finalAnswer": 0.05,
+          "formatOnly": 1
+        },
+        "automata:t5": {
+          "total": 20,
+          "n": 20,
+          "errors": 0,
+          "passed": 0,
+          "strict": 0,
+          "interval95": [
+            0,
+            0.16112515805281938
+          ],
+          "finalAnswerMatches": 1,
+          "finalAnswer": 0.05,
+          "formatOnly": 1
+        },
+        "cipher:t2": {
+          "total": 20,
+          "n": 20,
+          "errors": 0,
+          "passed": 1,
+          "strict": 0.05,
+          "interval95": [
+            0.008881448800795402,
+            0.23613119344674205
+          ],
+          "finalAnswerMatches": 1,
+          "finalAnswer": 0.05,
+          "formatOnly": 0
+        },
+        "cryptarithm:t4": {
+          "total": 20,
+          "n": 20,
+          "errors": 0,
+          "passed": 0,
+          "strict": 0,
+          "interval95": [
+            0,
+            0.16112515805281938
+          ],
+          "finalAnswerMatches": 0,
+          "finalAnswer": 0,
+          "formatOnly": 0
+        },
+        "cryptarithm:t5": {
+          "total": 20,
+          "n": 20,
+          "errors": 0,
+          "passed": 0,
+          "strict": 0,
+          "interval95": [
+            0,
+            0.16112515805281938
+          ],
+          "finalAnswerMatches": 0,
+          "finalAnswer": 0,
+          "formatOnly": 0
+        },
+        "echo:t0": {
+          "total": 20,
+          "n": 20,
+          "errors": 0,
+          "passed": 17,
+          "strict": 0.85,
+          "interval95": [
+            0.6395811352592431,
+            0.9476312541037835
+          ],
+          "finalAnswerMatches": 17,
+          "finalAnswer": 0.85,
+          "formatOnly": 0
+        },
+        "gridpath:t3": {
+          "total": 20,
+          "n": 20,
+          "errors": 0,
+          "passed": 13,
+          "strict": 0.65,
+          "interval95": [
+            0.43285427668523624,
+            0.818808175898918
+          ],
+          "finalAnswerMatches": 13,
+          "finalAnswer": 0.65,
+          "formatOnly": 0
+        },
+        "gridxf:t5": {
+          "total": 20,
+          "n": 20,
+          "errors": 0,
+          "passed": 1,
+          "strict": 0.05,
+          "interval95": [
+            0.008881448800795402,
+            0.23613119344674205
+          ],
+          "finalAnswerMatches": 3,
+          "finalAnswer": 0.15,
+          "formatOnly": 2
+        },
+        "gridxf:t6": {
+          "total": 20,
+          "n": 20,
+          "errors": 0,
+          "passed": 0,
+          "strict": 0,
+          "interval95": [
+            0,
+            0.16112515805281938
+          ],
+          "finalAnswerMatches": 2,
+          "finalAnswer": 0.1,
+          "formatOnly": 2
+        },
+        "hiddenfn:t5": {
+          "total": 20,
+          "n": 20,
+          "errors": 0,
+          "passed": 0,
+          "strict": 0,
+          "interval95": [
+            0,
+            0.16112515805281938
+          ],
+          "finalAnswerMatches": 0,
+          "finalAnswer": 0,
+          "formatOnly": 0
+        },
+        "hiddenfn:t6": {
+          "total": 20,
+          "n": 20,
+          "errors": 0,
+          "passed": 1,
+          "strict": 0.05,
+          "interval95": [
+            0.008881448800795402,
+            0.23613119344674205
+          ],
+          "finalAnswerMatches": 1,
+          "finalAnswer": 0.05,
+          "formatOnly": 0
+        },
+        "knights:t3": {
+          "total": 20,
+          "n": 20,
+          "errors": 0,
+          "passed": 0,
+          "strict": 0,
+          "interval95": [
+            0,
+            0.16112515805281938
+          ],
+          "finalAnswerMatches": 9,
+          "finalAnswer": 0.45,
+          "formatOnly": 9
+        },
+        "knights:t4": {
+          "total": 20,
+          "n": 20,
+          "errors": 0,
+          "passed": 0,
+          "strict": 0,
+          "interval95": [
+            0,
+            0.16112515805281938
+          ],
+          "finalAnswerMatches": 12,
+          "finalAnswer": 0.6,
+          "formatOnly": 12
+        },
+        "ordering:t3": {
+          "total": 20,
+          "n": 20,
+          "errors": 0,
+          "passed": 7,
+          "strict": 0.35,
+          "interval95": [
+            0.18119182410108206,
+            0.5671457233147638
+          ],
+          "finalAnswerMatches": 7,
+          "finalAnswer": 0.35,
+          "formatOnly": 0
+        },
+        "registervm:t3": {
+          "total": 20,
+          "n": 20,
+          "errors": 0,
+          "passed": 10,
+          "strict": 0.5,
+          "interval95": [
+            0.2992980081982123,
+            0.7007019918017877
+          ],
+          "finalAnswerMatches": 10,
+          "finalAnswer": 0.5,
+          "formatOnly": 0
+        },
+        "registervm:t4": {
+          "total": 20,
+          "n": 20,
+          "errors": 0,
+          "passed": 8,
+          "strict": 0.4,
+          "interval95": [
+            0.21880653237281705,
+            0.6134184992377469
+          ],
+          "finalAnswerMatches": 8,
+          "finalAnswer": 0.4,
+          "formatOnly": 0
+        },
+        "sequence:t2": {
+          "total": 20,
+          "n": 20,
+          "errors": 0,
+          "passed": 20,
+          "strict": 1,
+          "interval95": [
+            0.8388748419471806,
+            1
+          ],
+          "finalAnswerMatches": 20,
+          "finalAnswer": 1,
+          "formatOnly": 0
+        },
+        "strings:t1": {
+          "total": 20,
+          "n": 20,
+          "errors": 0,
+          "passed": 17,
+          "strict": 0.85,
+          "interval95": [
+            0.6395811352592431,
+            0.9476312541037835
+          ],
+          "finalAnswerMatches": 17,
+          "finalAnswer": 0.85,
+          "formatOnly": 0
+        },
+        "strings:t2": {
+          "total": 20,
+          "n": 20,
+          "errors": 0,
+          "passed": 5,
+          "strict": 0.25,
+          "interval95": [
+            0.11186170140766569,
+            0.468700877618744
+          ],
+          "finalAnswerMatches": 5,
+          "finalAnswer": 0.25,
+          "formatOnly": 0
+        },
+        "sudoku:t3": {
+          "total": 20,
+          "n": 20,
+          "errors": 0,
+          "passed": 7,
+          "strict": 0.35,
+          "interval95": [
+            0.18119182410108206,
+            0.5671457233147638
+          ],
+          "finalAnswerMatches": 7,
+          "finalAnswer": 0.35,
+          "formatOnly": 0
+        },
+        "sudoku:t4": {
+          "total": 20,
+          "n": 20,
+          "errors": 0,
+          "passed": 1,
+          "strict": 0.05,
+          "interval95": [
+            0.008881448800795402,
+            0.23613119344674205
+          ],
+          "finalAnswerMatches": 1,
+          "finalAnswer": 0.05,
+          "formatOnly": 0
+        },
+        "sudoku:t5": {
+          "total": 20,
+          "n": 20,
+          "errors": 0,
+          "passed": 0,
+          "strict": 0,
+          "interval95": [
+            0,
+            0.16112515805281938
+          ],
+          "finalAnswerMatches": 0,
+          "finalAnswer": 0,
+          "formatOnly": 0
+        }
+      },
+      "bySeed": {
+        "101": {
+          "total": 25,
+          "n": 25,
+          "errors": 0,
+          "passed": 7,
+          "strict": 0.28,
+          "interval95": [
+            0.14283853850956563,
+            0.47576605190361576
+          ],
+          "finalAnswerMatches": 7,
+          "finalAnswer": 0.28,
+          "formatOnly": 0
+        },
+        "102": {
+          "total": 25,
+          "n": 25,
+          "errors": 0,
+          "passed": 8,
+          "strict": 0.32,
+          "interval95": [
+            0.17205190306907978,
+            0.5158973072689775
+          ],
+          "finalAnswerMatches": 9,
+          "finalAnswer": 0.36,
+          "formatOnly": 1
+        },
+        "103": {
+          "total": 25,
+          "n": 25,
+          "errors": 0,
+          "passed": 6,
+          "strict": 0.24,
+          "interval95": [
+            0.11496313693401444,
+            0.4342968335542908
+          ],
+          "finalAnswerMatches": 7,
+          "finalAnswer": 0.28,
+          "formatOnly": 1
+        },
+        "104": {
+          "total": 25,
+          "n": 25,
+          "errors": 0,
+          "passed": 5,
+          "strict": 0.2,
+          "interval95": [
+            0.08860584686802572,
+            0.3913095036954033
+          ],
+          "finalAnswerMatches": 7,
+          "finalAnswer": 0.28,
+          "formatOnly": 2
+        },
+        "105": {
+          "total": 25,
+          "n": 25,
+          "errors": 0,
+          "passed": 6,
+          "strict": 0.24,
+          "interval95": [
+            0.11496313693401444,
+            0.4342968335542908
+          ],
+          "finalAnswerMatches": 11,
+          "finalAnswer": 0.44,
+          "formatOnly": 5
+        },
+        "106": {
+          "total": 25,
+          "n": 25,
+          "errors": 0,
+          "passed": 6,
+          "strict": 0.24,
+          "interval95": [
+            0.11496313693401444,
+            0.4342968335542908
+          ],
+          "finalAnswerMatches": 10,
+          "finalAnswer": 0.4,
+          "formatOnly": 4
+        },
+        "107": {
+          "total": 25,
+          "n": 25,
+          "errors": 0,
+          "passed": 4,
+          "strict": 0.16,
+          "interval95": [
+            0.0640345145667644,
+            0.3465362160717886
+          ],
+          "finalAnswerMatches": 4,
+          "finalAnswer": 0.16,
+          "formatOnly": 0
+        },
+        "108": {
+          "total": 25,
+          "n": 25,
+          "errors": 0,
+          "passed": 7,
+          "strict": 0.28,
+          "interval95": [
+            0.14283853850956563,
+            0.47576605190361576
+          ],
+          "finalAnswerMatches": 8,
+          "finalAnswer": 0.32,
+          "formatOnly": 1
+        },
+        "109": {
+          "total": 25,
+          "n": 25,
+          "errors": 0,
+          "passed": 8,
+          "strict": 0.32,
+          "interval95": [
+            0.17205190306907978,
+            0.5158973072689775
+          ],
+          "finalAnswerMatches": 11,
+          "finalAnswer": 0.44,
+          "formatOnly": 3
+        },
+        "110": {
+          "total": 25,
+          "n": 25,
+          "errors": 0,
+          "passed": 10,
+          "strict": 0.4,
+          "interval95": [
+            0.23403302377747973,
+            0.5926054264103301
+          ],
+          "finalAnswerMatches": 11,
+          "finalAnswer": 0.44,
+          "formatOnly": 1
+        },
+        "111": {
+          "total": 25,
+          "n": 25,
+          "errors": 0,
+          "passed": 5,
+          "strict": 0.2,
+          "interval95": [
+            0.08860584686802572,
+            0.3913095036954033
+          ],
+          "finalAnswerMatches": 7,
+          "finalAnswer": 0.28,
+          "formatOnly": 2
+        },
+        "112": {
+          "total": 25,
+          "n": 25,
+          "errors": 0,
+          "passed": 7,
+          "strict": 0.28,
+          "interval95": [
+            0.14283853850956563,
+            0.47576605190361576
+          ],
+          "finalAnswerMatches": 8,
+          "finalAnswer": 0.32,
+          "formatOnly": 1
+        },
+        "113": {
+          "total": 25,
+          "n": 25,
+          "errors": 0,
+          "passed": 5,
+          "strict": 0.2,
+          "interval95": [
+            0.08860584686802572,
+            0.3913095036954033
+          ],
+          "finalAnswerMatches": 5,
+          "finalAnswer": 0.2,
+          "formatOnly": 0
+        },
+        "114": {
+          "total": 25,
+          "n": 25,
+          "errors": 0,
+          "passed": 8,
+          "strict": 0.32,
+          "interval95": [
+            0.17205190306907978,
+            0.5158973072689775
+          ],
+          "finalAnswerMatches": 8,
+          "finalAnswer": 0.32,
+          "formatOnly": 0
+        },
+        "115": {
+          "total": 25,
+          "n": 25,
+          "errors": 0,
+          "passed": 6,
+          "strict": 0.24,
+          "interval95": [
+            0.11496313693401444,
+            0.4342968335542908
+          ],
+          "finalAnswerMatches": 7,
+          "finalAnswer": 0.28,
+          "formatOnly": 1
+        },
+        "116": {
+          "total": 25,
+          "n": 25,
+          "errors": 0,
+          "passed": 9,
+          "strict": 0.36,
+          "interval95": [
+            0.20247880774458224,
+            0.5548150225183514
+          ],
+          "finalAnswerMatches": 9,
+          "finalAnswer": 0.36,
+          "formatOnly": 0
+        },
+        "117": {
+          "total": 25,
+          "n": 25,
+          "errors": 0,
+          "passed": 10,
+          "strict": 0.4,
+          "interval95": [
+            0.23403302377747973,
+            0.5926054264103301
+          ],
+          "finalAnswerMatches": 12,
+          "finalAnswer": 0.48,
+          "formatOnly": 2
+        },
+        "118": {
+          "total": 25,
+          "n": 25,
+          "errors": 0,
+          "passed": 8,
+          "strict": 0.32,
+          "interval95": [
+            0.17205190306907978,
+            0.5158973072689775
+          ],
+          "finalAnswerMatches": 9,
+          "finalAnswer": 0.36,
+          "formatOnly": 1
+        },
+        "119": {
+          "total": 25,
+          "n": 25,
+          "errors": 0,
+          "passed": 8,
+          "strict": 0.32,
+          "interval95": [
+            0.17205190306907978,
+            0.5158973072689775
+          ],
+          "finalAnswerMatches": 9,
+          "finalAnswer": 0.36,
+          "formatOnly": 1
+        },
+        "120": {
+          "total": 25,
+          "n": 25,
+          "errors": 0,
+          "passed": 7,
+          "strict": 0.28,
+          "interval95": [
+            0.14283853850956563,
+            0.47576605190361576
+          ],
+          "finalAnswerMatches": 8,
+          "finalAnswer": 0.32,
+          "formatOnly": 1
+        }
+      },
+      "rescored": {
+        "lostPasses": 0,
+        "gainedPasses": 0
+      }
+    },
+    {
+      "model": "meta/llama-3.1-8b",
+      "all": {
+        "total": 500,
+        "n": 500,
+        "errors": 0,
+        "passed": 47,
+        "strict": 0.094,
+        "interval95": [
+          0.0714264085922213,
+          0.12276455586255913
+        ],
+        "finalAnswerMatches": 49,
+        "finalAnswer": 0.098,
+        "formatOnly": 2
+      },
+      "eligible": {
+        "total": 500,
+        "n": 500,
+        "errors": 0,
+        "passed": 47,
+        "strict": 0.094,
+        "interval95": [
+          0.0714264085922213,
+          0.12276455586255913
+        ],
+        "finalAnswerMatches": 49,
+        "finalAnswer": 0.098,
+        "formatOnly": 2
+      },
+      "excluded": 0,
+      "byTier": {
+        "0": {
+          "total": 40,
+          "n": 40,
+          "errors": 0,
+          "passed": 35,
+          "strict": 0.875,
+          "interval95": [
+            0.738878801611489,
+            0.945404997490546
+          ],
+          "finalAnswerMatches": 35,
+          "finalAnswer": 0.875,
+          "formatOnly": 0
+        },
+        "1": {
+          "total": 40,
+          "n": 40,
+          "errors": 0,
+          "passed": 5,
+          "strict": 0.125,
+          "interval95": [
+            0.05459500250945401,
+            0.261121198388511
+          ],
+          "finalAnswerMatches": 5,
+          "finalAnswer": 0.125,
+          "formatOnly": 0
+        },
+        "2": {
+          "total": 80,
+          "n": 80,
+          "errors": 0,
+          "passed": 5,
+          "strict": 0.0625,
+          "interval95": [
+            0.026989375670841982,
+            0.13810148767274424
+          ],
+          "finalAnswerMatches": 5,
+          "finalAnswer": 0.0625,
+          "formatOnly": 0
+        },
+        "3": {
+          "total": 100,
+          "n": 100,
+          "errors": 0,
+          "passed": 2,
+          "strict": 0.02,
+          "interval95": [
+            0.00550196755016235,
+            0.07001179072854388
+          ],
+          "finalAnswerMatches": 2,
+          "finalAnswer": 0.02,
+          "formatOnly": 0
+        },
+        "4": {
+          "total": 100,
+          "n": 100,
+          "errors": 0,
+          "passed": 0,
+          "strict": 0,
+          "interval95": [
+            3.469446951953614e-18,
+            0.03699349820698568
+          ],
+          "finalAnswerMatches": 1,
+          "finalAnswer": 0.01,
+          "formatOnly": 1
+        },
+        "5": {
+          "total": 100,
+          "n": 100,
+          "errors": 0,
+          "passed": 0,
+          "strict": 0,
+          "interval95": [
+            3.469446951953614e-18,
+            0.03699349820698568
+          ],
+          "finalAnswerMatches": 1,
+          "finalAnswer": 0.01,
+          "formatOnly": 1
+        },
+        "6": {
+          "total": 40,
+          "n": 40,
+          "errors": 0,
+          "passed": 0,
+          "strict": 0,
+          "interval95": [
+            0,
+            0.08762160119728664
+          ],
+          "finalAnswerMatches": 0,
+          "finalAnswer": 0,
+          "formatOnly": 0
+        }
+      },
+      "byFamily": {
+        "arithmetic": {
+          "total": 60,
+          "n": 60,
+          "errors": 0,
+          "passed": 20,
+          "strict": 0.3333333333333333,
+          "interval95": [
+            0.2272926152352268,
+            0.4594313354788031
+          ],
+          "finalAnswerMatches": 20,
+          "finalAnswer": 0.3333333333333333,
+          "formatOnly": 0
+        },
+        "automata": {
+          "total": 40,
+          "n": 40,
+          "errors": 0,
+          "passed": 0,
+          "strict": 0,
+          "interval95": [
+            0,
+            0.08762160119728664
+          ],
+          "finalAnswerMatches": 0,
+          "finalAnswer": 0,
+          "formatOnly": 0
+        },
+        "cipher": {
+          "total": 20,
+          "n": 20,
+          "errors": 0,
+          "passed": 0,
+          "strict": 0,
+          "interval95": [
+            0,
+            0.16112515805281938
+          ],
+          "finalAnswerMatches": 0,
+          "finalAnswer": 0,
+          "formatOnly": 0
+        },
+        "cryptarithm": {
+          "total": 40,
+          "n": 40,
+          "errors": 0,
+          "passed": 0,
+          "strict": 0,
+          "interval95": [
+            0,
+            0.08762160119728664
+          ],
+          "finalAnswerMatches": 0,
+          "finalAnswer": 0,
+          "formatOnly": 0
+        },
+        "echo": {
+          "total": 20,
+          "n": 20,
+          "errors": 0,
+          "passed": 15,
+          "strict": 0.75,
+          "interval95": [
+            0.531299122381256,
+            0.8881382985923343
+          ],
+          "finalAnswerMatches": 15,
+          "finalAnswer": 0.75,
+          "formatOnly": 0
+        },
+        "gridpath": {
+          "total": 20,
+          "n": 20,
+          "errors": 0,
+          "passed": 0,
+          "strict": 0,
+          "interval95": [
+            0,
+            0.16112515805281938
+          ],
+          "finalAnswerMatches": 0,
+          "finalAnswer": 0,
+          "formatOnly": 0
+        },
+        "gridxf": {
+          "total": 40,
+          "n": 40,
+          "errors": 0,
+          "passed": 0,
+          "strict": 0,
+          "interval95": [
+            0,
+            0.08762160119728664
+          ],
+          "finalAnswerMatches": 1,
+          "finalAnswer": 0.025,
+          "formatOnly": 1
+        },
+        "hiddenfn": {
+          "total": 40,
+          "n": 40,
+          "errors": 0,
+          "passed": 0,
+          "strict": 0,
+          "interval95": [
+            0,
+            0.08762160119728664
+          ],
+          "finalAnswerMatches": 0,
+          "finalAnswer": 0,
+          "formatOnly": 0
+        },
+        "knights": {
+          "total": 40,
+          "n": 40,
+          "errors": 0,
+          "passed": 0,
+          "strict": 0,
+          "interval95": [
+            0,
+            0.08762160119728664
+          ],
+          "finalAnswerMatches": 1,
+          "finalAnswer": 0.025,
+          "formatOnly": 1
+        },
+        "ordering": {
+          "total": 20,
+          "n": 20,
+          "errors": 0,
+          "passed": 0,
+          "strict": 0,
+          "interval95": [
+            0,
+            0.16112515805281938
+          ],
+          "finalAnswerMatches": 0,
+          "finalAnswer": 0,
+          "formatOnly": 0
+        },
+        "registervm": {
+          "total": 40,
+          "n": 40,
+          "errors": 0,
+          "passed": 0,
+          "strict": 0,
+          "interval95": [
+            0,
+            0.08762160119728664
+          ],
+          "finalAnswerMatches": 0,
+          "finalAnswer": 0,
+          "formatOnly": 0
+        },
+        "sequence": {
+          "total": 20,
+          "n": 20,
+          "errors": 0,
+          "passed": 5,
+          "strict": 0.25,
+          "interval95": [
+            0.11186170140766569,
+            0.468700877618744
+          ],
+          "finalAnswerMatches": 5,
+          "finalAnswer": 0.25,
+          "formatOnly": 0
+        },
+        "strings": {
+          "total": 40,
+          "n": 40,
+          "errors": 0,
+          "passed": 5,
+          "strict": 0.125,
+          "interval95": [
+            0.05459500250945401,
+            0.261121198388511
+          ],
+          "finalAnswerMatches": 5,
+          "finalAnswer": 0.125,
+          "formatOnly": 0
+        },
+        "sudoku": {
+          "total": 60,
+          "n": 60,
+          "errors": 0,
+          "passed": 2,
+          "strict": 0.03333333333333333,
+          "interval95": [
+            0.009189319256197877,
+            0.113637742743086
+          ],
+          "finalAnswerMatches": 2,
+          "finalAnswer": 0.03333333333333333,
+          "formatOnly": 0
+        }
+      },
+      "byCell": {
+        "arithmetic:t0": {
+          "total": 20,
+          "n": 20,
+          "errors": 0,
+          "passed": 20,
+          "strict": 1,
+          "interval95": [
+            0.8388748419471806,
+            1
+          ],
+          "finalAnswerMatches": 20,
+          "finalAnswer": 1,
+          "formatOnly": 0
+        },
+        "arithmetic:t1": {
+          "total": 20,
+          "n": 20,
+          "errors": 0,
+          "passed": 0,
+          "strict": 0,
+          "interval95": [
+            0,
+            0.16112515805281938
+          ],
+          "finalAnswerMatches": 0,
+          "finalAnswer": 0,
+          "formatOnly": 0
+        },
+        "arithmetic:t2": {
+          "total": 20,
+          "n": 20,
+          "errors": 0,
+          "passed": 0,
+          "strict": 0,
+          "interval95": [
+            0,
+            0.16112515805281938
+          ],
+          "finalAnswerMatches": 0,
+          "finalAnswer": 0,
+          "formatOnly": 0
+        },
+        "automata:t4": {
+          "total": 20,
+          "n": 20,
+          "errors": 0,
+          "passed": 0,
+          "strict": 0,
+          "interval95": [
+            0,
+            0.16112515805281938
+          ],
+          "finalAnswerMatches": 0,
+          "finalAnswer": 0,
+          "formatOnly": 0
+        },
+        "automata:t5": {
+          "total": 20,
+          "n": 20,
+          "errors": 0,
+          "passed": 0,
+          "strict": 0,
+          "interval95": [
+            0,
+            0.16112515805281938
+          ],
+          "finalAnswerMatches": 0,
+          "finalAnswer": 0,
+          "formatOnly": 0
+        },
+        "cipher:t2": {
+          "total": 20,
+          "n": 20,
+          "errors": 0,
+          "passed": 0,
+          "strict": 0,
+          "interval95": [
+            0,
+            0.16112515805281938
+          ],
+          "finalAnswerMatches": 0,
+          "finalAnswer": 0,
+          "formatOnly": 0
+        },
+        "cryptarithm:t4": {
+          "total": 20,
+          "n": 20,
+          "errors": 0,
+          "passed": 0,
+          "strict": 0,
+          "interval95": [
+            0,
+            0.16112515805281938
+          ],
+          "finalAnswerMatches": 0,
+          "finalAnswer": 0,
+          "formatOnly": 0
+        },
+        "cryptarithm:t5": {
+          "total": 20,
+          "n": 20,
+          "errors": 0,
+          "passed": 0,
+          "strict": 0,
+          "interval95": [
+            0,
+            0.16112515805281938
+          ],
+          "finalAnswerMatches": 0,
+          "finalAnswer": 0,
+          "formatOnly": 0
+        },
+        "echo:t0": {
+          "total": 20,
+          "n": 20,
+          "errors": 0,
+          "passed": 15,
+          "strict": 0.75,
+          "interval95": [
+            0.531299122381256,
+            0.8881382985923343
+          ],
+          "finalAnswerMatches": 15,
+          "finalAnswer": 0.75,
+          "formatOnly": 0
+        },
+        "gridpath:t3": {
+          "total": 20,
+          "n": 20,
+          "errors": 0,
+          "passed": 0,
+          "strict": 0,
+          "interval95": [
+            0,
+            0.16112515805281938
+          ],
+          "finalAnswerMatches": 0,
+          "finalAnswer": 0,
+          "formatOnly": 0
+        },
+        "gridxf:t5": {
+          "total": 20,
+          "n": 20,
+          "errors": 0,
+          "passed": 0,
+          "strict": 0,
+          "interval95": [
+            0,
+            0.16112515805281938
+          ],
+          "finalAnswerMatches": 1,
+          "finalAnswer": 0.05,
+          "formatOnly": 1
+        },
+        "gridxf:t6": {
+          "total": 20,
+          "n": 20,
+          "errors": 0,
+          "passed": 0,
+          "strict": 0,
+          "interval95": [
+            0,
+            0.16112515805281938
+          ],
+          "finalAnswerMatches": 0,
+          "finalAnswer": 0,
+          "formatOnly": 0
+        },
+        "hiddenfn:t5": {
+          "total": 20,
+          "n": 20,
+          "errors": 0,
+          "passed": 0,
+          "strict": 0,
+          "interval95": [
+            0,
+            0.16112515805281938
+          ],
+          "finalAnswerMatches": 0,
+          "finalAnswer": 0,
+          "formatOnly": 0
+        },
+        "hiddenfn:t6": {
+          "total": 20,
+          "n": 20,
+          "errors": 0,
+          "passed": 0,
+          "strict": 0,
+          "interval95": [
+            0,
+            0.16112515805281938
+          ],
+          "finalAnswerMatches": 0,
+          "finalAnswer": 0,
+          "formatOnly": 0
+        },
+        "knights:t3": {
+          "total": 20,
+          "n": 20,
+          "errors": 0,
+          "passed": 0,
+          "strict": 0,
+          "interval95": [
+            0,
+            0.16112515805281938
+          ],
+          "finalAnswerMatches": 0,
+          "finalAnswer": 0,
+          "formatOnly": 0
+        },
+        "knights:t4": {
+          "total": 20,
+          "n": 20,
+          "errors": 0,
+          "passed": 0,
+          "strict": 0,
+          "interval95": [
+            0,
+            0.16112515805281938
+          ],
+          "finalAnswerMatches": 1,
+          "finalAnswer": 0.05,
+          "formatOnly": 1
+        },
+        "ordering:t3": {
+          "total": 20,
+          "n": 20,
+          "errors": 0,
+          "passed": 0,
+          "strict": 0,
+          "interval95": [
+            0,
+            0.16112515805281938
+          ],
+          "finalAnswerMatches": 0,
+          "finalAnswer": 0,
+          "formatOnly": 0
+        },
+        "registervm:t3": {
+          "total": 20,
+          "n": 20,
+          "errors": 0,
+          "passed": 0,
+          "strict": 0,
+          "interval95": [
+            0,
+            0.16112515805281938
+          ],
+          "finalAnswerMatches": 0,
+          "finalAnswer": 0,
+          "formatOnly": 0
+        },
+        "registervm:t4": {
+          "total": 20,
+          "n": 20,
+          "errors": 0,
+          "passed": 0,
+          "strict": 0,
+          "interval95": [
+            0,
+            0.16112515805281938
+          ],
+          "finalAnswerMatches": 0,
+          "finalAnswer": 0,
+          "formatOnly": 0
+        },
+        "sequence:t2": {
+          "total": 20,
+          "n": 20,
+          "errors": 0,
+          "passed": 5,
+          "strict": 0.25,
+          "interval95": [
+            0.11186170140766569,
+            0.468700877618744
+          ],
+          "finalAnswerMatches": 5,
+          "finalAnswer": 0.25,
+          "formatOnly": 0
+        },
+        "strings:t1": {
+          "total": 20,
+          "n": 20,
+          "errors": 0,
+          "passed": 5,
+          "strict": 0.25,
+          "interval95": [
+            0.11186170140766569,
+            0.468700877618744
+          ],
+          "finalAnswerMatches": 5,
+          "finalAnswer": 0.25,
+          "formatOnly": 0
+        },
+        "strings:t2": {
+          "total": 20,
+          "n": 20,
+          "errors": 0,
+          "passed": 0,
+          "strict": 0,
+          "interval95": [
+            0,
+            0.16112515805281938
+          ],
+          "finalAnswerMatches": 0,
+          "finalAnswer": 0,
+          "formatOnly": 0
+        },
+        "sudoku:t3": {
+          "total": 20,
+          "n": 20,
+          "errors": 0,
+          "passed": 2,
+          "strict": 0.1,
+          "interval95": [
+            0.027866481213768224,
+            0.3010336452284873
+          ],
+          "finalAnswerMatches": 2,
+          "finalAnswer": 0.1,
+          "formatOnly": 0
+        },
+        "sudoku:t4": {
+          "total": 20,
+          "n": 20,
+          "errors": 0,
+          "passed": 0,
+          "strict": 0,
+          "interval95": [
+            0,
+            0.16112515805281938
+          ],
+          "finalAnswerMatches": 0,
+          "finalAnswer": 0,
+          "formatOnly": 0
+        },
+        "sudoku:t5": {
+          "total": 20,
+          "n": 20,
+          "errors": 0,
+          "passed": 0,
+          "strict": 0,
+          "interval95": [
+            0,
+            0.16112515805281938
+          ],
+          "finalAnswerMatches": 0,
+          "finalAnswer": 0,
+          "formatOnly": 0
+        }
+      },
+      "bySeed": {
+        "101": {
+          "total": 25,
+          "n": 25,
+          "errors": 0,
+          "passed": 1,
+          "strict": 0.04,
+          "interval95": [
+            0.007096233501987265,
+            0.19544063736193734
+          ],
+          "finalAnswerMatches": 2,
+          "finalAnswer": 0.08,
+          "formatOnly": 1
+        },
+        "102": {
+          "total": 25,
+          "n": 25,
+          "errors": 0,
+          "passed": 2,
+          "strict": 0.08,
+          "interval95": [
+            0.022220401284847563,
+            0.24966108950395313
+          ],
+          "finalAnswerMatches": 2,
+          "finalAnswer": 0.08,
+          "formatOnly": 0
+        },
+        "103": {
+          "total": 25,
+          "n": 25,
+          "errors": 0,
+          "passed": 3,
+          "strict": 0.12,
+          "interval95": [
+            0.04166817150440358,
+            0.2995579392092732
+          ],
+          "finalAnswerMatches": 3,
+          "finalAnswer": 0.12,
+          "formatOnly": 0
+        },
+        "104": {
+          "total": 25,
+          "n": 25,
+          "errors": 0,
+          "passed": 1,
+          "strict": 0.04,
+          "interval95": [
+            0.007096233501987265,
+            0.19544063736193734
+          ],
+          "finalAnswerMatches": 1,
+          "finalAnswer": 0.04,
+          "formatOnly": 0
+        },
+        "105": {
+          "total": 25,
+          "n": 25,
+          "errors": 0,
+          "passed": 3,
+          "strict": 0.12,
+          "interval95": [
+            0.04166817150440358,
+            0.2995579392092732
+          ],
+          "finalAnswerMatches": 3,
+          "finalAnswer": 0.12,
+          "formatOnly": 0
+        },
+        "106": {
+          "total": 25,
+          "n": 25,
+          "errors": 0,
+          "passed": 4,
+          "strict": 0.16,
+          "interval95": [
+            0.0640345145667644,
+            0.3465362160717886
+          ],
+          "finalAnswerMatches": 4,
+          "finalAnswer": 0.16,
+          "formatOnly": 0
+        },
+        "107": {
+          "total": 25,
+          "n": 25,
+          "errors": 0,
+          "passed": 4,
+          "strict": 0.16,
+          "interval95": [
+            0.0640345145667644,
+            0.3465362160717886
+          ],
+          "finalAnswerMatches": 4,
+          "finalAnswer": 0.16,
+          "formatOnly": 0
+        },
+        "108": {
+          "total": 25,
+          "n": 25,
+          "errors": 0,
+          "passed": 4,
+          "strict": 0.16,
+          "interval95": [
+            0.0640345145667644,
+            0.3465362160717886
+          ],
+          "finalAnswerMatches": 4,
+          "finalAnswer": 0.16,
+          "formatOnly": 0
+        },
+        "109": {
+          "total": 25,
+          "n": 25,
+          "errors": 0,
+          "passed": 1,
+          "strict": 0.04,
+          "interval95": [
+            0.007096233501987265,
+            0.19544063736193734
+          ],
+          "finalAnswerMatches": 1,
+          "finalAnswer": 0.04,
+          "formatOnly": 0
+        },
+        "110": {
+          "total": 25,
+          "n": 25,
+          "errors": 0,
+          "passed": 1,
+          "strict": 0.04,
+          "interval95": [
+            0.007096233501987265,
+            0.19544063736193734
+          ],
+          "finalAnswerMatches": 1,
+          "finalAnswer": 0.04,
+          "formatOnly": 0
+        },
+        "111": {
+          "total": 25,
+          "n": 25,
+          "errors": 0,
+          "passed": 1,
+          "strict": 0.04,
+          "interval95": [
+            0.007096233501987265,
+            0.19544063736193734
+          ],
+          "finalAnswerMatches": 1,
+          "finalAnswer": 0.04,
+          "formatOnly": 0
+        },
+        "112": {
+          "total": 25,
+          "n": 25,
+          "errors": 0,
+          "passed": 2,
+          "strict": 0.08,
+          "interval95": [
+            0.022220401284847563,
+            0.24966108950395313
+          ],
+          "finalAnswerMatches": 3,
+          "finalAnswer": 0.12,
+          "formatOnly": 1
+        },
+        "113": {
+          "total": 25,
+          "n": 25,
+          "errors": 0,
+          "passed": 2,
+          "strict": 0.08,
+          "interval95": [
+            0.022220401284847563,
+            0.24966108950395313
+          ],
+          "finalAnswerMatches": 2,
+          "finalAnswer": 0.08,
+          "formatOnly": 0
+        },
+        "114": {
+          "total": 25,
+          "n": 25,
+          "errors": 0,
+          "passed": 4,
+          "strict": 0.16,
+          "interval95": [
+            0.0640345145667644,
+            0.3465362160717886
+          ],
+          "finalAnswerMatches": 4,
+          "finalAnswer": 0.16,
+          "formatOnly": 0
+        },
+        "115": {
+          "total": 25,
+          "n": 25,
+          "errors": 0,
+          "passed": 2,
+          "strict": 0.08,
+          "interval95": [
+            0.022220401284847563,
+            0.24966108950395313
+          ],
+          "finalAnswerMatches": 2,
+          "finalAnswer": 0.08,
+          "formatOnly": 0
+        },
+        "116": {
+          "total": 25,
+          "n": 25,
+          "errors": 0,
+          "passed": 2,
+          "strict": 0.08,
+          "interval95": [
+            0.022220401284847563,
+            0.24966108950395313
+          ],
+          "finalAnswerMatches": 2,
+          "finalAnswer": 0.08,
+          "formatOnly": 0
+        },
+        "117": {
+          "total": 25,
+          "n": 25,
+          "errors": 0,
+          "passed": 2,
+          "strict": 0.08,
+          "interval95": [
+            0.022220401284847563,
+            0.24966108950395313
+          ],
+          "finalAnswerMatches": 2,
+          "finalAnswer": 0.08,
+          "formatOnly": 0
+        },
+        "118": {
+          "total": 25,
+          "n": 25,
+          "errors": 0,
+          "passed": 4,
+          "strict": 0.16,
+          "interval95": [
+            0.0640345145667644,
+            0.3465362160717886
+          ],
+          "finalAnswerMatches": 4,
+          "finalAnswer": 0.16,
+          "formatOnly": 0
+        },
+        "119": {
+          "total": 25,
+          "n": 25,
+          "errors": 0,
+          "passed": 2,
+          "strict": 0.08,
+          "interval95": [
+            0.022220401284847563,
+            0.24966108950395313
+          ],
+          "finalAnswerMatches": 2,
+          "finalAnswer": 0.08,
+          "formatOnly": 0
+        },
+        "120": {
+          "total": 25,
+          "n": 25,
+          "errors": 0,
+          "passed": 2,
+          "strict": 0.08,
+          "interval95": [
+            0.022220401284847563,
+            0.24966108950395313
+          ],
+          "finalAnswerMatches": 2,
+          "finalAnswer": 0.08,
+          "formatOnly": 0
+        }
+      },
+      "rescored": {
+        "lostPasses": 0,
+        "gainedPasses": 0
+      }
+    }
+  ]
+}

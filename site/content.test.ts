@@ -2,8 +2,9 @@ import { describe, expect, test } from "bun:test";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { createHash } from "node:crypto";
-import { escapeHtml, renderChallenge, renderPilot, renderTiers } from "./content.ts";
+import { escapeHtml, renderChallenge, renderPilot, renderTiers, renderV2 } from "./content.ts";
 import { verifyPilot } from "../bench/pilot.ts";
+import { verifyCalibration } from "../bench/archive.ts";
 import { FAMILIES, SCORER_VERSION, SUITE_VERSION } from "../ladder/mod.ts";
 
 const root = import.meta.dir;
@@ -17,7 +18,12 @@ describe("public site contract", () => {
     expect(table).toContain(SUITE_VERSION);
   });
 
-  test("pilot rendering uses verified data and escapes arbitrary labels", () => {
+  test("published calibrations replay and render verified data", () => {
+    const v2 = verifyCalibration(resolve(root, "benchmark/v2-calibration-0"));
+    const v2Html = renderV2(v2);
+    expect(v2Html).toContain("437/499");
+    expect(v2Html).toContain("500 instances");
+    expect(v2.suiteHash).toBe("608d81e3473fa321783e5d77a56b8cb0210a6a2493cbb3f85a68eb319b4789df");
     const report = verifyPilot(resolve(root, "benchmark/pilot-v0"));
     const html = renderPilot(report);
     expect(html).toContain("161/190");

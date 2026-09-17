@@ -135,7 +135,9 @@ export function buildReport(runs: RecordedRun[], excludedFamilies: string[] = []
       puzzles.set(key, value);
     }
   }
-  const suiteHash = digest(JSON.stringify(keys.map((key) => [key, ...(puzzles.get(key) ?? [null, null])])));
+  const suiteHash = provenance === "versioned"
+    ? String(runs[0].manifest!.suiteHash)
+    : digest(JSON.stringify(keys.map((key) => [key, ...(puzzles.get(key) ?? [null, null])])));
   const evaluate = (row: RecordedRow) => row.error || row.truncated || row.refused ? { pass: false, finalAnswerMatch: false, formatOnly: false } : scoreAnswer(row.expected, row.response, answerFormat(row.family));
   const tally = (rows: RecordedRow[]) => {
     const valid = rows.filter((row) => !row.error);

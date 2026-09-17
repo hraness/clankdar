@@ -16,7 +16,9 @@ describe("auditable reports", () => {
     try {
       await recordRun(oracle, { families: ["echo"], seeds: [1] }, path);
       const original = readFileSync(path, "utf8");
-      expect(parseRun(original).rows).toHaveLength(1);
+      const parsed = parseRun(original);
+      expect(parsed.rows).toHaveLength(1);
+      expect(buildReport([parsed]).suiteHash).toBe(String(parsed.manifest!.suiteHash));
       const records = original.trim().split("\n").map((line) => JSON.parse(line));
       records[1].prompt += " altered";
       expect(() => parseRun(records.map((record) => JSON.stringify(record)).join("\n"))).toThrow("suite hash");

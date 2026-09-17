@@ -3,16 +3,18 @@ import { fileURLToPath } from "node:url";
 import { dirname, resolve } from "node:path";
 import { createHash } from "node:crypto";
 import { supportFooter } from "./support-footer.ts";
-import { renderChallenge, renderPilot, renderTiers } from "./content.ts";
+import { renderChallenge, renderPilot, renderTiers, renderV2 } from "./content.ts";
 import { verifyPilot } from "../bench/pilot.ts";
+import { verifyCalibration } from "../bench/archive.ts";
 import { SUITE_VERSION, SCORER_VERSION } from "../ladder/mod.ts";
 const root = import.meta.dir;
 const output = resolve(root, "dist");
 const kit = dirname(fileURLToPath(import.meta.resolve("@hraness/design-kit/paper-theme.css")));
 const pages = ["index.html", "docs/index.html", "benchmark/index.html"];
 const pilot = verifyPilot(resolve(root, "benchmark/pilot-v0"));
+const v2 = verifyCalibration(resolve(root, "benchmark/v2-calibration-0"));
 const substitutions: Record<string, string> = {
-  "{{CHALLENGE}}": renderChallenge(), "{{TIERS}}": renderTiers(), "{{PILOT_RESULTS}}": renderPilot(pilot),
+  "{{CHALLENGE}}": renderChallenge(), "{{TIERS}}": renderTiers(), "{{PILOT_RESULTS}}": renderPilot(pilot), "{{V2_RESULTS}}": renderV2(v2),
   "{{SUITE_VERSION}}": SUITE_VERSION, "{{SCORER_VERSION}}": SCORER_VERSION,
 };
 await rm(output, { recursive: true, force: true });
@@ -28,7 +30,7 @@ for (const page of pages) {
   await mkdir(dirname(target), { recursive: true });
   await writeFile(target, html.replace(footerMarker, supportFooter()));
 }
-await cp(resolve(root, "benchmark/pilot-v0"), resolve(output, "benchmark/pilot-v0"), { recursive: true });
+for (const archive of ["pilot-v0", "v2-calibration-0"]) await cp(resolve(root, `benchmark/${archive}`), resolve(output, `benchmark/${archive}`), { recursive: true });
 await cp(fileURLToPath(import.meta.resolve("@hraness/site-footer/stylex.css")), resolve(output, "footer.css"));
 const files = ["paper-theme.css", "product-marketing-preset.css", "lantern-material.css", "appearance-menu.css", "fonts.css"];
 for (const name of files) await cp(resolve(kit, name), resolve(output, "design", name));

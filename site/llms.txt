@@ -11,17 +11,18 @@ The Bun runner supports oracle/echo controls and OpenAI-compatible endpoints.
 Model commands default to dry runs; inference requires --execute and an
 explicit --max-requests budget. Credentials must stay private.
 
-The public pilot contains 3,000 legacy attempt records from twelve requested
-model aliases, including one provider error. Saved replies are rescored with
-the corrected scorer. The screened table excludes four flawed legacy families;
-full scores and exclusions remain available. The pilot is not a v2 model run
-or a tier certification. Fresh v2 calibration is still required.
+The public v2 calibration contains 2,500 attempt records from five requested
+model aliases on held-out seeds 101-120, including one timeout. Strict scores
+span 9.4% to 87.6%. This supports family/cell capability separation, not one
+scalar intelligence level: pooled tier difficulty is not monotone. The public
+legacy pilot retains 3,000 earlier attempts with explicit exclusions.
 
 - Site: https://clankdar.com
 - Quickstart and scoring: https://clankdar.com/docs/
-- Ladder and pilot findings: https://clankdar.com/benchmark/
-- Pilot manifest: https://clankdar.com/benchmark/pilot-v0/manifest.json
-- Pilot report: https://clankdar.com/benchmark/pilot-v0/report.json
+- Calibration findings: https://clankdar.com/benchmark/
+- V2 manifest: https://clankdar.com/benchmark/v2-calibration-0/manifest.json
+- V2 report: https://clankdar.com/benchmark/v2-calibration-0/report.json
+- Legacy pilot: https://clankdar.com/benchmark/pilot-v0/manifest.json
 - Source: https://github.com/hraness/clankdar
 - Historical hashcash prototype: https://github.com/hraness/valhalla/tree/main/prototypes/botcaptcha
 
