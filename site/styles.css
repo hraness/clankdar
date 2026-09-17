@@ -33,6 +33,7 @@ main { flex: 1; min-width: 0; }
 .skip-link:focus { top: 12px; }
 .eyebrow { font: 500 11px/1.6 var(--font-mono); color: var(--muted); letter-spacing: 0.045em; text-transform: uppercase; }
 .opening > .eyebrow, .doc-head > .eyebrow { margin-bottom: 22px; }
+.brand-icon { display: block; width: 88px; height: 88px; object-fit: contain; margin-bottom: 24px; }
 .release-note { margin-top: 23px; font: 11px/1.7 var(--font-mono); color: var(--muted); }
 .sample-body { padding: 26px; }
 .sample-prompt { margin-top: 20px; font: 18px/1.6 var(--font-mono); }
