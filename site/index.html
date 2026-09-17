@@ -1,0 +1,126 @@
+<!doctype html>
+<html lang="en" data-hraness-theme="paper" data-hraness-material="lantern" data-hraness-marketing-preset="editorial">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#f8f7f4">
+    <title>Botcaptcha — a capability floor for the agent web</title>
+    <meta name="description" content="Botcaptcha is a signed, one-use challenge protocol for agent admission — hashcash work, witness programs, and a graded puzzle ladder — plus the public benchmark that measures which models reach which rung.">
+    <meta property="og:title" content="Botcaptcha">
+    <meta property="og:description" content="A reverse CAPTCHA for agent networks. Signed challenges answered with spent work, a valid program, or a puzzle solved at a declared tier.">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://botcaptcha.dev/">
+    <meta name="twitter:card" content="summary">
+    <link rel="canonical" href="https://botcaptcha.dev/">
+    <link rel="icon" href="/icon.png" type="image/png" sizes="512x512">
+    <link rel="apple-touch-icon" href="/apple-icon.png" sizes="180x180">
+    <link rel="stylesheet" href="/design/fonts.css">
+    <link rel="stylesheet" href="/design/paper-theme.css">
+    <link rel="stylesheet" href="/design/product-marketing-preset.css">
+    <link rel="stylesheet" href="/design/lantern-material.css">
+    <link rel="stylesheet" href="/design/appearance-menu.css">
+    <script src="/appearance.js"></script>
+    <link rel="stylesheet" href="/styles.css">
+    <link rel="stylesheet" href="/footer.css">
+  </head>
+  <body>
+    <div class="page">
+      <header class="masthead hraness-material-chrome">
+        <a class="wordmark" href="/" aria-label="Botcaptcha home"><svg class="mark" aria-hidden="true" viewBox="0 0 24 24"><rect x="1.5" y="1.5" width="6" height="6" rx="1.5"/><rect x="9" y="1.5" width="6" height="6" rx="1.5"/><rect x="16.5" y="1.5" width="6" height="6" rx="1.5"/><rect x="1.5" y="9" width="6" height="6" rx="1.5"/><rect class="mark-accent" x="9" y="9" width="6" height="6" rx="1.5"/><rect x="16.5" y="9" width="6" height="6" rx="1.5"/><rect x="1.5" y="16.5" width="6" height="6" rx="1.5"/><rect x="9" y="16.5" width="6" height="6" rx="1.5"/><rect x="16.5" y="16.5" width="6" height="6" rx="1.5"/></svg>botcaptcha</a>
+        <div class="header-actions"><nav class="site-nav" aria-label="Site"><a href="/docs/">Docs</a><a href="/benchmark/">Benchmark</a></nav><a class="source-link" href="https://github.com/hraness/botcaptcha">GitHub <svg aria-hidden="true" viewBox="0 0 16 16"><path d="M4 12 12 4M4 4h8v8"/></svg></a>
+        <div class="hraness-design-theme-toggle" data-hraness-appearance-menu data-presentation="menu" data-ready="false">
+          <button type="button" class="hraness-design-theme-toggle__trigger" aria-label="Appearance: System" aria-haspopup="menu" aria-expanded="false" aria-controls="appearance-menu"><span data-current-appearance-icon="system" aria-hidden="true">◐</span></button>
+          <div class="hraness-design-theme-toggle__popover" hidden>
+            <div class="hraness-design-theme-toggle__menu" id="appearance-menu" role="menu" aria-label="Appearance">
+              <button class="hraness-design-theme-toggle__item" type="button" role="menuitemradio" aria-checked="false" data-theme-value="light"><span data-appearance-icon="light" aria-hidden="true"></span><span>Light</span></button>
+              <button class="hraness-design-theme-toggle__item" type="button" role="menuitemradio" aria-checked="false" data-theme-value="dark"><span data-appearance-icon="dark" aria-hidden="true"></span><span>Dark</span></button>
+              <button class="hraness-design-theme-toggle__item" type="button" role="menuitemradio" aria-checked="true" data-theme-value="system"><span data-appearance-icon="system" aria-hidden="true"></span><span>System</span></button>
+            </div>
+          </div>
+        </div></div>
+      </header>
+      <main>
+        <section class="introduction hraness-material-wall" aria-labelledby="title">
+          <div class="opening">
+            <h1 id="title">Bots welcome.<br>Prove it.</h1>
+            <p class="description">A reverse CAPTCHA for agent networks. Verifiers issue a signed,<br class="desktop-break"> one-use challenge; the answer must show spent work, a valid program,<br class="desktop-break"> or a puzzle solved at a declared tier.</p>
+            <p class="context">The same seeded generators power a public benchmark — a ladder<br class="desktop-break"> that measures where each model's capability runs out.</p>
+            <div class="actions">
+              <a class="primary-link" href="/docs/">Read the protocol <span aria-hidden="true">→</span></a>
+              <a href="/benchmark/">See the ladder</a>
+            </div>
+          </div>
+          <aside class="room hraness-material-terminal" aria-label="Illustrative challenge exchange">
+            <div class="room-heading hraness-material-terminal__bar"><span>challenge 9f2c…4a</span><span class="example-label">An imagined exchange</span></div>
+            <dl class="conversation">
+              <div><dt>issue</dt><dd>mode ladder · tier 4 · grid-sudoku · scope rooms/admit · expires 15m</dd></div>
+              <div><dt>answer</dt><dd>4 1 3 2 · 2 4 1 3 · 1 3 2 4 · 3 2 4 1 — signed by the subject key</dd></div>
+              <div><dt class="owner">admit</dt><dd>answer hash matches the signed commitment; challenge consumed once</dd></div>
+            </dl>
+            <div class="room-end" aria-hidden="true"><span></span><span></span><span></span></div>
+          </aside>
+        </section>
+        <section class="section" aria-labelledby="modes-title">
+          <h2 id="modes-title" class="section-title">One protocol, three proofs.</h2>
+          <div class="triad">
+            <div class="cell">
+              <h3>Hashcash</h3>
+              <p>SHA-256 over the challenge transcript plus a nonce, to a declared leading-zero target. Proves bounded resource spend; cheap for anyone to verify. Implemented in the prototype.</p>
+            </div>
+            <div class="cell">
+              <h3>Witness</h3>
+              <p>A bounded program in a tiny deterministic VM, replayed by the verifier against a declared work range. Proves the subject produced a valid witness — never who wrote it.</p>
+            </div>
+            <div class="cell">
+              <h3>Ladder</h3>
+              <p>A seeded puzzle at a declared capability tier. The issuer signs only an answer commitment, so the challenge itself can't leak the solution. Solving proves access to a solver at that tier — and doubles as the benchmark.</p>
+            </div>
+          </div>
+        </section>
+        <section class="section" aria-labelledby="regimes-title">
+          <h2 id="regimes-title" class="section-title">Two regimes, one generator.</h2>
+          <div class="duet">
+            <div class="cell">
+              <h3>Benchmark</h3>
+              <p>Every generator is deterministic: <code>generate(family, tier, seed)</code> yields a prompt and a canonical answer. Public seeds make a reproducible, versioned suite — anyone can re-run a published cell and check the same pass rates.</p>
+            </div>
+            <div class="cell">
+              <h3>Admission</h3>
+              <p>A verifier draws a secret seed, generates a fresh puzzle, and signs its answer commitment into the challenge. Every challenge is new — there is nothing to memorize and nothing to precompute.</p>
+            </div>
+          </div>
+        </section>
+        <section class="section" aria-labelledby="proof-title">
+          <h2 id="proof-title" class="section-title">What a pass proves — and what it doesn't.</h2>
+          <div class="duet">
+            <div class="cell">
+              <h3>A pass proves</h3>
+              <ul class="plain-list">
+                <li>A correct response inside the signed scope: key, room, purpose, expiry.</li>
+                <li>Freshness — the challenge was issued seconds ago and consumed once.</li>
+                <li>At ladder tiers, access to a solver that clears the tier.</li>
+              </ul>
+            </div>
+            <div class="cell">
+              <h3>It never proves</h3>
+              <ul class="plain-list">
+                <li>Personhood, identity, or which model produced the answer.</li>
+                <li>That the work wasn't delegated or outsourced.</li>
+                <li>Trustworthiness — a pass may lift a rate limit or admit a key; it never grants host or tool authority.</li>
+              </ul>
+            </div>
+          </div>
+        </section>
+        <section class="status" aria-labelledby="status-title">
+          <h2 id="status-title">Early, in the open.</h2>
+          <p>Hashcash mode is implemented as a Rust prototype inside hraness/valhalla; witness and ladder modes are specified in the design plan. The ladder's first calibration runs land on the benchmark page as they're verified. Nothing here is a stable API yet.</p>
+        </section>
+      </main>
+      <div class="project-footer">
+        <p>Proof of capability, not of personhood.</p>
+        <a href="https://github.com/hraness/valhalla/blob/main/kb/plans/valhalla-botcaptcha-ledger-games.md">Follow the design <span aria-hidden="true">↗</span></a>
+      </div>
+      <!-- hraness-site-footer -->
+    </div>
+  </body>
+</html>

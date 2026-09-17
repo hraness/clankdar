@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="en" data-hraness-theme="paper" data-hraness-material="lantern" data-hraness-marketing-preset="editorial">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#f8f7f4">
+    <title>The ladder — Botcaptcha</title>
+    <meta name="description" content="The Botcaptcha capability ladder: seeded puzzle families at graded tiers, from 'is anything there' to beyond today's frontier models — a benchmark where tier labels are earned by published calibration, not asserted.">
+    <meta property="og:title" content="The Botcaptcha ladder">
+    <meta property="og:description" content="Seeded puzzle families at graded tiers — a capability floor you can set, and a ceiling today's models can't reach.">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://botcaptcha.dev/benchmark/">
+    <meta name="twitter:card" content="summary">
+    <link rel="canonical" href="https://botcaptcha.dev/benchmark/">
+    <link rel="icon" href="/icon.png" type="image/png" sizes="512x512">
+    <link rel="apple-touch-icon" href="/apple-icon.png" sizes="180x180">
+    <link rel="stylesheet" href="/design/fonts.css">
+    <link rel="stylesheet" href="/design/paper-theme.css">
+    <link rel="stylesheet" href="/design/product-marketing-preset.css">
+    <link rel="stylesheet" href="/design/lantern-material.css">
+    <link rel="stylesheet" href="/design/appearance-menu.css">
+    <script src="/appearance.js"></script>
+    <link rel="stylesheet" href="/styles.css">
+    <link rel="stylesheet" href="/footer.css">
+  </head>
+  <body>
+    <div class="page">
+      <header class="masthead hraness-material-chrome">
+        <a class="wordmark" href="/" aria-label="Botcaptcha home"><svg class="mark" aria-hidden="true" viewBox="0 0 24 24"><rect x="1.5" y="1.5" width="6" height="6" rx="1.5"/><rect x="9" y="1.5" width="6" height="6" rx="1.5"/><rect x="16.5" y="1.5" width="6" height="6" rx="1.5"/><rect x="1.5" y="9" width="6" height="6" rx="1.5"/><rect class="mark-accent" x="9" y="9" width="6" height="6" rx="1.5"/><rect x="16.5" y="9" width="6" height="6" rx="1.5"/><rect x="1.5" y="16.5" width="6" height="6" rx="1.5"/><rect x="9" y="16.5" width="6" height="6" rx="1.5"/><rect x="16.5" y="16.5" width="6" height="6" rx="1.5"/></svg>botcaptcha</a>
+        <div class="header-actions"><nav class="site-nav" aria-label="Site"><a href="/docs/">Docs</a><a href="/benchmark/" aria-current="page">Benchmark</a></nav><a class="source-link" href="https://github.com/hraness/botcaptcha">GitHub <svg aria-hidden="true" viewBox="0 0 16 16"><path d="M4 12 12 4M4 4h8v8"/></svg></a>
+        <div class="hraness-design-theme-toggle" data-hraness-appearance-menu data-presentation="menu" data-ready="false">
+          <button type="button" class="hraness-design-theme-toggle__trigger" aria-label="Appearance: System" aria-haspopup="menu" aria-expanded="false" aria-controls="appearance-menu"><span data-current-appearance-icon="system" aria-hidden="true">◐</span></button>
+          <div class="hraness-design-theme-toggle__popover" hidden>
+            <div class="hraness-design-theme-toggle__menu" id="appearance-menu" role="menu" aria-label="Appearance">
+              <button class="hraness-design-theme-toggle__item" type="button" role="menuitemradio" aria-checked="false" data-theme-value="light"><span data-appearance-icon="light" aria-hidden="true"></span><span>Light</span></button>
+              <button class="hraness-design-theme-toggle__item" type="button" role="menuitemradio" aria-checked="false" data-theme-value="dark"><span data-appearance-icon="dark" aria-hidden="true"></span><span>Dark</span></button>
+              <button class="hraness-design-theme-toggle__item" type="button" role="menuitemradio" aria-checked="true" data-theme-value="system"><span data-appearance-icon="system" aria-hidden="true"></span><span>System</span></button>
+            </div>
+          </div>
+        </div></div>
+      </header>
+      <main class="doc">
+        <header class="doc-head">
+          <h1 id="title">The ladder.</h1>
+          <p class="doc-lede">Botcaptcha's puzzle mode doubles as a capability benchmark. Each family is a parameterized generator; each tier is a difficulty setting. A model's level is the highest tier it clears — measured, not claimed.</p>
+        </header>
+
+        <section class="doc-section" aria-labelledby="tiers-title">
+          <h2 id="tiers-title">Seven rungs, floor to ceiling.</h2>
+          <p>Tier 0 is the floor — it asks only whether anything is home. Each tier above maps to a class of model capability. Tier 6 is deliberately open: puzzles today's frontier models fail, kept in the suite so the ladder has headroom as capability climbs.</p>
+          <table class="ladder-table">
+            <thead>
+              <tr><th scope="col">Tier</th><th scope="col">Reads as</th><th scope="col">Example families</th></tr>
+            </thead>
+            <tbody>
+              <tr><td class="tier">0</td><td>floor — is anything there</td><td>echo and transform text, single-step arithmetic</td></tr>
+              <tr><td class="tier">1</td><td>weak chatbots, tiny models</td><td>multi-step arithmetic, string surgery, single-hop extraction</td></tr>
+              <tr><td class="tier">2</td><td>small local models</td><td>sequence completion, anagrams, Caesar shifts, 3×3 grid rules</td></tr>
+              <tr><td class="tier">3</td><td>mid-tier assistants</td><td>4×4 sudoku, shortest path, 3-entity logic, register-VM traces</td></tr>
+              <tr><td class="tier">4</td><td>strong general models</td><td>6×6 sudoku, cryptarithms, knights and knaves, 8-puzzle, cellular automata</td></tr>
+              <tr><td class="tier">5</td><td>frontier</td><td>hard 9×9 sudoku, zebra puzzles, multi-hop combinatorics, program synthesis</td></tr>
+              <tr><td class="tier">6+</td><td>beyond today's models</td><td>novel-rule grids, hidden-function induction, adversarial composition</td></tr>
+            </tbody>
+          </table>
+          <p class="note">Labels are design intent until a published calibration run verifies them.</p>
+        </section>
+
+        <section class="doc-section" aria-labelledby="method-title">
+          <h2 id="method-title">How a tier is earned.</h2>
+          <ul class="doc-list">
+            <li><b>Seeded instances.</b> Every cell is a fixed set of seeds per family at a tier. Deterministic generation means a published suite is byte-for-byte reproducible.</li>
+            <li><b>Fixed prompt, exact match.</b> One prompt template per family; answers are normalized to a canonical form and compared exactly. No partial credit, no judge model.</li>
+            <li><b>Pass@1 reported.</b> A model clears a tier at ≥90% pass@1 across the cell's instances. Pass@3 is collected as diagnostic, never as the headline.</li>
+            <li><b>Calibration, not intuition.</b> A tier's label is only verified once a published run shows the claimed class of models clearing it and the class below failing it. Until then, labels are hypotheses.</li>
+            <li><b>Freshness over memorization.</b> Parameterized generation makes public puzzle text a poor training target; benchmark seeds are public and versioned, while admission seeds stay secret.</li>
+          </ul>
+        </section>
+
+        <section class="doc-section" aria-labelledby="results-title">
+          <h2 id="results-title">Results.</h2>
+          <p>No calibration run is published yet. When runs land, each reports the model, harness version, suite hash, seed range, and per-cell pass rates — enough for anyone to regenerate the suite and check the numbers.</p>
+          <pre class="code"><code>{
+  "model": "…",
+  "harness": "botcaptcha-bench 0.x",
+  "suite": "sha256:…",
+  "seeds": "1..64",
+  "cells": { "sudoku:t4": { "n": 64, "pass_at_1": 0.91 } }
+}</code></pre>
+        </section>
+
+        <section class="doc-section" aria-labelledby="run-title">
+          <h2 id="run-title">Run it.</h2>
+          <p>The reference harness ships with the ladder generators. The planned interface:</p>
+          <pre class="code"><code>botcaptcha bench --suite v1 --tier 0..4 --seeds 1..64 --model &lt;adapter&gt;</code></pre>
+          <p class="note">Planned — the harness and adapters are in design. Protocol details live in the <a href="/docs/">docs</a>.</p>
+        </section>
+      </main>
+      <div class="project-footer">
+        <p>A floor you can set. A ceiling you can watch move.</p>
+        <a href="/docs/">Read the protocol <span aria-hidden="true">→</span></a>
+      </div>
+      <!-- hraness-site-footer -->
+    </div>
+  </body>
+</html>
