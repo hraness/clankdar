@@ -84,6 +84,13 @@ mixtures. Treat family/tier cells as capability profiles, not one intelligence
 level. The small public rule sets can be memorized, solved with code, or
 outsourced; tool-assisted agents require a separately labeled evaluation.
 
+`bench/profiles.ts` partitions all 25 v2 cells into transform fidelity, symbolic
+execution, constraint solving, and rule induction. Profile aggregation preserves
+raw cell verdicts and reports uncertainty; it is not a universal intelligence
+score. Decision-makers should predeclare relevant cells, conditions, sample
+sizes, thresholds, and error treatment rather than selecting a policy after
+seeing a candidate's results.
+
 ## Scoring and protocol boundaries
 
 `clankdar-score-v2` compares the whole response using a family-specific answer

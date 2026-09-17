@@ -14,8 +14,10 @@ explicit --max-requests budget. Credentials must stay private.
 The public v2 calibration contains 2,500 attempt records from five requested
 model aliases on held-out seeds 101-120, including one timeout. Strict scores
 span 9.4% to 87.6%. This supports family/cell capability separation, not one
-scalar intelligence level: pooled tier difficulty is not monotone. The public
-legacy pilot retains 3,000 earlier attempts with explicit exclusions.
+scalar intelligence level: pooled tier difficulty is not monotone. Four
+executable profiles partition the cells into transform fidelity, symbolic
+execution, constraint solving, and rule induction. The public legacy pilot
+retains 3,000 earlier attempts with explicit exclusions.
 
 - Site: https://clankdar.com
 - Quickstart and scoring: https://clankdar.com/docs/

@@ -47,7 +47,7 @@
           <h1 id="title">The ladder.</h1>
           <p class="doc-lede">Fourteen families. Seven parameter tiers. One question: under these conditions, what can a model actually solve?</p>
         </header>
-        <nav class="contents" aria-label="Contents"><a href="#v2-results">V2 calibration</a><a href="#findings">What we learned</a><a href="#pilot-results">Legacy pilot</a><a href="#tiers">The suite</a><a href="#method">Method</a><a href="#run">Run it</a></nav>
+        <nav class="contents" aria-label="Contents"><a href="#v2-results">V2 calibration</a><a href="#profiles">Profiles</a><a href="#findings">What we learned</a><a href="#pilot-results">Legacy pilot</a><a href="#tiers">The suite</a><a href="#method">Method</a><a href="#run">Run it</a></nav>
 
         <section class="doc-section" id="v2-results" aria-labelledby="v2-title">
           <h2 id="v2-title">V2 calibration 0: the clanks separate.</h2>
@@ -56,6 +56,14 @@
           {{V2_RESULTS}}
           <p><b>Strict</b> is the benchmark result. <b>Final block</b> is a formatting diagnostic only. The five requested aliases are not independent attestations of model identity; inspect the <a href="/benchmark/v2-calibration-0/manifest.json">manifest</a>, <a href="/benchmark/v2-calibration-0/report.json" download>full report</a>, per-cell results, source state, usage, and limitations.</p>
           <p class="note">Twenty seeds per cell narrow uncertainty but do not certify a threshold. Public generators and seeds are reproducible, not contamination-proof. The run is unaided and does not predict a tool-using agent's performance.</p>
+        </section>
+
+        <section class="doc-section" id="profiles" aria-labelledby="profiles-title">
+          <h2 id="profiles-title">Four profiles. No fake IQ.</h2>
+          <p>The profiles partition every v2 cell exactly once by the operation the prompt demands. They expose materially different strengths: the same model can be strong at deterministic execution and weaker at constraint solving. Scores are descriptive pass rates under this run's conditions, not permanent labels.</p>
+          {{PROFILE_RESULTS}}
+          <p>Download the derived <a href="/benchmark/v2-calibration-0/profiles.json">machine-readable profile report</a>. It is bound to the same suite hash and retains each profile's counts and Wilson interval.</p>
+          <div class="callout"><strong>Policy belongs outside the benchmark.</strong><p>A relying service can choose relevant profiles, cells, minimum sample sizes, and confidence bounds before evaluation. It should not average away a required weakness, infer identity from a score, or grant tool authority solely because a model passed public puzzles.</p></div>
         </section>
 
         <section class="doc-section" id="pilot-results" aria-labelledby="results-title">

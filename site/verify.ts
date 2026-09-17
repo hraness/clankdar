@@ -69,6 +69,9 @@ try {
           await expect(v2.locator("tbody tr")).toHaveCount(5);
           await v2.scrollIntoViewIfNeeded();
           await page.screenshot({ path: resolve(screenshots, `v2-table-${width}-${theme}.png`) });
+          const profiles = page.locator("#profiles .profile-table");
+          await expect(profiles.locator("tbody tr")).toHaveCount(5);
+          await profiles.screenshot({ path: resolve(screenshots, `profiles-table-${width}-${theme}.png`) });
           const pilot = page.locator("#pilot-results .results-table").first();
           await expect(pilot.locator("tbody tr")).toHaveCount(12);
         }

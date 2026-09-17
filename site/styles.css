@@ -52,7 +52,8 @@ summary:focus-visible { outline: 2px solid var(--focus); outline-offset: 5px; }
 .ladder-table caption { text-align: left; color: var(--muted); font-size: 12px; line-height: 1.7; padding-bottom: 16px; }
 .ladder-table tbody th { color: var(--ink); font: 500 12px/1.7 var(--font-mono); padding-block: 11px; vertical-align: top; }
 .results-table td { white-space: nowrap; font: 12px/1.7 var(--font-mono); }
-.results-table td.score { color: var(--focus); font-weight: 600; }
+.results-table td.score, .profile-table td .score { color: var(--focus); font-weight: 600; }
+.profile-table td small { display: block; color: var(--muted); font: 10px/1.5 var(--font-mono); }
 .model-name { display: inline-block; max-width: 260px; overflow-wrap: anywhere; }
 .callout { margin-top: 22px; border: 1px solid var(--line); border-left: 3px solid var(--focus); border-radius: 8px; padding: 18px 20px; background: var(--surface); font-size: 14px; line-height: 1.6; }
 .callout > p { margin-top: 8px; }

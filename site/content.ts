@@ -1,5 +1,6 @@
 import { FAMILIES, familyByName, SUITE_VERSION } from "../ladder/mod.ts";
 import type { CalibrationReport } from "../bench/report.ts";
+import { CAPABILITY_PROFILES, profileReport } from "../bench/profiles.ts";
 
 export const escapeHtml = (value: string | number): string => String(value).replace(/[&<>"']/g, (char) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[char]!);
 const pct = (value: number | null) => value === null ? "—" : `${(value * 100).toFixed(1)}%`;
@@ -33,3 +34,14 @@ function renderResults(report: CalibrationReport, base: string, caption: string,
 
 export const renderPilot = (report: CalibrationReport): string => renderResults(report, "/benchmark/pilot-v0", "Screened legacy pilot: 190 instances per model, minus provider errors. One response per instance. No tools.", [0, 1, 2, 3, 4, 5]);
 export const renderV2 = (report: CalibrationReport): string => renderResults(report, "/benchmark/v2-calibration-0", "Held-out v2 calibration: 500 instances per model, minus provider errors. One response per instance. No tools.", [0, 1, 2, 3, 4, 5, 6]);
+
+export function renderProfiles(report: CalibrationReport): string {
+  const results = profileReport(report);
+  const rows = results.map((result) => `<tr><th scope="row">${escapeHtml(result.model)}</th>${CAPABILITY_PROFILES.map((profile) => {
+    const score = result.profiles[profile.id];
+    return `<td><span class="score">${pct(score.strict)}</span><small>${score.passed}/${score.n}</small></td>`;
+  }).join("")}</tr>`).join("\n");
+  const definitions = CAPABILITY_PROFILES.map((profile) => `<li><b>${escapeHtml(profile.name)}.</b> ${escapeHtml(profile.description)} <span class="note">${profile.cells.map((cell) => `<code>${escapeHtml(cell)}</code>`).join(", ")}</span></li>`).join("\n");
+  return `<div class="table-scroll" role="region" aria-label="Capability profile results" tabindex="0"><table class="ladder-table results-table profile-table"><caption>Strict pass rates. Every v2 cell belongs to exactly one profile; sample sizes differ by profile.</caption><thead><tr><th scope="col">Requested model</th>${CAPABILITY_PROFILES.map((profile) => `<th scope="col">${escapeHtml(profile.name)}</th>`).join("")}</tr></thead><tbody>${rows}</tbody></table></div>
+<details class="report-details"><summary>Show profile contracts and included cells</summary><ul class="doc-list">${definitions}</ul></details>`;
+}
