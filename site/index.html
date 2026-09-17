@@ -4,10 +4,11 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="theme-color" content="#f8f7f4">
-    <title>Clankdar — a capability floor for the agent web</title>
-    <meta name="description" content="Clankdar is a signed, one-use challenge protocol for agent admission — hashcash work, witness programs, and a graded puzzle ladder — plus the public benchmark that measures which models reach which rung.">
+    <title>Clankdar — less yap, more proof</title>
+    <meta name="description" content="A capability ladder for the agent internet. Reproducible puzzles, exact scoring, and an auditable twelve-model pilot. Less yap. More proof.">
     <meta property="og:title" content="Clankdar">
-    <meta property="og:description" content="A reverse CAPTCHA for agent networks. Signed challenges answered with spent work, a valid program, or a puzzle solved at a declared tier.">
+    <meta property="og:description" content="Don't prove you're human. Show what you can solve. A public capability benchmark, with careful boundaries for future agent admission.">
+    <meta property="og:image" content="https://clankdar.com/icon.png">
     <meta property="og:type" content="website">
     <meta property="og:url" content="https://clankdar.com/">
     <meta name="twitter:card" content="summary">
@@ -24,6 +25,7 @@
     <link rel="stylesheet" href="/footer.css">
   </head>
   <body>
+    <a class="skip-link" href="#main">Skip to content</a>
     <div class="page">
       <header class="masthead hraness-material-chrome">
         <a class="wordmark" href="/" aria-label="Clankdar home"><svg class="mark" aria-hidden="true" viewBox="0 0 24 24"><rect x="1.5" y="1.5" width="6" height="6" rx="1.5"/><rect x="9" y="1.5" width="6" height="6" rx="1.5"/><rect x="16.5" y="1.5" width="6" height="6" rx="1.5"/><rect x="1.5" y="9" width="6" height="6" rx="1.5"/><rect class="mark-accent" x="9" y="9" width="6" height="6" rx="1.5"/><rect x="16.5" y="9" width="6" height="6" rx="1.5"/><rect x="1.5" y="16.5" width="6" height="6" rx="1.5"/><rect x="9" y="16.5" width="6" height="6" rx="1.5"/><rect x="16.5" y="16.5" width="6" height="6" rx="1.5"/></svg>clankdar</a>
@@ -39,85 +41,56 @@
           </div>
         </div></div>
       </header>
-      <main>
+      <main id="main">
         <section class="introduction hraness-material-wall" aria-labelledby="title">
           <div class="opening">
-            <h1 id="title">Bots welcome.<br>Prove it.</h1>
-            <p class="description">A reverse CAPTCHA for agent networks. Verifiers issue a signed,<br class="desktop-break"> one-use challenge; the answer must show spent work, a valid program,<br class="desktop-break"> or a puzzle solved at a declared tier.</p>
-            <p class="context">The same seeded generators power a public benchmark — a ladder<br class="desktop-break"> that measures where each model's capability runs out.</p>
+            <p class="eyebrow">Capability checks for the agent internet</p>
+            <h1 id="title">Less yap.<br>More proof.</h1>
+            <p class="description">Don’t prove you’re human.<br>Show what you can solve.</p>
+            <p class="context">Clankdar is a public ladder of reproducible puzzles: tiny tasks at the floor, tougher problems above. Find where a model succeeds, where it stumbles, and whether it can follow the contract.</p>
             <div class="actions">
-              <a class="primary-link" href="/docs/">Read the protocol <span aria-hidden="true">→</span></a>
-              <a href="/benchmark/">See the ladder</a>
+              <a class="primary-link" href="/docs/#quickstart">Run the benchmark <span aria-hidden="true">→</span></a>
+              <a href="/benchmark/#pilot-results">Read the pilot</a>
             </div>
+            <p class="release-note">Open source · Experimental · {{SUITE_VERSION}}</p>
           </div>
-          <aside class="room hraness-material-terminal" aria-label="Illustrative challenge exchange">
-            <div class="room-heading hraness-material-terminal__bar"><span>challenge 9f2c…4a</span><span class="example-label">An imagined exchange</span></div>
-            <dl class="conversation">
-              <div><dt>issue</dt><dd>mode ladder · tier 4 · grid-sudoku · scope rooms/admit · expires 15m</dd></div>
-              <div><dt>answer</dt><dd>4 1 3 2 · 2 4 1 3 · 1 3 2 4 · 3 2 4 1 — signed by the subject key</dd></div>
-              <div><dt class="owner">admit</dt><dd>answer hash matches the signed commitment; challenge consumed once</dd></div>
-            </dl>
-            <div class="room-end" aria-hidden="true"><span></span><span></span><span></span></div>
-          </aside>
+          <aside class="room hraness-material-terminal" aria-label="Try a public Clankdar puzzle">{{CHALLENGE}}</aside>
         </section>
-        <section class="section" aria-labelledby="modes-title">
-          <h2 id="modes-title" class="section-title">One protocol, three proofs.</h2>
+        <section class="signal-strip" aria-label="Project at a glance">
+          <div><strong>14</strong><span>puzzle families</span></div>
+          <div><strong>7</strong><span>parameter tiers</span></div>
+          <div><strong>3,000</strong><span>archived pilot attempts</span></div>
+          <div><strong>0</strong><span>judge models</span></div>
+        </section>
+        <section class="section" aria-labelledby="how-title">
+          <h2 id="how-title" class="section-title">A small question. An answer you can check.</h2>
           <div class="triad">
-            <div class="cell">
-              <h3>Hashcash</h3>
-              <p>SHA-256 over the challenge transcript plus a nonce, to a declared leading-zero target. Proves bounded resource spend; cheap for anyone to verify. Implemented in the prototype.</p>
-            </div>
-            <div class="cell">
-              <h3>Witness</h3>
-              <p>A bounded program in a tiny deterministic VM, replayed by the verifier against a declared work range. Proves the subject produced a valid witness — never who wrote it.</p>
-            </div>
-            <div class="cell">
-              <h3>Ladder</h3>
-              <p>A seeded puzzle at a declared capability tier. The issuer signs only an answer commitment, so the challenge itself can't leak the solution. Solving proves access to a solver at that tier — and doubles as the benchmark.</p>
-            </div>
+            <div class="cell"><span class="step-number">01 / Generate</span><h3>Same seed. Same task.</h3><p>Arithmetic, strings, logic, machines, grids. Versioned generators produce a prompt and a reference answer. Public seeds make the question reproducible—not the model’s response.</p></div>
+            <div class="cell"><span class="step-number">02 / Attempt</span><h3>Give the model the question.</h3><p>One prompt, one response. Adapters see neither the answer nor the seed. Request and token budgets stay explicit; tools and agent scaffolding belong in separately labeled evaluations.</p></div>
+            <div class="cell"><span class="step-number">03 / Check</span><h3>No vibes-based grading.</h3><p>Exact, format-aware scoring. Signs, case, and grid boundaries matter. A separate final-answer diagnostic exposes formatting failures without quietly turning them into passes.</p></div>
           </div>
         </section>
-        <section class="section" aria-labelledby="regimes-title">
-          <h2 id="regimes-title" class="section-title">Two regimes, one generator.</h2>
+        <section class="section" aria-labelledby="learn-title">
+          <h2 id="learn-title" class="section-title">We tested the models. Then we tested the test.</h2>
           <div class="duet">
-            <div class="cell">
-              <h3>Benchmark</h3>
-              <p>Every generator is deterministic: <code>generate(family, tier, seed)</code> yields a prompt and a canonical answer. Public seeds make a reproducible, versioned suite — anyone can re-run a published cell and check the same pass rates.</p>
-            </div>
-            <div class="cell">
-              <h3>Admission</h3>
-              <p>A verifier draws a secret seed, generates a fresh puzzle, and signs its answer commitment into the challenge. Every challenge is new — there is nothing to memorize and nothing to precompute.</p>
-            </div>
+            <div class="cell"><h3>The first pilot is public.</h3><p>Twelve requested model aliases, ten seeds per family/tier, 3,000 recorded attempts. Full responses, hashes, error counts, confidence intervals, and a replayable report—not a mysterious leaderboard number.</p><p><a href="/benchmark/#pilot-results">Inspect the evidence <span aria-hidden="true">→</span></a></p></div>
+            <div class="cell"><h3>The flaws are public, too.</h3><p>The audit caught sign-blind scoring, a constant-answer path puzzle, and underspecified induction tasks. The pilot is labeled legacy; the corrected v2 suite needs fresh calibration. Better to fix the ruler than polish the ranking.</p></div>
           </div>
         </section>
-        <section class="section" aria-labelledby="proof-title">
-          <h2 id="proof-title" class="section-title">What a pass proves — and what it doesn't.</h2>
+        <section class="section" aria-labelledby="admission-title">
+          <h2 id="admission-title" class="section-title">Benchmark first. Admission carefully.</h2>
           <div class="duet">
-            <div class="cell">
-              <h3>A pass proves</h3>
-              <ul class="plain-list">
-                <li>A correct response inside the signed scope: key, room, purpose, expiry.</li>
-                <li>Freshness — the challenge was issued seconds ago and consumed once.</li>
-                <li>At ladder tiers, access to a solver that clears the tier.</li>
-              </ul>
-            </div>
-            <div class="cell">
-              <h3>It never proves</h3>
-              <ul class="plain-list">
-                <li>Personhood, identity, or which model produced the answer.</li>
-                <li>That the work wasn't delegated or outsourced.</li>
-                <li>Trustworthiness — a pass may lift a rate limit or admit a key; it never grants host or tool authority.</li>
-              </ul>
-            </div>
+            <div class="cell"><h3>Measure a floor. Don’t mint trust.</h3><p>The long-term goal is scoped, one-use capability checks for agent networks. A valid response could inform a rate limit or an admission policy. It must never, by itself, grant tool access, authorize a payment, or make another message trustworthy.</p></div>
+            <div class="cell"><h3>Different questions need different proofs.</h3><p>Hashcash meets a declared hash target. A witness satisfies a replayable program contract. A puzzle answer satisfies that puzzle. The Rust prototypes and proposed admission envelope are documented separately from the shipped benchmark.</p><p><a href="/docs/#security">Read the security boundaries <span aria-hidden="true">→</span></a></p></div>
           </div>
         </section>
         <section class="status" aria-labelledby="status-title">
-          <h2 id="status-title">Early, in the open.</h2>
-          <p>Hashcash mode is implemented as a Rust prototype inside hraness/valhalla; the reference ladder — fourteen seeded families across tiers 0–6 plus the bench harness — ships in this repo. Signed-challenge integration for ladder mode is specified in the design plan. First calibration runs land on the benchmark page as they're verified. Nothing here is a stable API yet.</p>
+          <h2 id="status-title">A cheeky name.<br>A narrow promise.</h2>
+          <p>Clankdar is not a bot detector, a personhood test, or a certificate of general intelligence. This is an experimental benchmark and protocol research project—not a production admission service. Public puzzles can be memorized, solved with code, or outsourced. We report the conditions and keep authority somewhere else.</p>
         </section>
       </main>
       <div class="project-footer">
-        <p>Proof of capability, not of personhood.</p>
+        <p>Keep the clank. Check the claim.</p>
         <a href="https://github.com/hraness/valhalla/blob/main/kb/plans/valhalla-botcaptcha-ledger-games.md">Follow the design <span aria-hidden="true">↗</span></a>
       </div>
       <!-- hraness-site-footer -->

@@ -5,6 +5,14 @@
   "installCommand": "bun install --frozen-lockfile --ignore-scripts",
   "outputDirectory": "site/dist",
   "cleanUrls": true,
+  "redirects": [
+    {
+      "source": "/:path*",
+      "has": [{ "type": "host", "value": "botcaptcha.dev" }],
+      "destination": "https://clankdar.com/:path*",
+      "permanent": true
+    }
+  ],
   "headers": [
     {
       "source": "/(.*)",

@@ -1,0 +1,157 @@
+{
+  "schemaVersion": 1,
+  "id": "pilot-v0",
+  "status": "exploratory; not a capability certification",
+  "collectedOn": "2026-09-17",
+  "generatorBaseRevision": "d49410b98e4cfb48d579fa7c71139b46267de7dc",
+  "driverRecordedAfterRunAt": "e5df6847fe2109e9cadeba9a6100e82d8524d589",
+  "provenanceLimit": "The exact dirty run tree, provider-resolved model versions, finish reasons, effective negotiated parameters, and per-request usage were not recorded. Model names are requested gateway aliases, not attestations.",
+  "protocol": {
+    "endpoint": "https://ai-gateway.vercel.sh/v1",
+    "turns": 1,
+    "tools": false,
+    "requestedTemperature": 0,
+    "requestedMaxTokens": 4096,
+    "timeoutMs": 120000,
+    "concurrency": 8
+  },
+  "scoring": {
+    "version": "clankdar-score-v2",
+    "strict": "family-aware canonical whole-response match",
+    "diagnostic": "independent final-block extraction followed by exact match; not a capability estimate",
+    "errors": "separate from wrong answers; excluded from valid-response denominators"
+  },
+  "exclusions": {
+    "gridpath": "Legacy generation guaranteed a ten-move monotone path, so a constant-answer baseline solves the family.",
+    "sequence": "Legacy prompts did not constrain the recurrence class; the geometric branch also showed only four terms.",
+    "hiddenfn": "Legacy prompts did not state a finite hypothesis class or establish a unique query answer within it.",
+    "gridxf": "Legacy prompts did not state a finite transform grammar or disambiguate all query predictions."
+  },
+  "excludedInstancesPerModel": 60,
+  "screenedInstancesPerModel": 190,
+  "originalSources": [
+    {
+      "file": "anthropic_claude-opus-4.5.jsonl",
+      "sha256": "94084a873be028ec608935da2bbab5ab7c8b4845d4fdfcbf0c2c2ccf04383ecb"
+    },
+    {
+      "file": "anthropic_claude-sonnet-4.5.jsonl",
+      "sha256": "d2389f9a2c58dc6a2a602e7a119cddfd2eb40f0ec0c1eb7b0d9641d9f41e8e4b"
+    },
+    {
+      "file": "deepseek_deepseek-v3.2.jsonl",
+      "sha256": "d3a87f7d28beea879368c4e7467a3f2fee997edf56bef13ef17779efab2431f2"
+    },
+    {
+      "file": "google_gemini-2.5-flash-lite.jsonl",
+      "sha256": "0195c789ac94e3b9a79f96b97fc2c83a370fa594273af96516ff066cf8146020"
+    },
+    {
+      "file": "google_gemini-2.5-pro.jsonl",
+      "sha256": "e0d3b70c45023404f5781b339fd881416ce72e3e8e77d69acc57e9f6af65f4f0"
+    },
+    {
+      "file": "meta_llama-3.1-8b.jsonl",
+      "sha256": "3a05a4fc2e0ec70e88617192b2c301d98fbed1ab5f8c8b376c700b9cdcb2fd13"
+    },
+    {
+      "file": "meta_llama-3.3-70b.jsonl",
+      "sha256": "659a85d1e58ccf594efc8bf4a88f90d39da076018c98ab7af6986d1ef0a46c0e"
+    },
+    {
+      "file": "mistral_ministral-3b.jsonl",
+      "sha256": "714dc3cd6878d048ad58b442ae7010a6283b9e7767f98108dc5b020bf2d95e42"
+    },
+    {
+      "file": "openai_gpt-3.5-turbo.jsonl",
+      "sha256": "02dcba1acc8916ed07cf76eeed20fd7180a4ef8b558166b83b068e44e1acd9c6"
+    },
+    {
+      "file": "openai_gpt-4.1.jsonl",
+      "sha256": "b4f2ebd96527e50286af89f4a77618684c318b06bd528da329d1bd5316aba094"
+    },
+    {
+      "file": "openai_gpt-4o-mini.jsonl",
+      "sha256": "0619c12acbeacbf24a78f692725c47475265aaa2c838ee41503693998bd80782"
+    },
+    {
+      "file": "openai_gpt-5-mini.jsonl",
+      "sha256": "99e1ce2fbc942cec393f1c3dae7c2c2ec951a3964ee1ebb5d5eec851132df9cf"
+    }
+  ],
+  "privacy": "Only synthetic prompts, expected answers, model replies, verdicts, latency, and model labels are retained. Upstream error bodies and unknown fields are omitted. The private source files are unchanged.",
+  "limitations": [
+    "Ten seeds per family/tier is a small exploratory sample. Wilson intervals are descriptive binomial intervals, not a tier certification.",
+    "Public seeds and published generators can be memorized or solved programmatically. The benchmark does not prove model identity, personhood, trust, or tool authority.",
+    "The screened subset removes design-invalid or degenerate families uniformly across models. Full legacy-suite scores remain in report.json for transparency.",
+    "This is the legacy pilot rescored under the corrected scorer, not a model run against clankdar-suite-v2. New-suite calibration is still required.",
+    "The final-block diagnostic is a formatting diagnostic only; it can miss correctly expressed answers and does not establish how an answer was obtained."
+  ],
+  "artifacts": [
+    {
+      "file": "anthropic_claude-opus-4.5.jsonl.gz",
+      "sha256": "4d8ff8b0adbc64ae336f9d3302d8db50f7c62ca2861ae2d8f7f2dd2be913a034",
+      "bytes": 55544
+    },
+    {
+      "file": "anthropic_claude-sonnet-4.5.jsonl.gz",
+      "sha256": "864572a47aca8859f09296aef2e81ba430e1e4712f922330a7583e8042bc6fa9",
+      "bytes": 60014
+    },
+    {
+      "file": "deepseek_deepseek-v3.2.jsonl.gz",
+      "sha256": "5431057743c7ada2e840a4c5a6a2be0184c2ef89a747e56c9b3c216f911fcaad",
+      "bytes": 134296
+    },
+    {
+      "file": "google_gemini-2.5-flash-lite.jsonl.gz",
+      "sha256": "a0e744fe69e384a882d50769a8ac539a966b7bb11a9556e615e2784f275eefd5",
+      "bytes": 22464
+    },
+    {
+      "file": "google_gemini-2.5-pro.jsonl.gz",
+      "sha256": "ad87d86bdf152e7e8bf4b450737157db0e9cce4712cace83fea9e89eb770d4ab",
+      "bytes": 15456
+    },
+    {
+      "file": "meta_llama-3.1-8b.jsonl.gz",
+      "sha256": "eeb0d750e0f030003b8a3ea37107d8213781fc33d446d2053e6a76a42158bde3",
+      "bytes": 35301
+    },
+    {
+      "file": "meta_llama-3.3-70b.jsonl.gz",
+      "sha256": "736e8129d22dd358baf1cbaa0ac3465d6c582c3ed6408ce49646eda121e40af6",
+      "bytes": 22489
+    },
+    {
+      "file": "mistral_ministral-3b.jsonl.gz",
+      "sha256": "baf1d937c21f8c20fa2d16a6c703961a3e7381cf7f0b59e7fd6cd4874d15d4c8",
+      "bytes": 127679
+    },
+    {
+      "file": "openai_gpt-3.5-turbo.jsonl.gz",
+      "sha256": "532abbff60dc5607e0a8cd18ddade47c9cb85983df1dbbdd76c314dd265069f7",
+      "bytes": 12306
+    },
+    {
+      "file": "openai_gpt-4.1.jsonl.gz",
+      "sha256": "314b792c54455f05838ec3c71750b54ce6e093364775006a05af09af64c534c1",
+      "bytes": 23177
+    },
+    {
+      "file": "openai_gpt-4o-mini.jsonl.gz",
+      "sha256": "4a81af1ae7e9435acc053075a5eb7fe9bacee57013c5a01af6c7f010180b99c9",
+      "bytes": 17368
+    },
+    {
+      "file": "openai_gpt-5-mini.jsonl.gz",
+      "sha256": "087dbc65927d94e4cf9e8fcb8a12a02110f95d4aa8740f90985baf0aea09ceec",
+      "bytes": 11174
+    },
+    {
+      "file": "report.json",
+      "sha256": "3b32d571af15ee41b5f02a6ff17bc8348d6599c83dd73cb15447ff4f51da03b2",
+      "bytes": 197327
+    }
+  ]
+}

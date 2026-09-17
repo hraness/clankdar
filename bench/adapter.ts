@@ -1,12 +1,29 @@
-import type { Instance } from "../ladder/family.ts";
+import type { Puzzle } from "../ladder/family.ts";
 
-/** Anything that can attempt a puzzle instance: a model, a bot, a human UI, or a test double. */
+export interface SolveResponse {
+  text: string;
+  refused?: boolean;
+  finishReason?: string;
+  resolvedModel?: string;
+  usage?: { inputTokens?: number; outputTokens?: number; reasoningTokens?: number; costUsd?: number };
+  parameters?: { tokenField: string; maxTokens: number; temperature: number | null; requests: number };
+}
+
+/** Anything that can attempt a public puzzle: a model, a bot, a human UI, or a test double. */
 export interface Adapter {
   readonly name: string;
-  solve(inst: Instance): Promise<string>;
+  readonly config?: Readonly<Record<string, string | number | null>>;
+  validate?(): void;
+  solve(puzzle: Puzzle, context?: { signal: AbortSignal }): Promise<string | SolveResponse>;
 }
 
 export interface BenchResult {
+  type: "result";
+  schemaVersion: 2;
+  runId: string;
+  suiteVersion: string;
+  suiteHash: string;
+  scorerVersion: string;
   adapter: string;
   family: string;
   tier: number;
@@ -17,28 +34,42 @@ export interface BenchResult {
   /** Strict verdict: normalized response equals normalized answer. */
   pass: boolean;
   /**
-   * Diagnostic: the normalized response ends with the normalized answer —
-   * i.e. the model solved it but wrapped the answer in prose. Strict `pass`
-   * remains the contract verdict; this separates capability from format-
-   * following. Conservative: misses correct answers buried mid-response.
+   * Diagnostic: the independently extracted final answer block matches.
+   * This is not a capability estimate and never changes the strict verdict.
+   * Extraction may miss correct answers formatted outside its grammar.
    */
-  answerPresent?: boolean;
+  finalAnswerMatch: boolean;
   latencyMs: number;
+  truncated?: boolean;
+  refused?: boolean;
+  detail?: Omit<SolveResponse, "text">;
   error?: string;
 }
 
 export interface CellSummary {
   n: number;
-  passed: number;
-  rate: number;
-}
-
-export interface BenchSummary {
-  adapter: string;
-  total: number;
+  attempted: number;
   passed: number;
   errors: number;
-  rate: number;
+  rate: number | null;
+  interval95: [number, number] | null;
+  finalAnswerMatches: number;
+}
+
+export interface BenchSummary extends CellSummary {
+  adapter: string;
+  total: number;
+  coverage: number;
   byTier: Record<number, CellSummary>;
   byFamily: Record<string, CellSummary>;
+  byCell: Record<string, CellSummary>;
+  bySeed: Record<number, CellSummary>;
+}
+
+export type AdapterErrorCode = "missing_api_key" | "http_error" | "invalid_response" | "response_too_large" | "parameter_negotiation" | "request_limit";
+
+export class AdapterError extends Error {
+  constructor(readonly code: AdapterErrorCode, readonly status?: number) {
+    super(status === undefined ? code : `${code}:${status}`);
+  }
 }

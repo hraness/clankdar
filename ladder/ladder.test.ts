@@ -1,8 +1,10 @@
 import { describe, expect, test } from "bun:test";
-import { FAMILIES, normalize, answersMatch, type Instance } from "./mod.ts";
+import { FAMILIES, normalize, answersMatch, answerFormat, type Instance } from "./mod.ts";
 import { _internals as crypt } from "./families/cryptarithm.ts";
+import { integerCandidates, wordCandidates } from "./families/hiddenfn.ts";
+import { gridCandidates, transformGrid } from "./families/gridxf.ts";
 
-const SEEDS = [1, 2, 3, 17, 42, 9001];
+const SEEDS = [...Array.from({ length: 33 }, (_, i) => i), 42, 9001, 0xffffffff];
 
 // --- shared helpers: re-derive the answer from the prompt text -------------
 
@@ -93,7 +95,17 @@ const validators: Record<string, (inst: Instance) => boolean> = {
 
   sequence: ({ prompt, answer }) => {
     const nums = prompt.match(/sequence\? ([-\d, ]+), \?/);
-    return !!nums && /^-?\d+$/.test(answer.trim()) && nums[1].split(",").length === 5;
+    if (!nums) return false;
+    const terms = nums[1].split(",").map(Number);
+    if (terms.length !== 5) return false;
+    const [a, b, c, d, e] = terms;
+    const candidates = [
+      b - a === c - b && c - b === d - c && d - c === e - d ? e + e - d : null,
+      a !== 0 && b / a === c / b && c / b === d / c && d / c === e / d ? e * b / a : null,
+      c === a + b && d === b + c && e === c + d ? d + e : null,
+      b - a === 3 && c - b === 5 && d - c === 7 && e - d === 9 ? e + 11 : null,
+    ].filter((value) => value !== null);
+    return candidates.length > 0 && candidates.every((value) => value === Number(answer));
   },
 
   cipher: ({ prompt, answer }) => {
@@ -147,17 +159,16 @@ const validators: Record<string, (inst: Instance) => boolean> = {
     const n = (answer.match(/=/g) ?? []).length;
     const C = (l: string) => l.charCodeAt(0) - 65;
     const parseClaim = (t: string): ((a: boolean[]) => boolean) | null => {
-      let m;
-      if ((m = t.match(/^([A-D]) is a (knight|knave)$/)))
-        return (a) => a[C(m[1])] === (m[2] === "knight");
-      if ((m = t.match(/^([A-D]) and ([A-D]) are both (knight|knave)s$/)))
-        return (a) => a[C(m[1])] === (m[3] === "knight") && a[C(m[2])] === (m[3] === "knight");
-      if ((m = t.match(/^at least one of ([A-D]) and ([A-D]) is a (knight|knave)$/)))
-        return (a) => a[C(m[1])] === (m[3] === "knight") || a[C(m[2])] === (m[3] === "knight");
-      if ((m = t.match(/^exactly one of ([A-D]) and ([A-D]) is a knight$/)))
-        return (a) => a[C(m[1])] !== a[C(m[2])];
-      if ((m = t.match(/^exactly (\d+) of us tell the truth$/)))
-        return (a) => a.filter(Boolean).length === Number(m[1]);
+      const simple = t.match(/^([A-D]) is a (knight|knave)$/);
+      if (simple) return (a) => a[C(simple[1])] === (simple[2] === "knight");
+      const both = t.match(/^([A-D]) and ([A-D]) are both (knight|knave)s$/);
+      if (both) return (a) => a[C(both[1])] === (both[3] === "knight") && a[C(both[2])] === (both[3] === "knight");
+      const either = t.match(/^at least one of ([A-D]) and ([A-D]) is a (knight|knave)$/);
+      if (either) return (a) => a[C(either[1])] === (either[3] === "knight") || a[C(either[2])] === (either[3] === "knight");
+      const one = t.match(/^exactly one of ([A-D]) and ([A-D]) is a knight$/);
+      if (one) return (a) => a[C(one[1])] !== a[C(one[2])];
+      const count = t.match(/^exactly (\d+) of us tell the truth$/);
+      if (count) return (a) => a.filter(Boolean).length === Number(count[1]);
       return null;
     };
     const stmts = [...prompt.matchAll(/([A-D]) says: "([^"]+)"/g)]
@@ -238,18 +249,42 @@ const validators: Record<string, (inst: Instance) => boolean> = {
     return row.join("") === answer;
   },
 
-  hiddenfn: ({ prompt, answer }) => /^[a-z0-9-]+$/.test(answer.trim()) && prompt.includes("hidden rule") || prompt.includes("hidden rule maps"),
-  gridxf: ({ prompt, answer }) => {
-    const m = prompt.match(/same rule to this input:\n([\d \n]+)\n\nReply/);
-    if (!m) return false;
-    const rows = answer.trim().split("\n").map((r) => r.trim().split(" ").map(Number));
-    return rows.every((r) => r.every((v) => v >= 0 && v <= 9));
+  hiddenfn: ({ prompt, tier, answer }) => {
+    const examples = [...prompt.matchAll(/f\(([^)]+)\) = ([a-z0-9-]+)/g)].map((m) => [m[1], m[2]]);
+    const query = prompt.match(/f\(([^)]+)\) = \?/);
+    if (!query || examples.length < 4 || examples.some(([input]) => input === query[1])) return false;
+    const rules = prompt.includes("each word")
+      ? wordCandidates()
+      : integerCandidates(tier).map((rule) => (x: string) => String(rule(Number(x))));
+    const remaining = rules.filter((rule) => examples.every(([input, output]) => rule(input) === output));
+    return remaining.length > 0 && remaining.every((rule) => rule(query[1]) === answer);
+  },
+  gridxf: ({ prompt, tier, answer }) => {
+    const parse = (grid: string) => grid.trim().split("\n").map((row) => row.trim().split(" ").map(Number));
+    const pairs = [...prompt.matchAll(/Example \d+ input:\n([\d \n]+)\nExample \d+ output:\n([\d \n]+)/g)].map((m) => [parse(m[1]), parse(m[2])]);
+    const query = prompt.match(/same rule to this input:\n([\d \n]+)\n\nReply/);
+    if (!query || pairs.length < 2) return false;
+    const remaining = gridCandidates(tier).filter((rule) => pairs.every(([input, output]) => JSON.stringify(rule(input)) === JSON.stringify(output)));
+    return remaining.length > 0 && remaining.every((rule) => JSON.stringify(rule(parse(query[1]))) === JSON.stringify(parse(answer)));
   },
 };
 
 // --- suite ------------------------------------------------------------------
 
 describe("ladder suite", () => {
+  test("spatial primitives follow the advertised operations without mutating input", () => {
+    const grid = [[1, 2, 0], [3, 0, 4]];
+    expect(transformGrid("rot90", grid)).toEqual([[3, 1], [0, 2], [4, 0]]);
+    expect(transformGrid("rot180", grid)).toEqual([[4, 0, 3], [0, 2, 1]]);
+    expect(transformGrid("flipH", grid)).toEqual([[3, 0, 4], [1, 2, 0]]);
+    expect(transformGrid("flipV", grid)).toEqual([[0, 2, 1], [4, 0, 3]]);
+    expect(transformGrid("transpose", grid)).toEqual([[1, 3], [2, 0], [0, 4]]);
+    expect(transformGrid("gravity", grid)).toEqual([[1, 0, 0], [3, 2, 4]]);
+    expect(transformGrid("crop", [[0, 0, 0], [0, 3, 0]])).toEqual([[3]]);
+    expect(transformGrid("crop", [[0, 0]])).toEqual([[0]]);
+    expect(grid).toEqual([[1, 2, 0], [3, 0, 4]]);
+  });
+
   for (const family of FAMILIES) {
     for (const tier of family.tiers) {
       test(`${family.name} t${tier}: deterministic and answers verify`, () => {
@@ -263,6 +298,8 @@ describe("ladder suite", () => {
           const v = validators[family.name];
           expect(v).toBeDefined();
           expect(v(a)).toBe(true);
+          expect(v({ ...a, answer: "definitely not the answer" })).toBe(false);
+          expect(answersMatch(a.answer, a.answer, answerFormat(a.family))).toBe(true);
         }
       });
     }
@@ -277,8 +314,8 @@ describe("ladder suite", () => {
   });
 
   test("normalization is format-insensitive", () => {
-    expect(normalize("  4 1 3 2 / 2 4 1 3 ")).toBe("41322413");
-    expect(answersMatch("A=Knight B=Knave", "a = knight, b = knave")).toBe(true);
+    expect(normalize("  4 1 3 2 / 2 4 1 3 ")).toBe("4 1 3 2 / 2 4 1 3");
+    expect(answersMatch("A=Knight B=Knave", "a = knight, b = knave", "assignments")).toBe(true);
     expect(answersMatch("123", "1234")).toBe(false);
   });
 });

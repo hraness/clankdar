@@ -6,91 +6,54 @@
  *   bun bench --adapter openai:gpt-4o-mini --seeds 1-10 --tiers 0-3 --out results/gpt-4o-mini.jsonl
  *
  * Writes one JSONL row per attempted instance (to --out or stdout) and prints a
- * pass-rate summary by tier and family.
+ * pass-rate summary by tier and family to stderr. Model calls need --execute.
  */
-import { adapterByName } from "./adapters.ts";
-import { runBench, summarize } from "./run.ts";
+import { parseArgs } from "node:util";
+import { adapterByName, openai } from "./adapters.ts";
 import { FAMILIES } from "../ladder/mod.ts";
-import { mkdirSync, writeFileSync, appendFileSync } from "node:fs";
-import { dirname } from "node:path";
+import { commonOptions, integer, requestBudget, selection } from "./options.ts";
+import { recordRun, runManifest, percent } from "./record.ts";
 
-function parseList(s: string): string[] {
-  return s.split(",").map((x) => x.trim()).filter(Boolean);
-}
+const HELP = `usage: bun bench --adapter <oracle|echo|openai:model> [options]
 
-function parseInts(spec: string): number[] {
-  const out: number[] = [];
-  for (const part of parseList(spec)) {
-    const m = part.match(/^(\d+)-(\d+)$/);
-    if (m) {
-      for (let i = Number(m[1]); i <= Number(m[2]); i++) out.push(i);
-    } else if (/^\d+$/.test(part)) {
-      out.push(Number(part));
-    } else {
-      throw new Error(`bad integer list item "${part}"`);
-    }
+  --list               list families and tiers
+  --seeds <spec>       unique seeds, e.g. 1-20 or 1,2,3 (default 1-10)
+  --tiers <spec>       restrict tiers, e.g. 0-3
+  --families <list>    comma-separated family names
+  --concurrency <n>    parallel solver calls, 1..64 (default 4)
+  --timeout-ms <n>     per-instance time budget (default 120000)
+  --max-tokens <n>     completion token budget (default 4096)
+  --out <path>        create a NEW JSONL file; never overwrite (default stdout)
+  --dry-run           show the manifest without running
+  --execute           enable model API calls (default is a dry run for models)
+  --max-requests <n>   required with --execute; includes parameter negotiation
+
+No credentials are accepted in command-line arguments. Use CLANKDAR_API_KEY
+and CLANKDAR_BASE_URL, or the OPENAI_* equivalents. No-key loopback is supported.
+`;
+
+export async function main(args = process.argv.slice(2)): Promise<number> {
+  const { values } = parseArgs({ args, options: { ...commonOptions, adapter: { type: "string" }, list: { type: "boolean" } }, strict: true, allowPositionals: false });
+  if (values.help) { console.log(HELP); return 0; }
+  if (values.list) { for (const f of FAMILIES) console.log(`${f.name}\ttiers ${f.tiers.join(",")}`); return 0; }
+  if (!values.adapter) throw new Error("--adapter is required (use --help)");
+  const opts = selection(values);
+  const remote = values.adapter.startsWith("openai:");
+  const budget = values["max-requests"] ? requestBudget(integer(values["max-requests"], 30_000)) : undefined;
+  const adapter = remote ? openai({ model: values.adapter.slice(7), maxTokens: integer(values["max-tokens"] ?? "4096", 32_768), timeoutMs: opts.timeoutMs, beforeRequest: budget?.beforeRequest }) : adapterByName(values.adapter);
+  const manifest = runManifest(adapter, opts);
+  if (values["dry-run"] || (remote && !values.execute)) {
+    console.log(JSON.stringify({ ...manifest, dryRun: true, maximumRequests: manifest.instances * 3 }, null, 2));
+    return 0;
   }
-  return [...new Set(out)].sort((a, b) => a - b);
+  if (remote && (!budget || integer(values["max-requests"]!, 30_000) < manifest.instances)) throw new Error("--execute requires --max-requests at least equal to the instance count");
+  const summary = await recordRun(adapter, opts, values.out);
+  console.error(`${adapter.name}: ${summary.passed}/${summary.attempted} valid responses passed (${percent(summary.rate)}); ${summary.errors} provider/adapter errors`);
+  for (const [tier, cell] of Object.entries(summary.byTier)) console.error(`  t${tier}: ${cell.passed}/${cell.attempted} (${percent(cell.rate)}), ${cell.errors} errors`);
+  for (const [family, cell] of Object.entries(summary.byFamily)) console.error(`  ${family}: ${cell.passed}/${cell.attempted} (${percent(cell.rate)})`);
+  return summary.errors ? 1 : 0;
 }
 
-function usage(): never {
-  console.error(`usage: bun bench --adapter <oracle|echo|openai:model> [options]
-
-options:
-  --seeds <spec>       seeds per cell, e.g. "1-20" or "1,2,3"   (default 1-10)
-  --tiers <spec>       restrict tiers, e.g. "0-3"               (default: all)
-  --families <list>    restrict families, comma-separated       (default: all)
-  --concurrency <n>    parallel solver calls                    (default 4)
-  --out <path>         JSONL output file                        (default: stdout rows suppressed)
-  --list               list families and tiers, then exit`);
-  process.exit(2);
+if (import.meta.main) {
+  try { process.exitCode = await main(); } catch (error) { console.error(error instanceof Error ? error.message : "benchmark failed"); process.exitCode = 2; }
 }
-
-const args = process.argv.slice(2);
-const opt: Record<string, string | true> = {};
-for (let i = 0; i < args.length; i++) {
-  const a = args[i];
-  if (!a.startsWith("--")) usage();
-  const k = a.slice(2);
-  if (i + 1 < args.length && !args[i + 1].startsWith("--")) opt[k] = args[++i];
-  else opt[k] = true;
-}
-
-if (opt.list) {
-  for (const f of FAMILIES) console.log(`${f.name}\ttiers ${f.tiers.join(",")}`);
-  process.exit(0);
-}
-
-const adapterSpec = typeof opt.adapter === "string" ? opt.adapter : usage();
-const adapter = adapterByName(adapterSpec);
-const seeds = typeof opt.seeds === "string" ? parseInts(opt.seeds) : parseInts("1-10");
-const tiers = typeof opt.tiers === "string" ? parseInts(opt.tiers) : undefined;
-const families = typeof opt.families === "string" ? parseList(opt.families) : undefined;
-const concurrency = typeof opt.concurrency === "string" ? Number(opt.concurrency) : 4;
-const out = typeof opt.out === "string" ? opt.out : undefined;
-
-if (out) {
-  mkdirSync(dirname(out), { recursive: true });
-  writeFileSync(out, "");
-}
-
-const results = await runBench(adapter, {
-  families, tiers, seeds, concurrency,
-  onResult: (r) => {
-    if (out) appendFileSync(out, JSON.stringify(r) + "\n");
-    const mark = r.error ? "ERR " : r.pass ? "pass" : "fail";
-    console.error(`  [${mark}] ${r.family} t${r.tier} s${r.seed}${r.error ? ` — ${r.error}` : ""}`);
-  },
-});
-
-const summary = summarize(adapter.name, results);
-if (out) appendFileSync(out, JSON.stringify({ type: "summary", ...summary }) + "\n");
-
-const pct = (x: number) => `${(x * 100).toFixed(1)}%`;
-console.log(`\n${adapter.name}: ${summary.passed}/${summary.total} passed (${pct(summary.rate)})${summary.errors ? `, ${summary.errors} errors` : ""}`);
-console.log("\nby tier:");
-for (const [t, c] of Object.entries(summary.byTier).sort(([a], [b]) => Number(a) - Number(b)))
-  console.log(`  t${t}: ${c.passed}/${c.n} (${pct(c.rate)})`);
-console.log("\nby family:");
-for (const [f, c] of Object.entries(summary.byFamily).sort())
-  console.log(`  ${f}: ${c.passed}/${c.n} (${pct(c.rate)})`);
