@@ -1,5 +1,5 @@
 import type { Adapter, BenchResult, BenchSummary, CellSummary } from "./adapter.ts";
-import { answersMatch, type Family } from "../ladder/family.ts";
+import { answersMatch, normalize, type Family } from "../ladder/family.ts";
 import { suiteCells } from "../ladder/mod.ts";
 
 export interface BenchOptions {
@@ -34,6 +34,7 @@ export async function runBench(adapter: Adapter, opts: BenchOptions): Promise<Be
           adapter: adapter.name, family: w.family.name, tier: w.tier, seed: w.seed,
           prompt: inst.prompt, expected: inst.answer, response,
           pass: answersMatch(inst.answer, response),
+          answerPresent: normalize(response).endsWith(normalize(inst.answer)),
           latencyMs: Math.round(performance.now() - started),
         };
       } catch (e) {

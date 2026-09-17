@@ -14,7 +14,15 @@ export interface BenchResult {
   prompt: string;
   expected: string;
   response: string;
+  /** Strict verdict: normalized response equals normalized answer. */
   pass: boolean;
+  /**
+   * Diagnostic: the normalized response ends with the normalized answer —
+   * i.e. the model solved it but wrapped the answer in prose. Strict `pass`
+   * remains the contract verdict; this separates capability from format-
+   * following. Conservative: misses correct answers buried mid-response.
+   */
+  answerPresent?: boolean;
   latencyMs: number;
   error?: string;
 }
