@@ -4,8 +4,8 @@ import { rng } from "../rng.ts";
 type Node = { text: string; value: number };
 
 /** Build a fully parenthesized expression tree of bounded depth with integer values. */
-function expr(r: ReturnType<typeof rng>, depth: number): Node {
-  if (depth === 0 || r.chance(0.25)) {
+function expr(r: ReturnType<typeof rng>, depth: number, root = false): Node {
+  if (depth === 0 || (!root && r.chance(0.25))) {
     const v = r.intBetween(2, 19);
     return { text: String(v), value: v };
   }
@@ -17,7 +17,7 @@ function expr(r: ReturnType<typeof rng>, depth: number): Node {
     const d = expr(r, depth - 1);
     if (d.value === 0) {
       const v = r.intBetween(2, 19);
-      return { text: String(v), value: v };
+      return { text: `(0 + ${v})`, value: v };
     }
     const k = r.intBetween(1, 9) * (r.chance(0.5) ? -1 : 1);
     const dividend: Node = { text: String(k * d.value), value: k * d.value };
@@ -44,7 +44,7 @@ export const arithmetic: Family = {
       answer = a + b;
     } else {
       const depth = tier === 1 ? 2 : 3;
-      const e = expr(r, depth);
+      const e = expr(r, depth, true);
       prompt = `Compute ${e.text}. Work left to right inside parentheses first. Reply with only the integer result.`;
       answer = e.value;
     }

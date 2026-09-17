@@ -1,4 +1,4 @@
-/** SplitMix64-seeded deterministic RNG (xoshiro-style output via mulberry32 stepping). */
+/** Deterministic Mulberry32 for public benchmark seeds; not a cryptographic RNG. */
 
 export type Rng = {
   next(): number;
@@ -10,8 +10,8 @@ export type Rng = {
 };
 
 export function rng(seed: number): Rng {
-  let state = seed >>> 0;
-  if (state === 0) state = 0x9e3779b9;
+  if (!Number.isInteger(seed) || seed < 0 || seed > 0xffffffff) throw new Error("seed must be a uint32 integer");
+  let state = seed;
   const next = () => {
     state = (state + 0x6d2b79f5) >>> 0;
     let t = state;

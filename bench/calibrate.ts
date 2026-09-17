@@ -6,64 +6,59 @@
  *   CLANKDAR_BASE_URL=… bun bench/calibrate.ts \
  *     --models openai/gpt-4o-mini,google/gemini-2.5-flash-lite --seeds 1-10
  *
- * Writes results/calibrate/<safe-model-name>.jsonl (one row per instance, plus a
- * trailing summary record) so runs are resumable and auditable.
+ * Creates a new run directory and exclusive per-model JSONL files. Interrupted
+ * runs remain available for audit; existing data is never overwritten or
+ * silently resumed. Model calls require an explicit request budget.
  */
+import { parseArgs } from "node:util";
+import { mkdirSync } from "node:fs";
+import { join, dirname } from "node:path";
+import { createHash, randomUUID } from "node:crypto";
 import { openai } from "./adapters.ts";
-import { runBench, summarize, type BenchOptions } from "./run.ts";
-import { mkdirSync, writeFileSync, appendFileSync } from "node:fs";
+import { commonOptions, integer, list, requestBudget, selection } from "./options.ts";
+import { recordRun, runManifest, percent } from "./record.ts";
 
-const args = process.argv.slice(2);
-const opt: Record<string, string> = {};
-for (let i = 0; i < args.length; i += 2) opt[args[i].replace(/^--/, "")] = args[i + 1];
-
-const parseInts = (spec: string): number[] => {
-  const out: number[] = [];
-  for (const part of spec.split(",")) {
-    const m = part.trim().match(/^(\d+)-(\d+)$/);
-    if (m) for (let i = +m[1]; i <= +m[2]; i++) out.push(i);
-    else out.push(+part);
+export async function main(args = process.argv.slice(2)): Promise<number> {
+  const { values } = parseArgs({ args, options: { ...commonOptions, models: { type: "string" } }, strict: true, allowPositionals: false });
+  if (values.help) {
+    console.log("usage: bun calibrate --models <provider/model,...> [--seeds 1-10] [--tiers 0-6] [--out NEW-DIRECTORY] [--execute --max-requests N]\nDefault: dry run. --execute enables bounded API calls. Common options match bun bench --help.");
+    return 0;
   }
-  return [...new Set(out)];
-};
-
-if (!opt.models) {
-  console.error("usage: bun bench/calibrate.ts --models <m1,m2,…> [--seeds 1-10] [--tiers 0-6] [--concurrency 8]");
-  process.exit(2);
+  if (!values.models) throw new Error("--models is required");
+  const models = list(values.models, 20);
+  const opts = selection(values);
+  const maxTokens = integer(values["max-tokens"] ?? "4096", 32_768);
+  const maxRequests = values["max-requests"] ? integer(values["max-requests"], 30_000) : undefined;
+  const budget = maxRequests ? requestBudget(maxRequests) : undefined;
+  const adapters = models.map((model) => openai({ model, name: model, maxTokens, timeoutMs: opts.timeoutMs, beforeRequest: budget?.beforeRequest }));
+  const manifest = runManifest(adapters[0], opts);
+  const instances = manifest.instances * models.length;
+  if (!values.execute || values["dry-run"]) {
+    console.log(JSON.stringify({ dryRun: true, models, instances, maximumRequests: instances * 3, maxTokens, suiteHash: manifest.suiteHash, suiteVersion: manifest.suiteVersion, scorerVersion: manifest.scorerVersion, seeds: manifest.seeds, cells: manifest.cells, endpoint: adapters[0].config?.endpoint }, null, 2));
+    return 0;
+  }
+  if (!maxRequests || maxRequests < instances) throw new Error("--execute requires --max-requests at least equal to the total instance count");
+  for (const adapter of adapters) adapter.validate?.();
+  const out = values.out ?? join("results", "calibrate", randomUUID());
+  mkdirSync(dirname(out), { recursive: true });
+  mkdirSync(out, { mode: 0o700 });
+  const summaries = [];
+  for (const adapter of adapters) {
+    const safe = adapter.name.replace(/[^a-z0-9.-]/gi, "_").slice(0, 100);
+    const digest = createHash("sha256").update(adapter.name).digest("hex").slice(0, 12);
+    const summary = await recordRun(adapter, opts, join(out, `${safe}-${digest}.jsonl`));
+    summaries.push(summary);
+    console.error(`${adapter.name}: ${summary.passed}/${summary.attempted} (${percent(summary.rate)}), ${summary.errors} errors`);
+    if (summary.attempted === 0) break;
+  }
+  // Comparison table: rows = models (sorted by overall rate), cols = tiers.
+  for (const summary of summaries.sort((a, b) => (b.rate ?? -1) - (a.rate ?? -1))) {
+    console.error(`${summary.adapter}: ${Object.entries(summary.byTier).map(([tier, cell]) => `t${tier} ${percent(cell.rate)}`).join(" | ")}`);
+  }
+  console.log(JSON.stringify({ type: "calibration", directory: out, requests: budget!.used(), models: summaries }));
+  return summaries.length !== models.length || summaries.some((summary) => summary.errors) ? 1 : 0;
 }
 
-const seeds = parseInts(opt.seeds ?? "1-10");
-const tiers = opt.tiers ? parseInts(opt.tiers) : undefined;
-const concurrency = Number(opt.concurrency ?? 8);
-const outDir = opt.out ?? "results/calibrate";
-mkdirSync(outDir, { recursive: true });
-
-const summaries = new Map<string, ReturnType<typeof summarize>>();
-
-for (const model of opt.models.split(",")) {
-  const spec = model.trim();
-  const adapter = openai({ model: spec, name: spec });
-  const file = `${outDir}/${spec.replace(/[^a-z0-9.-]+/gi, "_")}.jsonl`;
-  writeFileSync(file, "");
-  const t0 = Date.now();
-  const results = await runBench(adapter, {
-    seeds, tiers, concurrency,
-    onResult: (r) => {
-      appendFileSync(file, JSON.stringify(r) + "\n");
-      const mark = r.error ? "ERR " : r.pass ? "·" : "✗";
-      process.stderr.write(mark);
-    },
-  });
-  const s = summarize(adapter.name, results);
-  appendFileSync(file, JSON.stringify({ type: "summary", ...s }) + "\n");
-  summaries.set(spec, s);
-  console.error(`\n${spec}: ${s.passed}/${s.total} (${(s.rate * 100).toFixed(1)}%), ${s.errors} err, ${((Date.now() - t0) / 1000).toFixed(0)}s`);
-}
-
-// Comparison table: rows = models (sorted by overall rate), cols = tiers.
-const allTiers = [...new Set([...summaries.values()].flatMap((s) => Object.keys(s.byTier).map(Number)))].sort((a, b) => a - b);
-const pct = (x?: number) => (x === undefined ? "  - " : `${Math.round(x * 100)}`.padStart(3) + "%");
-console.log(`\n${"model".padEnd(34)} ${allTiers.map((t) => `t${t}`.padStart(5)).join("")}   all`);
-for (const [m, s] of [...summaries.entries()].sort((a, b) => b[1].rate - a[1].rate)) {
-  console.log(`${m.padEnd(34)} ${allTiers.map((t) => pct(s.byTier[t]?.rate).padStart(5)).join("")}  ${pct(s.rate)}`);
+if (import.meta.main) {
+  try { process.exitCode = await main(); } catch (error) { console.error(error instanceof Error ? error.message : "calibration failed"); process.exitCode = 2; }
 }

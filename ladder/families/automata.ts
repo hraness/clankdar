@@ -24,8 +24,8 @@ export const automata: Family = {
     const w = tier === 4 ? 13 : 17;
     const steps = tier === 4 ? 3 : 5;
     const rule = r.pick(RULES);
-    let row = Array.from({ length: w }, () => (r.chance(0.4) ? 1 : 0));
-    if (row.every((v) => v === 0)) row[r.int(w)] = 1;
+    let row: number[] = Array.from({ length: w }, () => (r.chance(0.4) ? 1 : 0));
+    if (!row.some(Boolean)) row[r.int(w)] = 1;
     const start = row.join("");
     for (let i = 0; i < steps; i++) row = step(row, rule);
     return {

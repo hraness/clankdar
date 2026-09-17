@@ -5,9 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="theme-color" content="#f8f7f4">
     <title>The ladder — Clankdar</title>
-    <meta name="description" content="The Clankdar capability ladder: seeded puzzle families at graded tiers, from 'is anything there' to beyond today's frontier models — a benchmark where tier labels are earned by published calibration, not asserted.">
+    <meta name="description" content="Inspect Clankdar's twelve-model pilot: 3,000 recorded attempts, reproducible scoring, explicit exclusions, and a corrected fourteen-family benchmark suite.">
     <meta property="og:title" content="The Clankdar ladder">
-    <meta property="og:description" content="Seeded puzzle families at graded tiers — a capability floor you can set, and a ceiling today's models can't reach.">
+    <meta property="og:description" content="The first pilot, the flaws it exposed, and the corrected suite. Real records, not invented capability tiers.">
+    <meta property="og:image" content="https://clankdar.com/icon.png">
     <meta property="og:type" content="website">
     <meta property="og:url" content="https://clankdar.com/benchmark/">
     <meta name="twitter:card" content="summary">
@@ -24,6 +25,7 @@
     <link rel="stylesheet" href="/footer.css">
   </head>
   <body>
+    <a class="skip-link" href="#main">Skip to content</a>
     <div class="page">
       <header class="masthead hraness-material-chrome">
         <a class="wordmark" href="/" aria-label="Clankdar home"><svg class="mark" aria-hidden="true" viewBox="0 0 24 24"><rect x="1.5" y="1.5" width="6" height="6" rx="1.5"/><rect x="9" y="1.5" width="6" height="6" rx="1.5"/><rect x="16.5" y="1.5" width="6" height="6" rx="1.5"/><rect x="1.5" y="9" width="6" height="6" rx="1.5"/><rect class="mark-accent" x="9" y="9" width="6" height="6" rx="1.5"/><rect x="16.5" y="9" width="6" height="6" rx="1.5"/><rect x="1.5" y="16.5" width="6" height="6" rx="1.5"/><rect x="9" y="16.5" width="6" height="6" rx="1.5"/><rect x="16.5" y="16.5" width="6" height="6" rx="1.5"/></svg>clankdar</a>
@@ -39,60 +41,60 @@
           </div>
         </div></div>
       </header>
-      <main class="doc">
+      <main class="doc" id="main">
         <header class="doc-head">
+          <p class="eyebrow">A benchmark, not a badge of trust</p>
           <h1 id="title">The ladder.</h1>
-          <p class="doc-lede">Clankdar's puzzle mode doubles as a capability benchmark. Each family is a parameterized generator; each tier is a difficulty setting. A model's level is the highest tier it clears — measured, not claimed.</p>
+          <p class="doc-lede">Fourteen families. Seven parameter tiers. One question: under these conditions, what can a model actually solve?</p>
         </header>
+        <nav class="contents" aria-label="Contents"><a href="#pilot-results">The pilot</a><a href="#findings">What we learned</a><a href="#tiers">The corrected suite</a><a href="#method">Method</a><a href="#run">Run it</a></nav>
 
-        <section class="doc-section" aria-labelledby="tiers-title">
-          <h2 id="tiers-title">Seven rungs, floor to ceiling.</h2>
-          <p>Tier 0 is the floor — it asks only whether anything is home. Each tier above maps to a class of model capability. Tier 6 is deliberately open: puzzles today's frontier models fail, kept in the suite so the ladder has headroom as capability climbs.</p>
-          <table class="ladder-table">
-            <thead>
-              <tr><th scope="col">Tier</th><th scope="col">Reads as</th><th scope="col">Families in the v1 suite</th></tr>
-            </thead>
-            <tbody>
-              <tr><td class="tier">0</td><td>floor — is anything there</td><td>echo/transform text, one-step arithmetic</td></tr>
-              <tr><td class="tier">1</td><td>weak chatbots, tiny models</td><td>multi-step arithmetic, string surgery</td></tr>
-              <tr><td class="tier">2</td><td>small local models</td><td>nested arithmetic, sequence completion, Caesar ciphers, anagrams</td></tr>
-              <tr><td class="tier">3</td><td>mid-tier assistants</td><td>4×4 sudoku, shortest path, 3-person knights and knaves, register-VM traces, weighted ordering</td></tr>
-              <tr><td class="tier">4</td><td>strong general models</td><td>6×6 sudoku, cryptarithms, 4-person knights and knaves, cellular automata</td></tr>
-              <tr><td class="tier">5</td><td>frontier</td><td>9×9 sudoku, harder cryptarithms, multi-step automata, hidden-function induction, grid transforms</td></tr>
-              <tr><td class="tier">6+</td><td>beyond today's models</td><td>harder hidden functions, composed grid transforms</td></tr>
-            </tbody>
-          </table>
-          <p class="note">Fourteen families span the seven tiers in v1. Labels are design intent until a published calibration run verifies them.</p>
+        <section class="doc-section" id="pilot-results" aria-labelledby="results-title">
+          <h2 id="results-title">Pilot 0: test the test.</h2>
+          <p>Recorded September 17, 2026 through Vercel AI Gateway: twelve requested model aliases, 25 family/tier cells, seeds 1–10. That is 3,000 attempts: 2,999 model responses and one provider error. One user prompt per instance, no tools; requested temperature 0 and a 4,096-token completion budget.</p>
+          <div class="callout"><strong>Legacy pilot. Corrected scoring. Not a certification.</strong><p>These saved replies were rescored with <code>{{SCORER_VERSION}}</code>. They are <em>not</em> a run against the corrected v2 generators. The original run did not record exact provider-resolved model versions, finish reasons, negotiated settings, or usage. See the <a href="/benchmark/pilot-v0/manifest.json">manifest and limitations</a>.</p></div>
+          {{PILOT_RESULTS}}
+          <p><b>Strict</b> means the whole response satisfies the declared answer format and matches. <b>Final block</b> extracts a final line, fenced block, or trailing grid, then compares exactly. It is a formatting diagnostic—not a second leaderboard and not an estimate of “real intelligence.”</p>
+          <p class="note">Provider errors are shown separately and excluded from valid-response denominators. The nominal 95% Wilson intervals describe observed proportions; pooled tasks are heterogeneous and only ten seeds were sampled per cell. No model is certified to clear a tier.</p>
+          <p>Four legacy families are excluded uniformly from the screened table: <code>gridpath</code>, <code>sequence</code>, <code>hiddenfn</code>, and <code>gridxf</code>. This removes six cells, or 60 instances per model. Full legacy-suite scores, per-cell counts, exclusions, and original-to-corrected verdict changes remain in the <a href="/benchmark/pilot-v0/report.json" download>machine-readable report</a>.</p>
         </section>
 
-        <section class="doc-section" aria-labelledby="method-title">
-          <h2 id="method-title">How a tier is earned.</h2>
+        <section class="doc-section" id="findings" aria-labelledby="findings-title">
+          <h2 id="findings-title">What the first clanks taught us.</h2>
           <ul class="doc-list">
-            <li><b>Seeded instances.</b> Every cell is a fixed set of seeds per family at a tier. Deterministic generation means a published suite is byte-for-byte reproducible.</li>
-            <li><b>Fixed prompt, exact match.</b> One prompt template per family; answers are normalized to a canonical form and compared exactly. No partial credit, no judge model.</li>
-            <li><b>Pass@1 reported.</b> A model clears a tier at ≥90% pass@1 across the cell's instances. Pass@3 is collected as diagnostic, never as the headline.</li>
-            <li><b>Calibration, not intuition.</b> A tier's label is only verified once a published run shows the claimed class of models clearing it and the class below failing it. Until then, labels are hypotheses.</li>
-            <li><b>Freshness over memorization.</b> Parameterized generation makes public puzzle text a poor training target; benchmark seeds are public and versioned, while admission seeds stay secret.</li>
+            <li><b>Formatting is part of the contract, not the whole capability story.</b> Some models often explain a solution before giving a correct final answer. We expose that gap without awarding a strict pass.</li>
+            <li><b>The scorer needs tests, too.</b> The original normalizer erased minus signs and boundaries. A suffix-based diagnostic could match “14” to “4.” Typed comparison and answer-independent extraction now replace both.</li>
+            <li><b>A hard-looking puzzle can be trivial.</b> The old shortest-path family always had a ten-move route. It was removed from the screened pilot; v2 requires real detours and tests answer diversity.</li>
+            <li><b>Ambiguity is not difficulty.</b> Legacy sequence and induction prompts left the hypothesis class open. The geometric sequence branch also displayed one fewer term. V2 states finite rule grammars and checks agreement on the query before emitting an induction puzzle.</li>
+            <li><b>Names do not calibrate rungs.</b> We removed “small,” “frontier,” and “beyond today’s models” as asserted tier labels. Fresh held-out runs must establish difficulty, variance, and useful thresholds.</li>
           </ul>
         </section>
 
-        <section class="doc-section" aria-labelledby="results-title">
-          <h2 id="results-title">Results.</h2>
-          <p>No calibration run is published yet. Each run writes one JSONL row per attempted instance — model, family, tier, seed, prompt, expected and actual answer, normalized verdict, latency — and closes with a summary record of pass rates per tier and per family:</p>
-          <pre class="code"><code>{"adapter":"openai:gpt-x","family":"sudoku","tier":4,"seed":17,
- "prompt":"…","expected":"…","response":"…","pass":true,"latencyMs":2311}
-{"type":"summary","adapter":"openai:gpt-x","total":320,"passed":271,"rate":0.85,
- "byTier":{"4":{"n":64,"passed":58,"rate":0.91}, …}, "byFamily":{ … }}</code></pre>
-          <p class="note">Deterministic seeds make every published row reproducible: regenerate the suite, replay the prompts, check the verdicts.</p>
+        <section class="doc-section" id="tiers" aria-labelledby="tiers-title">
+          <h2 id="tiers-title">The corrected suite.</h2>
+          <p><code>{{SUITE_VERSION}}</code> changes prompts and generation where the audit found flaws. It is deliberately versioned apart from the pilot. Numeric tiers are settings—not evidence that difficulty is monotone or that a tier defeats current models.</p>
+          {{TIERS}}
+          <p class="note">These are small, synthetic, programmatically solvable tasks. Grid transforms are not ARC-AGI, and tool-assisted agents must be evaluated separately from one-response model calls. There is no demonstrated “unsolvable frontier” in this suite.</p>
         </section>
 
-        <section class="doc-section" aria-labelledby="run-title">
-          <h2 id="run-title">Run it.</h2>
-          <p>The reference harness ships in this repo — fourteen seeded families, an oracle and an echo adapter for bounds checking, and an OpenAI-compatible adapter that points at any conforming endpoint:</p>
-          <pre class="code"><code>bun bench --adapter oracle --seeds 1-64 --out results/oracle.jsonl
-bun bench --adapter openai:gpt-4o-mini --tiers 0-3 --seeds 1-32
-OPENAI_BASE_URL=http://localhost:8000/v1 bun bench --adapter openai:local-model</code></pre>
-          <p class="note">Shipped and tested — <code>bun test</code> re-derives every family's answer from its own prompt text across the seed range. Protocol details live in the <a href="/docs/">docs</a>.</p>
+        <section class="doc-section" id="method" aria-labelledby="method-title">
+          <h2 id="method-title">Earn the measurement.</h2>
+          <ol class="doc-list">
+            <li><b>Freeze the question.</b> Record the suite version, prompt/answer hash, seed set, and exact source revision. Never compare different suites as if they were the same run.</li>
+            <li><b>Fix the conditions.</b> Use one response per instance. Record the requested model, endpoint, actual accepted parameters, finish reason, token usage where supplied, and latency. Do not mix tool-assisted and unaided runs.</li>
+            <li><b>Keep errors visible.</b> A provider failure is not a wrong answer. A token-limit truncation is a budget outcome, not a silently accepted partial response. Report coverage with pass rates.</li>
+            <li><b>Preserve evidence.</b> New runs create exclusive files, never truncate previous results. Report readers reject duplicate instances, incomplete runs, and incompatible coverage.</li>
+            <li><b>Use fresh seeds and uncertainty.</b> Compare the same held-out instances across models, inspect every family/tier cell, and predeclare any threshold. Ten successes out of ten still has a Wilson lower bound near 72%, not proof of 90% reliability.</li>
+          </ol>
+          <p>Public seeds make prompts reproducible, not contamination-proof. Published rule sets can be memorized or solved with code. A challenge response never establishes who—or which model—produced it.</p>
+        </section>
+
+        <section class="doc-section" id="run" aria-labelledby="run-title">
+          <h2 id="run-title">Bring your own clank.</h2>
+          <pre class="code"><code>bun bench --adapter oracle --seeds 1-10 --out results/oracle-first.jsonl
+bun bench --adapter openai:gpt-4o-mini --tiers 0-3 --seeds 101-110
+bun report site/benchmark/pilot-v0 --exclude gridpath,gridxf,hiddenfn,sequence</code></pre>
+          <p>The model command is a <b>dry run by default</b>. Inspect its manifest, configure a credential privately, then opt in with <code>--execute --max-requests N</code>. The request limit includes parameter negotiation; token limits are separate and neither is a guaranteed dollar cap. See the <a href="/docs/#quickstart">quickstart and budget controls</a>.</p>
         </section>
       </main>
       <div class="project-footer">

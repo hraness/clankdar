@@ -3,21 +3,32 @@ import { fileURLToPath } from "node:url";
 import { dirname, resolve } from "node:path";
 import { createHash } from "node:crypto";
 import { supportFooter } from "./support-footer.ts";
+import { renderChallenge, renderPilot, renderTiers } from "./content.ts";
+import { verifyPilot } from "../bench/pilot.ts";
+import { SUITE_VERSION, SCORER_VERSION } from "../ladder/mod.ts";
 const root = import.meta.dir;
 const output = resolve(root, "dist");
 const kit = dirname(fileURLToPath(import.meta.resolve("@hraness/design-kit/paper-theme.css")));
 const pages = ["index.html", "docs/index.html", "benchmark/index.html"];
+const pilot = verifyPilot(resolve(root, "benchmark/pilot-v0"));
+const substitutions: Record<string, string> = {
+  "{{CHALLENGE}}": renderChallenge(), "{{TIERS}}": renderTiers(), "{{PILOT_RESULTS}}": renderPilot(pilot),
+  "{{SUITE_VERSION}}": SUITE_VERSION, "{{SCORER_VERSION}}": SCORER_VERSION,
+};
 await rm(output, { recursive: true, force: true });
 await mkdir(resolve(output, "design"), { recursive: true });
 for (const name of ["styles.css", "icon.png", "apple-icon.png", "robots.txt", "sitemap.xml", "llms.txt"]) await cp(resolve(root, name), resolve(output, name));
 const footerMarker = "<!-- hraness-site-footer -->";
 for (const page of pages) {
-  const html = await readFile(resolve(root, page), "utf8");
+  let html = await readFile(resolve(root, page), "utf8");
   if (html.split(footerMarker).length !== 2) throw new Error(`Expected one shared footer slot in ${page}.`);
+  for (const [marker, content] of Object.entries(substitutions)) html = html.replaceAll(marker, content);
+  if (/\{\{[A-Z_]+\}\}/.test(html)) throw new Error(`Unresolved content slot in ${page}`);
   const target = resolve(output, page);
   await mkdir(dirname(target), { recursive: true });
   await writeFile(target, html.replace(footerMarker, supportFooter()));
 }
+await cp(resolve(root, "benchmark/pilot-v0"), resolve(output, "benchmark/pilot-v0"), { recursive: true });
 await cp(fileURLToPath(import.meta.resolve("@hraness/site-footer/stylex.css")), resolve(output, "footer.css"));
 const files = ["paper-theme.css", "product-marketing-preset.css", "lantern-material.css", "appearance-menu.css", "fonts.css"];
 for (const name of files) await cp(resolve(kit, name), resolve(output, "design", name));

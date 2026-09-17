@@ -28,29 +28,15 @@ export const gridpath: Family = {
   generate(tier, seed) {
     const r = rng(seed);
     const w = 6, h = 6;
-    for (let attempt = 0; attempt < 200; attempt++) {
-      const grid: Grid = Array.from({ length: h }, () => Array<string>(w).fill("."));
-      // Carve a guaranteed monotone path first, then scatter obstacles off it.
-      const path = new Set<string>(["0,0"]);
-      let x = 0, y = 0;
-      while (x !== w - 1 || y !== h - 1) {
-        if (x < w - 1 && (y === h - 1 || r.chance(0.55))) x++;
-        else y++;
-        path.add(`${x},${y}`);
-      }
-      let placed = 0;
-      const target = r.intBetween(7, 10);
-      while (placed < target) {
-        const ox = r.int(w), oy = r.int(h);
-        if (!path.has(`${ox},${oy}`) && grid[oy][ox] !== "#") {
-          grid[oy][ox] = "#";
-          placed++;
-        }
-      }
+    for (let attempt = 0; attempt < 5000; attempt++) {
+      // Scatter walls without carving a monotone path, which fixes every answer at ten.
+      const grid: Grid = Array.from({ length: h }, () => Array.from({ length: w }, () => r.chance(0.35) ? "#" : "."));
+      grid[0][0] = ".";
+      grid[h - 1][w - 1] = ".";
       const shortest = bfs(grid, w, h);
       if (shortest < 0) continue;
       // Require the path to be interesting: strictly longer than Manhattan.
-      if (shortest === w - 1 + h - 1 && r.chance(0.7)) continue;
+      if (shortest <= w - 1 + h - 1) continue;
       grid[0][0] = "S";
       grid[h - 1][w - 1] = "G";
       const drawn = grid.map((row) => row.join("")).join("\n");

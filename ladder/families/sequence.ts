@@ -14,7 +14,7 @@ export const sequence: Family = {
       for (let i = 0; i < 6; i++) terms.push(a + d * i);
     } else if (kind === 1) {
       const a = r.intBetween(1, 5), ratio = r.pick([2, 3]);
-      for (let i = 0; i < 5; i++) terms.push(a * ratio ** i);
+      for (let i = 0; i < 6; i++) terms.push(a * ratio ** i);
     } else if (kind === 2) {
       let a = r.intBetween(1, 6), b = r.intBetween(2, 8);
       terms.push(a, b);
@@ -28,7 +28,7 @@ export const sequence: Family = {
       family: this.name,
       tier,
       seed,
-      prompt: `What is the next number in this sequence? ${shown}, ? Reply with only the number.`,
+      prompt: `What is the next number in this sequence? ${shown}, ? The rule is one of: a constant difference; a constant integer ratio of 2 or 3; each term is the sum of the previous two; or n*n + c for n starting at 1 and a constant c. Reply with only the number.`,
       answer: String(terms[terms.length - 1]),
     };
   },

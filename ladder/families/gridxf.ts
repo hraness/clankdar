@@ -1,7 +1,7 @@
 import type { Family } from "../family.ts";
 import { rng, type Rng } from "../rng.ts";
 
-type Grid = number[][];
+export type Grid = number[][];
 
 function randGrid(r: Rng, w: number, h: number, colors: number, density: number): Grid {
   return Array.from({ length: h }, () =>
@@ -40,10 +40,18 @@ function recolor(a: number, b: number) {
 }
 
 const render = (g: Grid) => g.map((row) => row.join(" ")).join("\n");
+const NAMES = ["rot90", "rot180", "flipH", "flipV", "transpose", "gravity", "crop"];
+
+export function gridCandidates(tier: number): ((grid: Grid) => Grid)[] {
+  const chains = tier === 5 ? NAMES.map((name) => [name]) : NAMES.flatMap((a) => NAMES.filter((b) => b !== a).map((b) => [a, b]));
+  return [false, true].flatMap((swap) => chains.map((chain) => (grid: Grid) => chain.reduce((g, name) => OPS[name](g), swap ? recolor(1, 2)(grid) : grid)));
+}
+
+export const transformGrid = (name: string, grid: Grid): Grid => OPS[name](grid);
 
 /**
- * Tiers 5-6: ARC-style grid transforms. Two example input/output pairs
- * demonstrate the rule; the subject applies it to a fresh grid. Tier 6
+ * Tiers 5-6: bounded grid transforms. At least two input/output pairs
+ * disambiguate the query within the stated rule grammar. Tier 6
  * composes two transforms.
  */
 export const gridxf: Family = {
@@ -52,8 +60,7 @@ export const gridxf: Family = {
   generate(tier, seed) {
     const r = rng(seed);
     const colors = 4;
-    const names = ["rot90", "rot180", "flipH", "flipV", "transpose", "gravity", "crop"];
-    const picked = r.shuffle(names.slice()).slice(0, tier === 6 ? 2 : 1);
+    const picked = r.shuffle(NAMES.slice()).slice(0, tier === 6 ? 2 : 1);
     const swap = r.chance(0.3) ? recolor(1, 2) : null;
     const apply = (g: Grid) => {
       let out = g;
@@ -65,13 +72,20 @@ export const gridxf: Family = {
     const density = 0.45;
     const train = [randGrid(r, w, h, colors, density), randGrid(r, w, h, colors, density)];
     const testGrid = randGrid(r, w, h, colors, density);
+    let remaining = gridCandidates(tier).filter((rule) => train.every((g) => render(rule(g)) === render(apply(g))));
+    while (new Set(remaining.map((rule) => render(rule(testGrid)))).size > 1 && train.length < 12) {
+      const example = randGrid(r, w, h, colors, density);
+      train.push(example);
+      remaining = remaining.filter((rule) => render(rule(example)) === render(apply(example)));
+    }
+    if (!remaining.length || new Set(remaining.map((rule) => render(rule(testGrid)))).size !== 1) throw new Error("gridxf: ambiguous query");
     const pairs = train.map((g, i) => `Example ${i + 1} input:\n${render(g)}\nExample ${i + 1} output:\n${render(apply(g))}`).join("\n\n");
     const answer = render(apply(testGrid));
     return {
       family: this.name,
       tier,
       seed,
-      prompt: `A hidden spatial rule transforms each grid (digits are colors, 0 is empty). Two examples:\n\n${pairs}\n\nApply the same rule to this input:\n${render(testGrid)}\n\nReply with only the output grid: digits separated by spaces, one row per line.`,
+      prompt: `A hidden spatial rule transforms each grid (digits are colors, 0 is empty). First, optionally swap colors 1 and 2. Then apply ${tier === 5 ? "one operation" : "two different operations in order"} from: rotate clockwise 90 degrees; rotate 180 degrees; reverse row order; reverse column order; transpose; gravity (move nonzero cells down within each column, preserving order); crop to the bounding rectangle of nonzero cells (all empty becomes a single 0). Examples:\n\n${pairs}\n\nApply the same rule to this input:\n${render(testGrid)}\n\nReply with only the output grid: digits separated by spaces, one row per line.`,
       answer,
     };
   },

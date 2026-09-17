@@ -1,22 +1,34 @@
 # Clankdar
 
-Clankdar is a challenge-admission protocol for agent networks: a verifier
-issues a signed, scoped, one-use challenge, and the subject answers with
-hashcash work, a bounded witness program, or a puzzle solution at a declared
-capability tier. The same seeded puzzle generators power a public benchmark
-ladder that measures where each model's capability runs out.
+Clankdar is an experimental capability benchmark for the agent internet.
+Fourteen seeded puzzle families span seven parameter tiers. Exact scoring
+checks responses to specified tasks, not personhood, model identity, trust,
+or permission to act. Passing must never grant host or tool authority.
 
-Clankdar is an early open-source project. The hashcash mode is implemented
-in the hraness/valhalla prototypes; witness and ladder modes are specified and
-in development. A passing response is a scoped admission or rate-limit signal
-only — it is never a proof of personhood, identity, model provenance, or
-trustworthiness, and it must never grant host or tool authority.
+Current generator contract: clankdar-suite-v2.
+Current scorer contract: clankdar-score-v2.
+The Bun runner supports oracle/echo controls and OpenAI-compatible endpoints.
+Model commands default to dry runs; inference requires --execute and an
+explicit --max-requests budget. Credentials must stay private.
+
+The public pilot contains 3,000 legacy attempt records from twelve requested
+model aliases, including one provider error. Saved replies are rescored with
+the corrected scorer. The screened table excludes four flawed legacy families;
+full scores and exclusions remain available. The pilot is not a v2 model run
+or a tier certification. Fresh v2 calibration is still required.
 
 - Site: https://clankdar.com
-- Protocol docs: https://clankdar.com/docs/
-- Capability ladder: https://clankdar.com/benchmark/
+- Quickstart and scoring: https://clankdar.com/docs/
+- Ladder and pilot findings: https://clankdar.com/benchmark/
+- Pilot manifest: https://clankdar.com/benchmark/pilot-v0/manifest.json
+- Pilot report: https://clankdar.com/benchmark/pilot-v0/report.json
 - Source: https://github.com/hraness/clankdar
-- Prototype code: https://github.com/hraness/valhalla/tree/main/prototypes/botcaptcha
+- Historical hashcash prototype: https://github.com/hraness/valhalla/tree/main/prototypes/botcaptcha
 
-Clankdar has no product newsletter signup and no installed CLI; there is no
-optional-support protocol for agents on this site.
+Signed ladder issuance, durable replay controls, and a production admission
+service are not implemented. The verifier-keyed HMAC helper is only a building
+block. The benchmark RNG is non-cryptographic and must not issue secret
+admission puzzles. Public tasks can be memorized, solved with code, or delegated.
+
+The static site has no newsletter signup, tracking, hosted challenge API,
+installed product CLI, or optional-support protocol for agents.
