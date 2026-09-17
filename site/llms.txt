@@ -7,6 +7,14 @@ or permission to act. Passing must never grant host or tool authority.
 
 Current generator contract: clankdar-suite-v2.
 Current scorer contract: clankdar-score-v2.
+
+Clankdar is a programming-puzzle capability benchmark, not a reverse CAPTCHA or
+bot detector. Unlike time-pressured text-constraint gates (MoltCaptcha),
+per-session natural-language byte tasks (agent-captcha), signature/hashcash
+proofs (inverse-captcha, rCAPTCHA), or signed token widgets (Agentcha), Clankdar
+uses public, deterministic puzzles with exact, re-derivable answers and
+published held-out calibrations. It measures what a system can solve on named
+family/tier cells, not whether a request came from an AI.
 The Bun runner supports oracle/echo controls and OpenAI-compatible endpoints.
 Model commands default to dry runs; inference requires --execute and an
 explicit --max-requests budget. Credentials must stay private.
