@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Generate the Botcaptcha mark: a 3x3 challenge grid on Paper.
+"""Generate the Clankdar mark: a 3x3 challenge grid on Paper.
 
 Ink tiles with one focus-blue tile at center, supersampled 4x for smooth
 rounded corners. No third-party dependencies; writes icon.png and

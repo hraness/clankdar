@@ -56,12 +56,12 @@ describe("bench harness", () => {
 
   test("openai adapter without a key reports a captured error", async () => {
     const prev = process.env.OPENAI_API_KEY;
-    const prevB = process.env.BOTCAPTCHA_API_KEY;
+    const prevB = process.env.CLANKDAR_API_KEY;
     delete process.env.OPENAI_API_KEY;
-    delete process.env.BOTCAPTCHA_API_KEY;
+    delete process.env.CLANKDAR_API_KEY;
     const results = await runBench(adapterByName("openai:test-model"), { families: ["echo"], seeds: [1] });
     if (prev !== undefined) process.env.OPENAI_API_KEY = prev;
-    if (prevB !== undefined) process.env.BOTCAPTCHA_API_KEY = prevB;
+    if (prevB !== undefined) process.env.CLANKDAR_API_KEY = prevB;
     expect(results[0].error).toMatch(/no API key/);
   });
 });

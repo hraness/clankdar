@@ -1,6 +1,6 @@
 #!/usr/bin/env bun
 /**
- * Botcaptcha bench runner.
+ * Clankdar bench runner.
  *
  *   bun bench --adapter oracle --seeds 1-20
  *   bun bench --adapter openai:gpt-4o-mini --seeds 1-10 --tiers 0-3 --out results/gpt-4o-mini.jsonl

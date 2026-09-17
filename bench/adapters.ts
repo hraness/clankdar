@@ -24,8 +24,8 @@ export function openai(opts: {
   /** Display name for results; defaults to `openai:<model>`. */
   name?: string;
 }): Adapter {
-  const baseUrl = (opts.baseUrl ?? process.env.BOTCAPTCHA_BASE_URL ?? process.env.OPENAI_BASE_URL ?? "https://api.openai.com/v1").replace(/\/$/, "");
-  const apiKey = opts.apiKey ?? process.env.BOTCAPTCHA_API_KEY ?? process.env.OPENAI_API_KEY;
+  const baseUrl = (opts.baseUrl ?? process.env.CLANKDAR_BASE_URL ?? process.env.OPENAI_BASE_URL ?? "https://api.openai.com/v1").replace(/\/$/, "");
+  const apiKey = opts.apiKey ?? process.env.CLANKDAR_API_KEY ?? process.env.OPENAI_API_KEY;
   const name = opts.name ?? `openai:${opts.model}`;
   // Reasoning families reject `temperature` and `max_tokens`; negotiate the
   // accepted parameter shape once, on the first 400, and reuse it.
@@ -43,7 +43,7 @@ export function openai(opts: {
   return {
     name,
     async solve(inst: Instance): Promise<string> {
-      if (!apiKey) throw new Error("openai adapter: no API key (set OPENAI_API_KEY or BOTCAPTCHA_API_KEY)");
+      if (!apiKey) throw new Error("openai adapter: no API key (set OPENAI_API_KEY or CLANKDAR_API_KEY)");
       for (let attempt = 0; attempt < 3; attempt++) {
         const res = await fetch(`${baseUrl}/chat/completions`, {
           method: "POST",

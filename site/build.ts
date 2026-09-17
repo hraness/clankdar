@@ -29,4 +29,4 @@ const result = await Bun.build({ entrypoints: [resolve(root, "appearance.ts")], 
 if (!result.success) throw new AggregateError(result.logs, "Appearance bundle failed");
 const pkg = JSON.parse(await readFile(resolve(kit, "../package.json"), "utf8"));
 await writeFile(resolve(output, "design/source.json"), JSON.stringify({ package: pkg.name, version: pkg.version, files: Object.fromEntries(await Promise.all(files.map(async name => [name, createHash("sha256").update(await readFile(resolve(output, "design", name))).digest("hex")]))) }, null, 2));
-console.log(`Built Botcaptcha (${pages.length} pages) with ${pkg.name}@${pkg.version}.`);
+console.log(`Built Clankdar (${pages.length} pages) with ${pkg.name}@${pkg.version}.`);

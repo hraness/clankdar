@@ -3,7 +3,7 @@
  * Calibration driver: run several models over the same suite slice and print a
  * per-tier pass-rate table for comparison.
  *
- *   BOTCAPTCHA_BASE_URL=… bun bench/calibrate.ts \
+ *   CLANKDAR_BASE_URL=… bun bench/calibrate.ts \
  *     --models openai/gpt-4o-mini,google/gemini-2.5-flash-lite --seeds 1-10
  *
  * Writes results/calibrate/<safe-model-name>.jsonl (one row per instance, plus a

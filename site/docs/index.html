@@ -4,14 +4,14 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="theme-color" content="#f8f7f4">
-    <title>Protocol — Botcaptcha</title>
-    <meta name="description" content="The Botcaptcha protocol: signed, scoped, one-use challenges with hashcash, witness, and ladder modes — wire format, verification steps, binding rules, and the security model.">
-    <meta property="og:title" content="The Botcaptcha protocol">
+    <title>Protocol — Clankdar</title>
+    <meta name="description" content="The Clankdar protocol: signed, scoped, one-use challenges with hashcash, witness, and ladder modes — wire format, verification steps, binding rules, and the security model.">
+    <meta property="og:title" content="The Clankdar protocol">
     <meta property="og:description" content="Signed, scoped, one-use challenges for agent admission — hashcash, witness, and ladder modes.">
     <meta property="og:type" content="website">
-    <meta property="og:url" content="https://botcaptcha.dev/docs/">
+    <meta property="og:url" content="https://clankdar.com/docs/">
     <meta name="twitter:card" content="summary">
-    <link rel="canonical" href="https://botcaptcha.dev/docs/">
+    <link rel="canonical" href="https://clankdar.com/docs/">
     <link rel="icon" href="/icon.png" type="image/png" sizes="512x512">
     <link rel="apple-touch-icon" href="/apple-icon.png" sizes="180x180">
     <link rel="stylesheet" href="/design/fonts.css">
@@ -26,8 +26,8 @@
   <body>
     <div class="page">
       <header class="masthead hraness-material-chrome">
-        <a class="wordmark" href="/" aria-label="Botcaptcha home"><svg class="mark" aria-hidden="true" viewBox="0 0 24 24"><rect x="1.5" y="1.5" width="6" height="6" rx="1.5"/><rect x="9" y="1.5" width="6" height="6" rx="1.5"/><rect x="16.5" y="1.5" width="6" height="6" rx="1.5"/><rect x="1.5" y="9" width="6" height="6" rx="1.5"/><rect class="mark-accent" x="9" y="9" width="6" height="6" rx="1.5"/><rect x="16.5" y="9" width="6" height="6" rx="1.5"/><rect x="1.5" y="16.5" width="6" height="6" rx="1.5"/><rect x="9" y="16.5" width="6" height="6" rx="1.5"/><rect x="16.5" y="16.5" width="6" height="6" rx="1.5"/></svg>botcaptcha</a>
-        <div class="header-actions"><nav class="site-nav" aria-label="Site"><a href="/docs/" aria-current="page">Docs</a><a href="/benchmark/">Benchmark</a></nav><a class="source-link" href="https://github.com/hraness/botcaptcha">GitHub <svg aria-hidden="true" viewBox="0 0 16 16"><path d="M4 12 12 4M4 4h8v8"/></svg></a>
+        <a class="wordmark" href="/" aria-label="Clankdar home"><svg class="mark" aria-hidden="true" viewBox="0 0 24 24"><rect x="1.5" y="1.5" width="6" height="6" rx="1.5"/><rect x="9" y="1.5" width="6" height="6" rx="1.5"/><rect x="16.5" y="1.5" width="6" height="6" rx="1.5"/><rect x="1.5" y="9" width="6" height="6" rx="1.5"/><rect class="mark-accent" x="9" y="9" width="6" height="6" rx="1.5"/><rect x="16.5" y="9" width="6" height="6" rx="1.5"/><rect x="1.5" y="16.5" width="6" height="6" rx="1.5"/><rect x="9" y="16.5" width="6" height="6" rx="1.5"/><rect x="16.5" y="16.5" width="6" height="6" rx="1.5"/></svg>clankdar</a>
+        <div class="header-actions"><nav class="site-nav" aria-label="Site"><a href="/docs/" aria-current="page">Docs</a><a href="/benchmark/">Benchmark</a></nav><a class="source-link" href="https://github.com/hraness/clankdar">GitHub <svg aria-hidden="true" viewBox="0 0 16 16"><path d="M4 12 12 4M4 4h8v8"/></svg></a>
         <div class="hraness-design-theme-toggle" data-hraness-appearance-menu data-presentation="menu" data-ready="false">
           <button type="button" class="hraness-design-theme-toggle__trigger" aria-label="Appearance: System" aria-haspopup="menu" aria-expanded="false" aria-controls="appearance-menu"><span data-current-appearance-icon="system" aria-hidden="true">◐</span></button>
           <div class="hraness-design-theme-toggle__popover" hidden>
@@ -42,7 +42,7 @@
       <main class="doc">
         <header class="doc-head">
           <h1 id="title">Protocol.</h1>
-          <p class="doc-lede">Botcaptcha is challenge admission: a verifier signs a fresh, scoped challenge to a subject key, and the response must demonstrate a bounded proof before admission. It is transport-neutral, one-use, and deliberately narrow in what it can prove.</p>
+          <p class="doc-lede">Clankdar is challenge admission: a verifier signs a fresh, scoped challenge to a subject key, and the response must demonstrate a bounded proof before admission. It is transport-neutral, one-use, and deliberately narrow in what it can prove.</p>
         </header>
 
         <nav class="contents" aria-label="Contents">
@@ -138,11 +138,11 @@ verify(challenge, response)   → H(domain ‖ challenge_id ‖ normalize(answer
         <section class="doc-section" id="source" aria-labelledby="source-title">
           <h2 id="source-title">Source.</h2>
           <ul class="doc-list">
-            <li><a href="https://github.com/hraness/botcaptcha/tree/main/ladder">ladder/</a> — the reference puzzle suite: fourteen seeded families across tiers 0–6, plus answer normalization and commitment hashing, in TypeScript.</li>
-            <li><a href="https://github.com/hraness/botcaptcha/tree/main/bench">bench/</a> — the benchmark harness: adapters, JSONL results, per-tier and per-family pass rates.</li>
+            <li><a href="https://github.com/hraness/clankdar/tree/main/ladder">ladder/</a> — the reference puzzle suite: fourteen seeded families across tiers 0–6, plus answer normalization and commitment hashing, in TypeScript.</li>
+            <li><a href="https://github.com/hraness/clankdar/tree/main/bench">bench/</a> — the benchmark harness: adapters, JSONL results, per-tier and per-family pass rates.</li>
             <li><a href="https://github.com/hraness/valhalla/tree/main/prototypes/botcaptcha">prototypes/botcaptcha</a> — signed challenge + hashcash + one-use replay guard, in Rust.</li>
             <li><a href="https://github.com/hraness/valhalla/tree/main/prototypes/witness">prototypes/witness</a> — the bounded witness VM and work receipt.</li>
-            <li><a href="https://github.com/hraness/valhalla/blob/main/kb/plans/valhalla-botcaptcha-ledger-games.md">Design plan</a> — the full proposal: receipts, anti-grinding rules, evidence tiers, and what Botcaptcha must never become.</li>
+            <li><a href="https://github.com/hraness/valhalla/blob/main/kb/plans/valhalla-botcaptcha-ledger-games.md">Design plan</a> — the full proposal: receipts, anti-grinding rules, evidence tiers, and what Clankdar must never become.</li>
           </ul>
         </section>
       </main>

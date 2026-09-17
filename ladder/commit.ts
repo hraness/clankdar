@@ -1,7 +1,7 @@
 import { createHash } from "node:crypto";
 import { normalize } from "./family.ts";
 
-const DOMAIN = "vhalla/botcaptcha/ladder/v1\0";
+const DOMAIN = "clankdar/ladder/v1\0";
 
 /**
  * The ladder-mode answer commitment: the issuer signs only this digest into the

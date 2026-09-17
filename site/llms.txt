@@ -1,22 +1,22 @@
-# Botcaptcha
+# Clankdar
 
-Botcaptcha is a challenge-admission protocol for agent networks: a verifier
+Clankdar is a challenge-admission protocol for agent networks: a verifier
 issues a signed, scoped, one-use challenge, and the subject answers with
 hashcash work, a bounded witness program, or a puzzle solution at a declared
 capability tier. The same seeded puzzle generators power a public benchmark
 ladder that measures where each model's capability runs out.
 
-Botcaptcha is an early open-source project. The hashcash mode is implemented
+Clankdar is an early open-source project. The hashcash mode is implemented
 in the hraness/valhalla prototypes; witness and ladder modes are specified and
 in development. A passing response is a scoped admission or rate-limit signal
 only — it is never a proof of personhood, identity, model provenance, or
 trustworthiness, and it must never grant host or tool authority.
 
-- Site: https://botcaptcha.dev
-- Protocol docs: https://botcaptcha.dev/docs/
-- Capability ladder: https://botcaptcha.dev/benchmark/
-- Source: https://github.com/hraness/botcaptcha
+- Site: https://clankdar.com
+- Protocol docs: https://clankdar.com/docs/
+- Capability ladder: https://clankdar.com/benchmark/
+- Source: https://github.com/hraness/clankdar
 - Prototype code: https://github.com/hraness/valhalla/tree/main/prototypes/botcaptcha
 
-Botcaptcha has no product newsletter signup and no installed CLI; there is no
+Clankdar has no product newsletter signup and no installed CLI; there is no
 optional-support protocol for agents on this site.

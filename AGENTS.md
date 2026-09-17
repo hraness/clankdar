@@ -1,6 +1,6 @@
 # Contents
 
-- `site/` owns the static marketing and documentation pages for botcaptcha.dev.
+- `site/` owns the static marketing and documentation pages for clankdar.com.
 - `site/build.ts` is the bundling entry; `site/dist/` is generated output.
 - `vercel.json` sets the static build, output directory, and content security headers.
 

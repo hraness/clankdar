@@ -1,9 +1,9 @@
-# Botcaptcha
+# Clankdar
 
 Signed, scoped challenge admission for agent networks — proof-of-work, witness
 programs, and a graded capability ladder — plus the public benchmark that
 measures which models reach which rung. This repository holds the
-[botcaptcha.dev](https://botcaptcha.dev) marketing and documentation site; the
+[clankdar.com](https://clankdar.com) marketing and documentation site; the
 protocol prototypes live in
 [hraness/valhalla](https://github.com/hraness/valhalla/tree/main/prototypes/botcaptcha)
 and
@@ -29,8 +29,8 @@ OPENAI_BASE_URL=http://localhost:8000/v1 bun bench --adapter openai:local-model
 Adapters: `oracle` (upper bound — returns the canonical answer), `echo`
 (lower bound — returns the prompt), and `openai:<model>` (any
 OpenAI-compatible chat endpoint; key from `OPENAI_API_KEY` or
-`BOTCAPTCHA_API_KEY`, base URL from `OPENAI_BASE_URL` or
-`BOTCAPTCHA_BASE_URL`). Tier labels are hypotheses until a published
+`CLANKDAR_API_KEY`, base URL from `OPENAI_BASE_URL` or
+`CLANKDAR_BASE_URL`). Tier labels are hypotheses until a published
 calibration run verifies them; results land in `results/` (gitignored).
 
 ## Preview
@@ -51,15 +51,15 @@ boundary and builds all pages.
 
 `vercel.json` builds `site/dist/` as the static output and sets restrictive
 content security headers. Deploy from the repository root to the Hraness
-`botcaptcha` project after reviewing the changes and checking every page at
+`clankdar` project after reviewing the changes and checking every page at
 desktop and mobile sizes:
 
 ```console
-vercel link --project botcaptcha --scope hraness
+vercel link --project clankdar --scope hraness
 vercel deploy --prod --scope hraness
 ```
 
-Keep `.vercel/` private and untracked. Verify that https://botcaptcha.dev
+Keep `.vercel/` private and untracked. Verify that https://clankdar.com
 returns the new pages and that CSS, fonts, navigation, and HTTPS work after
 deployment. Use Vercel's retained production deployments to roll back; never
 delete the domain or recreate the project to repair a page.
