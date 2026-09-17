@@ -51,6 +51,7 @@
         <nav class="contents" aria-label="Contents">
           <a href="#quickstart">Quickstart</a>
           <a href="#scoring">Scoring</a>
+          <a href="#profiles">Profiles</a>
           <a href="#artifacts">Run artifacts</a>
           <a href="#exchange">Admission design</a>
           <a href="#modes">Modes</a>
@@ -100,6 +101,14 @@ result.pass;
 result.finalAnswerMatch;</code></pre>
           <p>The final-answer diagnostic extracts a final line or block <em>without looking at the expected answer</em>, then applies the same typed comparison. It never changes <code>pass</code>. It is not substring matching, a judge-model opinion, or proof that the model understood the task.</p>
           <p>Rule-induction tasks declare a finite hypothesis class and add examples until all surviving rules agree on the query. That is uniqueness <em>within the stated grammar</em>, not a claim that finite examples determine an arbitrary function.</p>
+        </section>
+
+        <section class="doc-section" id="profiles" aria-labelledby="profiles-title">
+          <h2 id="profiles-title">Ask for the capability you need.</h2>
+          <p>The v2 profile contract partitions all 25 cells exactly once: <b>transform fidelity</b>, <b>symbolic execution</b>, <b>constraint solving</b>, and <b>rule induction</b>. A profile score pools only its declared cells. It does not change the underlying prompts, verdicts, or family/tier results.</p>
+          <p>For evaluation, predeclare the suite hash, profile and cells, seed policy, response and tool conditions, minimum sample size, threshold, and treatment of provider errors. Prefer a lower confidence bound when a decision depends on reliability. Do not choose a threshold after seeing the candidate's answers.</p>
+          <div class="callout"><strong>Profiles describe evidence; they do not grant authority.</strong><p>A service with a hard constraint-solving requirement should evaluate that profile directly instead of averaging it with easier transformations. Passing still does not establish model identity, non-delegation, safety, or permission to call tools.</p></div>
+          <p>The executable profile definitions and partition checks live in <code>bench/profiles.ts</code>. Current observed results are on the <a href="/benchmark/#profiles">benchmark page</a>.</p>
         </section>
 
         <section class="doc-section" id="artifacts" aria-labelledby="artifacts-title">
