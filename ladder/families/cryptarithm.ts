@@ -1,5 +1,5 @@
 import type { Family } from "../family.ts";
-import { rng } from "../rng.ts";
+import { rng, mixSeed } from "../rng.ts";
 
 /** Column-wise alphametic solver: counts solutions to w1 + w2 = w3 up to cap. */
 function countSolutions(w1: string, w2: string, w3: string, cap: number): number {
@@ -40,23 +40,17 @@ function countSolutions(w1: string, w2: string, w3: string, cap: number): number
   return walk(0, 0);
 }
 
-/**
- * Tiers 4-5: alphametic addition. Built from a digit assignment so the equation
- * holds by construction, then brute-forced for uniqueness.
- */
-export const cryptarithm: Family = {
-  name: "cryptarithm",
-  tiers: [4, 5],
-  generate(tier, seed) {
-    const r = rng(seed);
-    const L = "ABCDEFGH";
-    for (let attempt = 0; attempt < 10_000; attempt++) {
-      const k = tier === 4 ? 5 : r.pick([6, 7]);
+function build(tier: number, seed: number) {
+  const r = rng(seed);
+  const L = "ABCDEFGHIJ";
+  for (let attempt = 0; attempt < 10_000; attempt++) {
+      const k = tier === 4 ? 5 : tier === 5 ? r.pick([6, 7]) : r.pick([8, 9, 10]);
       const letters = L.slice(0, k).split("");
       const digits = r.shuffle([0, 1, 2, 3, 4, 5, 6, 7, 8, 9]).slice(0, k);
       const map = new Map(letters.map((l, i) => [l, digits[i]]));
       const value = (w: string) => [...w].reduce((v, c) => v * 10 + map.get(c)!, 0);
-      const len1 = r.pick([2, 3]), len2 = r.pick([2, 3]);
+      const len1 = tier === 6 ? r.pick([3, 4]) : r.pick([2, 3]);
+      const len2 = tier === 6 ? r.pick([3, 4]) : r.pick([2, 3]);
       const pickLetters = (len: number) =>
         Array.from({ length: len }, () => r.pick(letters)).join("");
       const w1 = pickLetters(len1), w2 = pickLetters(len2);
@@ -70,15 +64,31 @@ export const cryptarithm: Family = {
       if (map.get(w3[0]) === 0) continue;
       if (countSolutions(w1, w2, w3, 2) !== 1) continue;
       return {
-        family: this.name,
+        family: "cryptarithm" as const,
         tier,
         seed,
         prompt: `Each letter stands for a distinct digit 0-9 and no word starts with 0. Solve the addition ${w1} + ${w2} = ${w3}. What number does ${w3} equal? Reply with only the digits.`,
         answer: sumDigits,
       };
-    }
-    throw new Error(`cryptarithm: no unique puzzle for seed ${seed} tier ${tier}`);
-  },
+  }
+  throw new Error(`cryptarithm: no unique puzzle for seed ${seed} tier ${tier}`);
+}
+
+/**
+ * Tiers 4-5: alphametic addition. Built from a digit assignment so the equation
+ * holds by construction, then brute-forced for uniqueness.
+ */
+export const cryptarithm: Family = {
+  name: "cryptarithm",
+  tiers: [4, 5],
+  generate: build,
+};
+
+/** Frontier pool: tier 6 uses 8-10 distinct letters and longer addends. */
+export const cryptarithmDeep: Family = {
+  name: "cryptarithm",
+  tiers: [6],
+  generate: (tier, seed) => ({ ...build(tier, mixSeed(`cryptarithm:t${tier}`, seed)), seed }),
 };
 
 /** First satisfying letter→digit mapping for w1 + w2 = w3, or null. */

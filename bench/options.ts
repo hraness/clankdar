@@ -2,7 +2,7 @@ import { AdapterError } from "./adapter.ts";
 import type { BenchOptions } from "./run.ts";
 
 export const commonOptions = {
-  seeds: { type: "string" }, tiers: { type: "string" }, families: { type: "string" },
+  seeds: { type: "string" }, tiers: { type: "string" }, families: { type: "string" }, suite: { type: "string" },
   concurrency: { type: "string" }, "timeout-ms": { type: "string" }, "max-tokens": { type: "string" },
   "max-requests": { type: "string" }, out: { type: "string" },
   execute: { type: "boolean" }, "dry-run": { type: "boolean" }, help: { type: "boolean", short: "h" },
@@ -34,10 +34,13 @@ export function parseInts(spec: string, max = 0xffffffff): number[] {
 
 export function selection(values: Record<string, string | boolean | undefined>): BenchOptions {
   const text = (key: string, fallback: string) => typeof values[key] === "string" ? values[key] as string : fallback;
+  const suite = text("suite", "v2");
+  if (suite !== "v2" && suite !== "frontier" && suite !== "agent") throw new Error("--suite must be v2, frontier, or agent");
   return {
     seeds: parseInts(text("seeds", "1-10")),
-    tiers: values.tiers === undefined ? undefined : parseInts(text("tiers", ""), 6),
+    tiers: values.tiers === undefined ? undefined : parseInts(text("tiers", ""), 8),
     families: values.families === undefined ? undefined : list(text("families", "")),
+    suite,
     concurrency: integer(text("concurrency", "4"), 64),
     timeoutMs: integer(text("timeout-ms", "120000"), 600_000),
   };

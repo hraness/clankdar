@@ -1,4 +1,5 @@
 import { AdapterError, type Adapter, type SolveResponse } from "./adapter.ts";
+import { runEpisode, type TranscriptEntry } from "./agent.ts";
 
 /** Privileged test control: the runner supplies the canonical answer without calling a model. */
 export const oracle: Adapter = {
@@ -37,8 +38,7 @@ async function boundedBody(response: Response): Promise<string> {
   return Buffer.concat(chunks).toString("utf8");
 }
 
-/** OpenAI-compatible chat-completions adapter with bounded transport and recorded parameters. */
-export function openai(opts: {
+interface ChatOpts {
   model: string;
   baseUrl?: string;
   apiKey?: string;
@@ -49,7 +49,17 @@ export function openai(opts: {
   name?: string;
   fetch?: (url: string, init: RequestInit) => Promise<Response>;
   beforeRequest?: () => void;
-}): Adapter {
+}
+
+type ChatMessage = { role: string; content: string };
+
+/** Shared bounded OpenAI-compatible transport with parameter negotiation. */
+function chatTransport(opts: ChatOpts): {
+  name: string;
+  config: Readonly<Record<string, string | number | null>>;
+  validate(): void;
+  chat(messages: ChatMessage[], context?: { signal: AbortSignal }): Promise<SolveResponse>;
+} {
   if (!/^[a-z0-9][a-z0-9_./:-]{0,199}$/i.test(opts.model)) throw new Error("invalid model ID");
   let url: URL;
   try { url = new URL(opts.baseUrl ?? process.env.CLANKDAR_BASE_URL ?? process.env.OPENAI_BASE_URL ?? "https://api.openai.com/v1"); } catch { throw new Error("invalid endpoint URL"); }
@@ -73,7 +83,7 @@ export function openai(opts: {
     name,
     config: { model: opts.model, endpoint: baseUrl, maxTokens, temperature, timeoutMs },
     validate,
-    async solve(puzzle, context): Promise<SolveResponse> {
+    async chat(messages, context): Promise<SolveResponse> {
       validate();
       const signal = context ? AbortSignal.any([context.signal, AbortSignal.timeout(timeoutMs)]) : AbortSignal.timeout(timeoutMs);
       for (let attempt = 0; attempt < 3; attempt++) {
@@ -81,7 +91,7 @@ export function openai(opts: {
         const body = {
           model: opts.model, [tokField]: maxTokens,
           ...(sendTemp ? { temperature } : {}),
-          messages: [{ role: "user", content: puzzle.prompt }],
+          messages,
         };
         opts.beforeRequest?.();
         const res = await (opts.fetch ?? fetch)(`${baseUrl}/chat/completions`, {
@@ -122,9 +132,76 @@ export function openai(opts: {
   };
 }
 
+/** OpenAI-compatible chat-completions adapter with bounded transport and recorded parameters. */
+export function openai(opts: ChatOpts): Adapter {
+  const t = chatTransport(opts);
+  return {
+    name: t.name,
+    config: t.config,
+    validate: t.validate,
+    solve: (puzzle, context) => t.chat([{ role: "user", content: puzzle.prompt }], context),
+  };
+}
+
+export const AGENT_PROTOCOL_VERSION = "clankdar-agent-protocol-v1";
+
+/**
+ * Bounded tool-agent adapter: the model plays the TOOL/FINAL protocol against
+ * the runner-side deterministic environment. Usage and parameters aggregate
+ * across turns; the full transcript is returned for replay verification.
+ */
+export function openaiAgent(opts: ChatOpts): Adapter {
+  const t = chatTransport({ ...opts, name: opts.name ?? `agent:openai:${opts.model}` });
+  return {
+    name: t.name,
+    config: { ...t.config, protocol: AGENT_PROTOCOL_VERSION },
+    validate: t.validate,
+    solve: (puzzle, context) => t.chat([{ role: "user", content: puzzle.prompt }], context),
+    async agent(puzzle, env, context): Promise<SolveResponse> {
+      t.validate();
+      const usage = { inputTokens: 0, outputTokens: 0, reasoningTokens: 0, costUsd: 0 };
+      let requests = 0;
+      let parameters: SolveResponse["parameters"];
+      let resolvedModel: string | undefined;
+      let finishReason: string | undefined;
+      const step = async (history: { role: "user" | "assistant"; text: string }[], ctx?: { signal: AbortSignal }) => {
+        const r = await t.chat(history.map((h) => ({ role: h.role, content: h.text })), ctx ?? context);
+        requests += r.parameters?.requests ?? 1;
+        parameters = r.parameters ? { ...r.parameters, requests } : parameters;
+        resolvedModel = r.resolvedModel ?? resolvedModel;
+        finishReason = r.finishReason ?? finishReason;
+        usage.inputTokens += r.usage?.inputTokens ?? 0;
+        usage.outputTokens += r.usage?.outputTokens ?? 0;
+        usage.reasoningTokens += r.usage?.reasoningTokens ?? 0;
+        usage.costUsd += r.usage?.costUsd ?? 0;
+        return r.text;
+      };
+      const episode = await runEpisode(
+        step,
+        { family: puzzle.family, tier: puzzle.tier, seed: -1, prompt: puzzle.prompt, answer: "", env },
+        undefined,
+        context,
+      );
+      const lastModel = [...episode.transcript].reverse().find((e) => e.role === "model");
+      return {
+        text: episode.finalAnswer ?? lastModel?.text ?? "",
+        finishReason,
+        resolvedModel,
+        usage: { ...usage, costUsd: usage.costUsd || undefined },
+        parameters,
+        transcript: episode.transcript as TranscriptEntry[],
+        toolCalls: episode.calls,
+        turns: episode.turns,
+        episodeError: episode.error,
+      };
+    },
+  };
+}
+
 export function adapterByName(spec: string): Adapter {
   if (spec === "oracle") return oracle;
   if (spec === "echo") return echoAdapter;
+  if (spec.startsWith("agent:openai:")) return openaiAgent({ model: spec.slice(13) });
   if (spec.startsWith("openai:")) return openai({ model: spec.slice(7) });
-  throw new Error(`unknown adapter "${spec}" (expected oracle | echo | openai:<model>)`);
+  throw new Error(`unknown adapter "${spec}" (expected oracle | echo | openai:<model> | agent:openai:<model>)`);
 }

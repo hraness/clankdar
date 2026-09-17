@@ -2,6 +2,12 @@ export const SCORER_VERSION = "clankdar-score-v2";
 export const MAX_ANSWER_LENGTH = 65_536;
 export type AnswerFormat = "text" | "integer" | "grid" | "bits" | "tokens" | "assignments";
 
+/** Deterministic server-side tools for agent-mode instances; never sent to model adapters. */
+export interface ToolEnv {
+  tools: Record<string, (args: unknown) => string>;
+  budget?: { maxCalls?: number; maxTurns?: number; maxOutput?: number };
+}
+
 /** A single generated puzzle instance. `answer` is the canonical truth. */
 export interface Instance {
   family: string;
@@ -9,6 +15,7 @@ export interface Instance {
   seed: number;
   prompt: string;
   answer: string;
+  env?: ToolEnv;
 }
 
 export type Puzzle = Readonly<Pick<Instance, "family" | "tier" | "prompt">>;
@@ -22,9 +29,9 @@ export interface Family {
 }
 
 export function answerFormat(family: string): AnswerFormat {
-  if (["arithmetic", "sequence", "gridpath", "registervm", "cryptarithm"].includes(family)) return "integer";
+  if (["arithmetic", "sequence", "gridpath", "registervm", "cryptarithm", "relayvm"].includes(family)) return "integer";
   if (["sudoku", "gridxf"].includes(family)) return "grid";
-  if (family === "automata") return "bits";
+  if (["automata", "sat", "satcheck", "bitmatrix", "bitcircuit", "autostep"].includes(family)) return "bits";
   if (family === "ordering") return "tokens";
   if (family === "knights") return "assignments";
   return "text";

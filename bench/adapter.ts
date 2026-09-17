@@ -1,4 +1,4 @@
-import type { Puzzle } from "../ladder/family.ts";
+import type { Puzzle, ToolEnv } from "../ladder/family.ts";
 
 export interface SolveResponse {
   text: string;
@@ -7,6 +7,11 @@ export interface SolveResponse {
   resolvedModel?: string;
   usage?: { inputTokens?: number; outputTokens?: number; reasoningTokens?: number; costUsd?: number };
   parameters?: { tokenField: string; maxTokens: number; temperature: number | null; requests: number };
+  /** Agent episodes: recorded tool/model transcript, call counts, and stop reason. */
+  transcript?: unknown;
+  toolCalls?: number;
+  turns?: number;
+  episodeError?: string;
 }
 
 /** Anything that can attempt a public puzzle: a model, a bot, a human UI, or a test double. */
@@ -15,6 +20,12 @@ export interface Adapter {
   readonly config?: Readonly<Record<string, string | number | null>>;
   validate?(): void;
   solve(puzzle: Puzzle, context?: { signal: AbortSignal }): Promise<string | SolveResponse>;
+  /**
+   * Optional bounded tool-agent episode. The runner supplies the instance's
+   * server-side tool environment; the model sees only text. Present only on
+   * adapters built for the agent suite.
+   */
+  agent?(puzzle: Puzzle, env: ToolEnv | undefined, context?: { signal: AbortSignal }): Promise<SolveResponse>;
 }
 
 export interface BenchResult {

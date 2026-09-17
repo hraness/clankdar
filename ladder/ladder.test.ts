@@ -1,8 +1,10 @@
 import { describe, expect, test } from "bun:test";
-import { FAMILIES, normalize, answersMatch, answerFormat, type Instance } from "./mod.ts";
+import { FAMILIES, FRONTIER_FAMILIES, AGENT_FAMILIES, normalize, answersMatch, answerFormat, type Instance } from "./mod.ts";
 import { _internals as crypt } from "./families/cryptarithm.ts";
 import { integerCandidates, wordCandidates } from "./families/hiddenfn.ts";
 import { gridCandidates, transformGrid } from "./families/gridxf.ts";
+import { countSolutions as satSolutions } from "./families/sat.ts";
+import { _internals as circuits } from "./families/bitcircuit.ts";
 
 const SEEDS = [...Array.from({ length: 33 }, (_, i) => i), 42, 112, 9001, 0xffffffff];
 
@@ -50,6 +52,24 @@ function caStep(row: number[], rule: number): number[] {
 }
 
 // --- per-family validators: true iff `answer` is the right answer to `prompt`
+
+/** Shared by `sat` and `satcheck`: re-solve the unique-solution formula. */
+const validateSat = ({ prompt, answer }: Instance): boolean => {
+  const head = prompt.match(/x0 through x(\d+)/);
+  if (!head) return false;
+  const n = Number(head[1]) + 1;
+  if (answer.length !== n || !/^[01]+$/.test(answer)) return false;
+  const clauses = [...prompt.matchAll(/\(([^)]+)\)/g)].map((m) =>
+    m[1].split(" ∨ ").map((t) => {
+      const v = Number(t.replace("¬", "").slice(1));
+      return (v << 1) | (t.startsWith("¬") ? 0 : 1);
+    }) as [number, number, number],
+  );
+  if (!clauses.length || clauses.some((c) => c.length !== 3)) return false;
+  if (satSolutions(clauses, n) !== 1) return false;
+  const mask = [...answer].reduce((m, c, i) => m | (Number(c) << i), 0);
+  return clauses.every((c) => c.some((lit) => ((mask >> (lit >> 1)) & 1) === (lit & 1)));
+};
 
 const validators: Record<string, (inst: Instance) => boolean> = {
   echo: ({ prompt, answer }) => {
@@ -159,19 +179,19 @@ const validators: Record<string, (inst: Instance) => boolean> = {
     const n = (answer.match(/=/g) ?? []).length;
     const C = (l: string) => l.charCodeAt(0) - 65;
     const parseClaim = (t: string): ((a: boolean[]) => boolean) | null => {
-      const simple = t.match(/^([A-D]) is a (knight|knave)$/);
+      const simple = t.match(/^([A-F]) is a (knight|knave)$/);
       if (simple) return (a) => a[C(simple[1])] === (simple[2] === "knight");
-      const both = t.match(/^([A-D]) and ([A-D]) are both (knight|knave)s$/);
+      const both = t.match(/^([A-F]) and ([A-F]) are both (knight|knave)s$/);
       if (both) return (a) => a[C(both[1])] === (both[3] === "knight") && a[C(both[2])] === (both[3] === "knight");
-      const either = t.match(/^at least one of ([A-D]) and ([A-D]) is a (knight|knave)$/);
+      const either = t.match(/^at least one of ([A-F]) and ([A-F]) is a (knight|knave)$/);
       if (either) return (a) => a[C(either[1])] === (either[3] === "knight") || a[C(either[2])] === (either[3] === "knight");
-      const one = t.match(/^exactly one of ([A-D]) and ([A-D]) is a knight$/);
+      const one = t.match(/^exactly one of ([A-F]) and ([A-F]) is a knight$/);
       if (one) return (a) => a[C(one[1])] !== a[C(one[2])];
       const count = t.match(/^exactly (\d+) of us tell the truth$/);
       if (count) return (a) => a.filter(Boolean).length === Number(count[1]);
       return null;
     };
-    const stmts = [...prompt.matchAll(/([A-D]) says: "([^"]+)"/g)]
+    const stmts = [...prompt.matchAll(/([A-F]) says: "([^"]+)"/g)]
       .map((m) => ({ s: C(m[1]), pred: parseClaim(m[2].replace(/\.$/, "")) }));
     if (stmts.some((s) => !s.pred)) return false;
     const sols: number[] = [];
@@ -185,8 +205,10 @@ const validators: Record<string, (inst: Instance) => boolean> = {
   },
 
   registervm: ({ prompt, answer }) => {
+    const names = prompt.match(/has registers ([r\d, ]+) starting at 0/);
     const listing = prompt.split("\n\n")[1];
-    const regs = [0, 0, 0];
+    if (!names || !listing) return false;
+    const regs = new Array<number>(names[1].split(",").length).fill(0);
     for (const line of listing.split("\n")) {
       const m = line.match(/^\d+: (\w+) r(\d) (r\d|\d+)$/);
       if (!m) return false;
@@ -267,6 +289,73 @@ const validators: Record<string, (inst: Instance) => boolean> = {
     const remaining = gridCandidates(tier).filter((rule) => pairs.every(([input, output]) => JSON.stringify(rule(input)) === JSON.stringify(output)));
     return remaining.length > 0 && remaining.every((rule) => JSON.stringify(rule(parse(query[1]))) === JSON.stringify(parse(answer)));
   },
+
+  sat: validateSat,
+  satcheck: validateSat,
+
+  relayvm: ({ prompt, answer }) => {
+    const m = prompt.match(/Program:\n\n([\s\S]+?)\n\nIf line (\d+) were changed to "([^"]+)"/);
+    if (!m) return false;
+    const lines = m[1].split("\n").map((l) => l.match(/^\d+: (.+)$/)?.[1]);
+    if (lines.some((l) => l === undefined) || Number(m[2]) >= lines.length) return false;
+    lines[Number(m[2])] = m[3];
+    const regs = new Array<number>(4).fill(0);
+    for (const line of lines) {
+      const om = line!.match(/^(mov|add|sub|mul|xor|shl) r(\d) (r\d|\d+)$/);
+      if (!om || Number(om[2]) > 3) return false;
+      const i = Number(om[2]);
+      const vb = om[3].startsWith("r") ? (Number(om[3][1]) < 4 ? regs[Number(om[3][1])] : NaN) : Number(om[3]);
+      if (!Number.isFinite(vb)) return false;
+      regs[i] = (om[1] === "mov" ? vb : om[1] === "add" ? regs[i] + vb : om[1] === "sub" ? regs[i] - vb : om[1] === "mul" ? regs[i] * vb : om[1] === "xor" ? regs[i] ^ vb : regs[i] << vb) & 0xffff;
+    }
+    return regs[0] === Number(answer);
+  },
+
+  autostep: ({ prompt, answer }) => {
+    const m = prompt.match(/rule (\d+)\. Starting row is:\n\n([01]+)\n\nAfter exactly (\d+) steps/);
+    if (!m) return false;
+    let row = [...m[2]].map(Number);
+    for (let i = 0; i < Number(m[3]); i++) row = caStep(row, Number(m[1]));
+    return row.join("") === answer;
+  },
+
+  bitcircuit: ({ prompt, answer }) => {
+    const head = prompt.match(/w0\.\.w(\d+) = ([01]+)/);
+    const listing = prompt.split("\n\n")[1];
+    if (!head || !listing) return false;
+    const inputs = head[2].split("").map(Number);
+    const gates = listing.split("\n").map((line, i) => {
+      const m = line.match(/^w(\d+) = (AND|OR|XOR|NAND|NOT|BUF)\(w(\d+)(?:, w(\d+))?\)$/);
+      if (!m || Number(m[1]) !== inputs.length + i) return null;
+      return { op: m[2].toLowerCase() as "and" | "or" | "xor" | "nand" | "not" | "buf", a: Number(m[3]), b: m[4] === undefined ? undefined : Number(m[4]) };
+    });
+    if (gates.some((g) => g === null)) return false;
+    const out = circuits.evaluate(inputs, gates as { op: "and" | "or" | "xor" | "nand" | "not" | "buf"; a: number; b?: number }[]);
+    return out.slice(-8).join("") === answer;
+  },
+
+  bitmatrix: ({ prompt, answer }) => {
+    const listing = prompt.split("\n\n")[1];
+    if (!listing || !/^[01]+$/.test(answer)) return false;
+    const n = answer.length;
+    const rows = listing.split("\n").map((line) => {
+      const m = line.match(/^((?:x\d+(?: ⊕ )?)+) = ([01])$/);
+      if (!m) return null;
+      const mask = [...m[1].matchAll(/x(\d+)/g)].reduce((acc, x) => acc | (1 << Number(x[1])), 0);
+      return { mask, rhs: Number(m[2]) };
+    });
+    if (rows.some((r) => r === null)) return false;
+    let sols = 0;
+    let last = -1;
+    for (let mask = 0; mask < 1 << n && sols < 2; mask++) {
+      if (rows.every((r) => {
+        let parity = 0;
+        for (let bits = r!.mask & mask; bits; bits &= bits - 1) parity ^= 1;
+        return parity === r!.rhs;
+      })) { sols++; last = mask; }
+    }
+    return sols === 1 && last === [...answer].reduce((m, c, i) => m | (Number(c) << i), 0);
+  },
 };
 
 // --- suite ------------------------------------------------------------------
@@ -285,7 +374,7 @@ describe("ladder suite", () => {
     expect(grid).toEqual([[1, 2, 0], [3, 0, 4]]);
   });
 
-  for (const family of FAMILIES) {
+  for (const family of [...FAMILIES, ...FRONTIER_FAMILIES, ...AGENT_FAMILIES]) {
     for (const tier of family.tiers) {
       test(`${family.name} t${tier}: deterministic and answers verify`, () => {
         for (const seed of SEEDS) {
@@ -306,7 +395,7 @@ describe("ladder suite", () => {
   }
 
   test("distinct seeds produce distinct prompts", () => {
-    for (const family of FAMILIES) {
+    for (const family of [...FAMILIES, ...FRONTIER_FAMILIES, ...AGENT_FAMILIES]) {
       const tier = family.tiers[0];
       const prompts = new Set([1, 2, 3, 4, 5].map((s) => family.generate(tier, s).prompt));
       expect(prompts.size).toBeGreaterThan(1);
