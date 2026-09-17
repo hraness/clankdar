@@ -16,7 +16,7 @@ import { createHash } from "node:crypto";
 import { gunzipSync } from "node:zlib";
 import { parseArgs } from "node:util";
 import { answerFormat, canonicalAnswer, scoreAnswer, SCORER_VERSION } from "../ladder/family.ts";
-import { cellSupported, poolForVersion, KNOWN_SUITE_VERSIONS, FAMILIES, FRONTIER_FAMILIES } from "../ladder/mod.ts";
+import { cellSupported, poolForVersion, KNOWN_SUITE_VERSIONS, FAMILIES, FRONTIER_FAMILIES, AGENT_FAMILIES } from "../ladder/mod.ts";
 import { hashSuite } from "./run.ts";
 import { wilson } from "./stats.ts";
 import { list } from "./options.ts";
@@ -152,7 +152,7 @@ export function readRuns(dir: string): RecordedRun[] {
 
 export function buildReport(runs: RecordedRun[], excludedFamilies: string[] = []) {
   if (!runs.length || new Set(runs.map((run) => run.model)).size !== runs.length) throw new Error("empty report or duplicate model runs");
-  if (excludedFamilies.some((family) => ![...FAMILIES, ...FRONTIER_FAMILIES].some((f) => f.name === family))) throw new Error("unknown excluded family");
+  if (excludedFamilies.some((family) => ![...FAMILIES, ...FRONTIER_FAMILIES, ...AGENT_FAMILIES].some((f) => f.name === family))) throw new Error("unknown excluded family");
   const keys = runs[0].rows.map(rowKey).sort();
   const puzzles = new Map<string, [string, string]>();
   const provenance = runs[0].manifest ? "versioned" : "legacy";
