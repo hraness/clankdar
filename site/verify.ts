@@ -64,16 +64,22 @@ try {
         }
         const slug = path === "/" ? "home" : path.replaceAll("/", "");
         await page.screenshot({ path: resolve(screenshots, `${slug}-${width}-${theme}.png`), fullPage: path === "/" });
+        if (path === "/benchmark/") {
+          const table = page.locator("#pilot-results .results-table").first();
+          await expect(table.locator("tbody tr")).toHaveCount(12);
+          await table.scrollIntoViewIfNeeded();
+          await page.screenshot({ path: resolve(screenshots, `pilot-table-${width}-${theme}.png`) });
+        }
         checked++;
       }
       if (width === 1280 && theme === "light") {
         await page.goto(origin);
         const trigger = page.locator("[data-hraness-appearance-menu] > button");
-        const before = await page.locator('meta[name="theme-color"]').getAttribute("content");
+        const before = await page.locator('meta[name="theme-color"][data-hraness-design-theme-color-sync-active]').getAttribute("content");
         await trigger.click();
-        await page.locator('[data-theme-value="dark"]').click();
-        await expect(page.locator('[data-theme-value="dark"]')).toHaveAttribute("aria-checked", "true");
-        expect(await page.locator('meta[name="theme-color"]').getAttribute("content")).not.toBe(before);
+        await page.locator('[role="menuitemradio"][data-theme-value="dark"]').click();
+        await expect(page.locator('[role="menuitemradio"][data-theme-value="dark"]')).toHaveAttribute("aria-checked", "true");
+        expect(await page.locator('meta[name="theme-color"][data-hraness-design-theme-color-sync-active]').getAttribute("content")).not.toBe(before);
         await trigger.focus();
         await trigger.press("Enter");
         await expect(trigger).toHaveAttribute("aria-expanded", "true");
