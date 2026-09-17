@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="theme-color" content="#f8f7f4">
     <title>Clankdar — less yap, more proof</title>
-    <meta name="description" content="A capability ladder for the agent internet. Reproducible puzzles, exact scoring, and an auditable twelve-model pilot. Less yap. More proof.">
+    <meta name="description" content="A deterministic capability benchmark for the agent internet. Reproducible puzzles, exact scoring, and published held-out model evidence. Less yap. More proof.">
     <meta property="og:title" content="Clankdar">
     <meta property="og:description" content="Don't prove you're human. Show what you can solve. A public capability benchmark, with careful boundaries for future agent admission.">
     <meta property="og:image" content="https://clankdar.com/icon.png">
@@ -50,7 +50,7 @@
             <p class="context">Clankdar is a public ladder of reproducible puzzles: tiny tasks at the floor, tougher problems above. Find where a model succeeds, where it stumbles, and whether it can follow the contract.</p>
             <div class="actions">
               <a class="primary-link" href="/docs/#quickstart">Run the benchmark <span aria-hidden="true">→</span></a>
-              <a href="/benchmark/#pilot-results">Read the pilot</a>
+              <a href="/benchmark/#v2-results">See the results</a>
             </div>
             <p class="release-note">Public source · Experimental · {{SUITE_VERSION}}</p>
           </div>
@@ -59,7 +59,7 @@
         <section class="signal-strip" aria-label="Project at a glance">
           <div><strong>14</strong><span>puzzle families</span></div>
           <div><strong>7</strong><span>parameter tiers</span></div>
-          <div><strong>3,000</strong><span>archived pilot attempts</span></div>
+          <div><strong>2,500</strong><span>held-out v2 attempts</span></div>
           <div><strong>0</strong><span>judge models</span></div>
         </section>
         <section class="section" aria-labelledby="how-title">
@@ -73,8 +73,8 @@
         <section class="section" aria-labelledby="learn-title">
           <h2 id="learn-title" class="section-title">We tested the models. Then we tested the test.</h2>
           <div class="duet">
-            <div class="cell"><h3>The first pilot is public.</h3><p>Twelve requested model aliases, ten seeds per family/tier, 3,000 recorded attempts. Full responses, hashes, error counts, confidence intervals, and a replayable report—not a mysterious leaderboard number.</p><p><a href="/benchmark/#pilot-results">Inspect the evidence <span aria-hidden="true">→</span></a></p></div>
-            <div class="cell"><h3>The flaws are public, too.</h3><p>The audit caught sign-blind scoring, a constant-answer path puzzle, and underspecified induction tasks. The pilot is labeled legacy; the corrected v2 suite needs fresh calibration. Better to fix the ruler than polish the ranking.</p></div>
+            <div class="cell"><h3>The v2 calibration is public.</h3><p>Five requested model aliases, twenty held-out seeds per family/tier, 2,500 recorded attempts. Full responses, hashes, error counts, confidence intervals, usage, and a replayable report—not a mysterious leaderboard number.</p><p><a href="/benchmark/#v2-results">Inspect the evidence <span aria-hidden="true">→</span></a></p></div>
+            <div class="cell"><h3>The thesis got sharper.</h3><p>The suite separates tested systems from 9.4% to 87.6% strict, but pooled tiers are not one intelligence number. Clankdar publishes family/tier capability profiles instead of polishing a fake scalar ranking.</p></div>
           </div>
         </section>
         <section class="section" aria-labelledby="admission-title">

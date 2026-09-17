@@ -76,11 +76,13 @@ The screened report excludes `gridpath` (constant-answer legacy generation),
 JSON report. The exact dirty run tree, resolved provider versions, effective
 negotiated settings, finish reasons, and usage were not recorded in that pilot.
 
-This is **legacy data rescored**, not a run against the corrected generators.
-`clankdar-suite-v2` still needs fresh held-out model calibration. Numeric tiers
-are generator settings, not established model classes or an unsolved frontier.
-The small public rule sets can be memorized, solved with code, or outsourced;
-tool-assisted agents require a separately labeled evaluation.
+A held-out `clankdar-suite-v2` calibration is also published under
+`site/benchmark/v2-calibration-0/`: five requested model aliases, all 25 cells,
+seeds 101–120, 2,500 attempts, and one timeout. Strict scores span 9.4%–87.6%,
+but pooled tier scores are not monotone because tiers contain different family
+mixtures. Treat family/tier cells as capability profiles, not one intelligence
+level. The small public rule sets can be memorized, solved with code, or
+outsourced; tool-assisted agents require a separately labeled evaluation.
 
 ## Scoring and protocol boundaries
 

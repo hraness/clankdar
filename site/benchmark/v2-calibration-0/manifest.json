@@ -1,0 +1,196 @@
+{
+  "schemaVersion": 1,
+  "id": "v2-calibration-0",
+  "status": "exploratory held-out calibration; not a capability certification",
+  "collectedOn": "2026-09-17",
+  "suiteVersion": "clankdar-suite-v2",
+  "scorerVersion": "clankdar-score-v2",
+  "suiteHash": "608d81e3473fa321783e5d77a56b8cb0210a6a2493cbb3f85a68eb319b4789df",
+  "seeds": [
+    101,
+    102,
+    103,
+    104,
+    105,
+    106,
+    107,
+    108,
+    109,
+    110,
+    111,
+    112,
+    113,
+    114,
+    115,
+    116,
+    117,
+    118,
+    119,
+    120
+  ],
+  "cells": [
+    "arithmetic:t0",
+    "arithmetic:t1",
+    "arithmetic:t2",
+    "automata:t4",
+    "automata:t5",
+    "cipher:t2",
+    "cryptarithm:t4",
+    "cryptarithm:t5",
+    "echo:t0",
+    "gridpath:t3",
+    "gridxf:t5",
+    "gridxf:t6",
+    "hiddenfn:t5",
+    "hiddenfn:t6",
+    "knights:t3",
+    "knights:t4",
+    "ordering:t3",
+    "registervm:t3",
+    "registervm:t4",
+    "sequence:t2",
+    "strings:t1",
+    "strings:t2",
+    "sudoku:t3",
+    "sudoku:t4",
+    "sudoku:t5"
+  ],
+  "models": [
+    "openai/gpt-5-mini",
+    "google/gemini-2.5-pro",
+    "openai/gpt-4.1",
+    "openai/gpt-4o-mini",
+    "meta/llama-3.1-8b"
+  ],
+  "protocol": [
+    {
+      "adapter": "google/gemini-2.5-pro",
+      "config": {
+        "model": "google/gemini-2.5-pro",
+        "endpoint": "https://ai-gateway.vercel.sh/v1",
+        "maxTokens": 4096,
+        "temperature": 0,
+        "timeoutMs": 120000
+      },
+      "concurrency": 8,
+      "timeoutMs": 120000,
+      "runtime": "bun@1.3.14",
+      "source": {
+        "revision": "7a4ad524b98ff885f4163468d8a0dceca4445244",
+        "dirty": true
+      }
+    },
+    {
+      "adapter": "meta/llama-3.1-8b",
+      "config": {
+        "model": "meta/llama-3.1-8b",
+        "endpoint": "https://ai-gateway.vercel.sh/v1",
+        "maxTokens": 4096,
+        "temperature": 0,
+        "timeoutMs": 120000
+      },
+      "concurrency": 8,
+      "timeoutMs": 120000,
+      "runtime": "bun@1.3.14",
+      "source": {
+        "revision": "7a4ad524b98ff885f4163468d8a0dceca4445244",
+        "dirty": true
+      }
+    },
+    {
+      "adapter": "openai/gpt-4.1",
+      "config": {
+        "model": "openai/gpt-4.1",
+        "endpoint": "https://ai-gateway.vercel.sh/v1",
+        "maxTokens": 4096,
+        "temperature": 0,
+        "timeoutMs": 120000
+      },
+      "concurrency": 8,
+      "timeoutMs": 120000,
+      "runtime": "bun@1.3.14",
+      "source": {
+        "revision": "7a4ad524b98ff885f4163468d8a0dceca4445244",
+        "dirty": true
+      }
+    },
+    {
+      "adapter": "openai/gpt-4o-mini",
+      "config": {
+        "model": "openai/gpt-4o-mini",
+        "endpoint": "https://ai-gateway.vercel.sh/v1",
+        "maxTokens": 4096,
+        "temperature": 0,
+        "timeoutMs": 120000
+      },
+      "concurrency": 8,
+      "timeoutMs": 120000,
+      "runtime": "bun@1.3.14",
+      "source": {
+        "revision": "7a4ad524b98ff885f4163468d8a0dceca4445244",
+        "dirty": true
+      }
+    },
+    {
+      "adapter": "openai/gpt-5-mini",
+      "config": {
+        "model": "openai/gpt-5-mini",
+        "endpoint": "https://ai-gateway.vercel.sh/v1",
+        "maxTokens": 4096,
+        "temperature": 0,
+        "timeoutMs": 120000
+      },
+      "concurrency": 8,
+      "timeoutMs": 120000,
+      "runtime": "bun@1.3.14",
+      "source": {
+        "revision": "7a4ad524b98ff885f4163468d8a0dceca4445244",
+        "dirty": true
+      }
+    }
+  ],
+  "scoring": {
+    "strict": "family-aware canonical whole-response match",
+    "diagnostic": "independent final-block extraction followed by exact match",
+    "errors": "separate from wrong answers and excluded from valid-response denominators"
+  },
+  "limitations": [
+    "Twenty public seeds per family/tier is an exploratory sample, not a certification threshold.",
+    "Requested gateway aliases and provider-reported resolved model labels are not independent model attestations.",
+    "The source manifests record a dirty tree because the held-out seed exposed a bounded-search defect before calls; the archived prompts, answers, authoritative suite hash, and subsequent patch preserve exact replayability.",
+    "Tier aggregates are not a scalar capability ladder because tiers contain different puzzle families; compare family/tier cells and model profiles.",
+    "Public generators can be memorized or solved with tools. This run used one-turn, no-tool model calls and does not prove identity, trust, personhood, or safe authority."
+  ],
+  "artifacts": [
+    {
+      "file": "google_gemini-2.5-pro-962e7b87ec69.jsonl.gz",
+      "sha256": "797f322893166f4d4cb77a03c85e06dde388e8353fab0d64e8cb68b89a0f745f",
+      "bytes": 37550
+    },
+    {
+      "file": "meta_llama-3.1-8b-9c3e6009a3b5.jsonl.gz",
+      "sha256": "a90ce1321284d7b216e34567681268ef9fa977c1069a125f01b78a259b78e22b",
+      "bytes": 95110
+    },
+    {
+      "file": "openai_gpt-4.1-c8893463e7ce.jsonl.gz",
+      "sha256": "e516ab72c344611f1e1d2920b18585286857e4670acadb44ec691ec8143fc0d1",
+      "bytes": 50111
+    },
+    {
+      "file": "openai_gpt-4o-mini-94d9f0da9727.jsonl.gz",
+      "sha256": "4df07505f79567fed9b234cfbca58916d4701d02687cce54fb4460bd241c8c7b",
+      "bytes": 41552
+    },
+    {
+      "file": "openai_gpt-5-mini-020751dc92eb.jsonl.gz",
+      "sha256": "0639a29550be41edecd465a0f153817174047e52adac30480d3a58bf1f25056a",
+      "bytes": 30238
+    },
+    {
+      "file": "report.json",
+      "sha256": "96dd9934d685128312a6a5d951ee367158a8ba892700b27a0920b4bed69ba556",
+      "bytes": 116810
+    }
+  ]
+}

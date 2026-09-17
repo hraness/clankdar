@@ -50,7 +50,7 @@ export const cryptarithm: Family = {
   generate(tier, seed) {
     const r = rng(seed);
     const L = "ABCDEFGH";
-    for (let attempt = 0; attempt < 900; attempt++) {
+    for (let attempt = 0; attempt < 10_000; attempt++) {
       const k = tier === 4 ? 5 : r.pick([6, 7]);
       const letters = L.slice(0, k).split("");
       const digits = r.shuffle([0, 1, 2, 3, 4, 5, 6, 7, 8, 9]).slice(0, k);

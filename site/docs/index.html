@@ -107,9 +107,10 @@ result.finalAnswerMatch;</code></pre>
           <p>JSONL begins with a versioned run manifest, contains one result per instance, and ends with a summary. It records the suite hash, seed set, source revision and dirty flag, runtime, requested model and endpoint, accepted request parameters, usage where provided, finish reason, and latency. Streaming rows may arrive in completion order; instance identities and the suite hash do not depend on that order.</p>
           <p>New files are exclusive-create: existing evidence is never truncated. Interrupted runs remain available for diagnosis, but incomplete files are rejected by the comparison report. A model timeout or provider error keeps the puzzle identity, is reported separately, and does not become a model’s wrong answer. A token-limit truncation cannot silently pass.</p>
           <pre class="code"><code>bun report results/my-run
-bun report site/benchmark/pilot-v0 --exclude gridpath,gridxf,hiddenfn,sequence
+bun report site/benchmark/v2-calibration-0
+bun bench/archive.ts verify site/benchmark/v2-calibration-0
 bun bench/pilot.ts verify site/benchmark/pilot-v0</code></pre>
-          <p>The public <a href="/benchmark/#pilot-results">pilot</a> contains saved legacy prompts, not v2 model runs. Replaying its archive recomputes the published report; calling a model again need not reproduce the same response. The report rejects mixed versions, duplicate instances, changed prompt/answer pairs, and different model coverage.</p>
+          <p>The public <a href="/benchmark/#v2-results">v2 calibration</a> contains 2,500 saved attempts on held-out seeds 101–120. Replaying its archive verifies hashes and recomputes every published score; calling a model again need not reproduce the same response. The report rejects mixed versions, duplicate instances, changed prompt/answer pairs, and different model coverage. The earlier pilot remains available as explicitly labeled legacy evidence.</p>
         </section>
 
         <section class="doc-section" id="exchange" aria-labelledby="exchange-title">

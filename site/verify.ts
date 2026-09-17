@@ -65,10 +65,12 @@ try {
         const slug = path === "/" ? "home" : path.replaceAll("/", "");
         await page.screenshot({ path: resolve(screenshots, `${slug}-${width}-${theme}.png`), fullPage: path === "/" });
         if (path === "/benchmark/") {
-          const table = page.locator("#pilot-results .results-table").first();
-          await expect(table.locator("tbody tr")).toHaveCount(12);
-          await table.scrollIntoViewIfNeeded();
-          await page.screenshot({ path: resolve(screenshots, `pilot-table-${width}-${theme}.png`) });
+          const v2 = page.locator("#v2-results .results-table").first();
+          await expect(v2.locator("tbody tr")).toHaveCount(5);
+          await v2.scrollIntoViewIfNeeded();
+          await page.screenshot({ path: resolve(screenshots, `v2-table-${width}-${theme}.png`) });
+          const pilot = page.locator("#pilot-results .results-table").first();
+          await expect(pilot.locator("tbody tr")).toHaveCount(12);
         }
         checked++;
       }

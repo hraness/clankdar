@@ -4,7 +4,7 @@ import { _internals as crypt } from "./families/cryptarithm.ts";
 import { integerCandidates, wordCandidates } from "./families/hiddenfn.ts";
 import { gridCandidates, transformGrid } from "./families/gridxf.ts";
 
-const SEEDS = [...Array.from({ length: 33 }, (_, i) => i), 42, 9001, 0xffffffff];
+const SEEDS = [...Array.from({ length: 33 }, (_, i) => i), 42, 112, 9001, 0xffffffff];
 
 // --- shared helpers: re-derive the answer from the prompt text -------------
 
