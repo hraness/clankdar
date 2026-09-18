@@ -1,7 +1,7 @@
 # Contents
 
-- `ladder/` owns versioned deterministic benchmark generators, typed scoring, and the experimental keyed commitment helper.
-- `bench/` owns bounded adapters, CLI run artifacts, comparison reports, and pilot replay.
+- `ladder/` owns versioned deterministic benchmark generators, typed scoring, and the experimental keyed commitment helper. `FAMILIES` is the frozen published v2 pool; `FRONTIER_FAMILIES` (deeper unaided cells) and `AGENT_FAMILIES` (bounded tool-agent cells with server-side `env` tools) are separate unpublished pools.
+- `bench/` owns bounded adapters, CLI run artifacts, comparison reports, pilot replay, and `agent.ts`/`replay.ts` — the TOOL/FINAL protocol loop and deterministic transcript verifier for the agent track.
 - `site/` owns the static marketing and documentation pages for clankdar.com.
 - `site/benchmark/pilot-v0/` is the intentional public legacy-data archive; private runtime results stay in ignored `results/`.
 - `site/build.ts` is the bundling entry; `site/dist/` is generated output.
@@ -22,6 +22,8 @@
 - Keep the shared appearance menu as the final header action.
 - Keep claims honest: the benchmark is implemented; hashcash and witness are Rust prototypes in valhalla. Signed ladder admission is not implemented. Tier numbers are parameter settings, not certified model classes.
 - Preserve the distinction between the legacy pilot and the corrected v2 suite. Never silently compare changed prompts, seed semantics, or scorer versions. Publish model results only with recorded evidence, counts, exclusions, and provenance limits.
+- Keep the three tracks strictly separate: v2 and frontier are unaided single-response suites; the agent suite measures bounded tool use with recorded transcripts and must never share a leaderboard with unaided results. Agent instances carry `env` tools that are deterministic closures over generated data — never expose shell, network, secrets, or ambient filesystem.
+- Frontier and agent suite generators mix a per-(family,tier) label into the seed so same-seed answers decorrelate across families; the public seed recorded in results stays the caller's seed.
 - Never send answers or seeds to model adapters, log provider error bodies or credentials, or overwrite existing run files. Model CLI calls must remain opt-in and request-bounded.
 - Keep text case, numeric signs, token boundaries, grid dimensions, and binary leading zeroes meaningful. Final-block extraction must not use the expected answer to select a candidate.
 - The 32-bit benchmark RNG is not an admission generator. Keyed answer commitments require a verifier-secret key and do not implement signatures, subject/scope binding, expiry, or durable replay protection.

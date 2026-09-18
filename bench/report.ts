@@ -16,10 +16,18 @@ import { createHash } from "node:crypto";
 import { gunzipSync } from "node:zlib";
 import { parseArgs } from "node:util";
 import { answerFormat, canonicalAnswer, scoreAnswer, SCORER_VERSION } from "../ladder/family.ts";
-import { familyByName, SUITE_VERSION } from "../ladder/mod.ts";
+import { cellSupported, poolForVersion, KNOWN_SUITE_VERSIONS, FAMILIES, FRONTIER_FAMILIES, AGENT_FAMILIES } from "../ladder/mod.ts";
 import { hashSuite } from "./run.ts";
 import { wilson } from "./stats.ts";
 import { list } from "./options.ts";
+
+export interface TranscriptEntryRow {
+  turn: number;
+  role: "model" | "tool";
+  text: string;
+  tool?: string;
+  ok?: boolean;
+}
 
 export interface RecordedRow {
   adapter: string;
@@ -34,6 +42,14 @@ export interface RecordedRow {
   error?: string;
   truncated?: boolean;
   refused?: boolean;
+  /** Agent-track episodes: bounded replayable transcript and diagnostics. */
+  detail?: {
+    transcript?: TranscriptEntryRow[];
+    toolCalls?: number;
+    turns?: number;
+    episodeError?: string;
+    [key: string]: unknown;
+  };
 }
 
 export interface RecordedRun {
@@ -58,13 +74,15 @@ export function parseRun(text: string, file = "run.jsonl"): RecordedRun {
   const keys = new Set<string>();
   let manifest: Record<string, unknown> | null = null;
   let summary: Record<string, unknown> | null = null;
+  let pool: ReturnType<typeof poolForVersion> | undefined;
   for (const [index, line] of lines.entries()) {
     let decoded: unknown;
     try { decoded = JSON.parse(line); } catch { throw new Error(`invalid JSONL at line ${index + 1}`); }
     const row = object(decoded);
     if (row.type === "run") {
-      if (index !== 0 || row.schemaVersion !== 2 || typeof row.runId !== "string" || !row.runId || typeof row.suiteHash !== "string" || !/^[a-f0-9]{64}$/.test(row.suiteHash) || typeof row.suiteVersion !== "string" || typeof row.scorerVersion !== "string") throw new Error("invalid run manifest");
+      if (index !== 0 || row.schemaVersion !== 2 || typeof row.runId !== "string" || !row.runId || typeof row.suiteHash !== "string" || !/^[a-f0-9]{64}$/.test(row.suiteHash) || typeof row.suiteVersion !== "string" || !KNOWN_SUITE_VERSIONS.includes(row.suiteVersion) || typeof row.scorerVersion !== "string") throw new Error("invalid run manifest");
       manifest = row;
+      pool = poolForVersion(row.suiteVersion);
       continue;
     }
     if (row.type === "summary") {
@@ -79,12 +97,26 @@ export function parseRun(text: string, file = "run.jsonl"): RecordedRun {
     } else if (row.type === "result") throw new Error("versioned result requires a manifest");
     for (const field of ["adapter", "family", "prompt", "expected", "response"]) if (typeof row[field] !== "string" || (row[field] as string).length > 65_536) throw new Error(`invalid result field: ${field}`);
     if (!(row.adapter as string).length || (row.adapter as string).length > 200 || /[\x00-\x1f\x7f]/.test(row.adapter as string)) throw new Error("invalid model label");
-    if (!Number.isInteger(row.seed) || (row.seed as number) < 0 || (row.seed as number) > 0xffffffff || !Number.isInteger(row.tier) || !familyByName(row.family as string)?.tiers.includes(row.tier as number)) throw new Error("invalid instance identity");
+    if (!Number.isInteger(row.seed) || (row.seed as number) < 0 || (row.seed as number) > 0xffffffff || !Number.isInteger(row.tier) || !cellSupported(row.family as string, row.tier as number, pool)) throw new Error("invalid instance identity");
     if (typeof row.pass !== "boolean" || typeof row.latencyMs !== "number" || !Number.isFinite(row.latencyMs) || row.latencyMs < 0) throw new Error("invalid verdict or latency");
     if (row.error !== undefined && (typeof row.error !== "string" || !row.error || row.pass)) throw new Error("invalid error record");
     if (!row.error && (!(row.prompt as string).length || canonicalAnswer(row.expected, answerFormat(row.family as string)) === null)) throw new Error("missing or invalid puzzle ground truth");
     if (row.truncated !== undefined && typeof row.truncated !== "boolean") throw new Error("invalid truncation flag");
     if (row.refused !== undefined && typeof row.refused !== "boolean") throw new Error("invalid refusal flag");
+    if (row.detail !== undefined) {
+      const detail = object(row.detail);
+      if (detail.transcript !== undefined) {
+        if (!Array.isArray(detail.transcript) || detail.transcript.length > 64) throw new Error("invalid transcript");
+        for (const entry of detail.transcript) {
+          const e = object(entry);
+          if (!Number.isInteger(e.turn) || (e.turn as number) < 0 || (e.turn as number) > 64 || (e.role !== "model" && e.role !== "tool") || typeof e.text !== "string" || (e.text as string).length > 8_192) throw new Error("invalid transcript entry");
+          if (e.tool !== undefined && (typeof e.tool !== "string" || !(e.tool as string).length || (e.tool as string).length > 64)) throw new Error("invalid transcript tool");
+          if (e.ok !== undefined && typeof e.ok !== "boolean") throw new Error("invalid transcript flag");
+        }
+      }
+      for (const field of ["toolCalls", "turns"]) if (detail[field] !== undefined && (!Number.isInteger(detail[field]) || (detail[field] as number) < 0 || (detail[field] as number) > 64)) throw new Error(`invalid episode field: ${field}`);
+      if (detail.episodeError !== undefined && (typeof detail.episodeError !== "string" || (detail.episodeError as string).length > 64)) throw new Error("invalid episode error");
+    }
     const record = row as unknown as RecordedRow;
     const key = rowKey(record);
     if (keys.has(key)) throw new Error("duplicate instance in run");
@@ -94,12 +126,12 @@ export function parseRun(text: string, file = "run.jsonl"): RecordedRun {
   }
   if (!rows.length || !summary || summary.adapter !== rows[0].adapter || summary.total !== rows.length || summary.passed !== rows.filter((row) => row.pass).length || summary.errors !== rows.filter((row) => row.error).length) throw new Error("incomplete run or inconsistent summary");
   if (manifest) {
-    if (manifest.suiteVersion !== SUITE_VERSION || manifest.scorerVersion !== SCORER_VERSION) throw new Error("unsupported suite or scorer version");
+    if (!KNOWN_SUITE_VERSIONS.includes(manifest.suiteVersion as string) || manifest.scorerVersion !== SCORER_VERSION) throw new Error("unsupported suite or scorer version");
     if (manifest.instances !== rows.length || manifest.adapter !== rows[0].adapter || summary.runId !== manifest.runId || summary.suiteHash !== manifest.suiteHash || summary.scorerVersion !== manifest.scorerVersion) throw new Error("manifest coverage mismatch");
     const seeds = [...new Set(rows.map((row) => row.seed))].sort((a, b) => a - b);
     const cells = [...new Set(rows.map((row) => `${row.family}:t${row.tier}`))].sort();
     if (!Array.isArray(manifest.cells) || JSON.stringify(seeds) !== JSON.stringify(manifest.seeds) || JSON.stringify(cells) !== JSON.stringify([...manifest.cells].sort())) throw new Error("manifest selection mismatch");
-    if (manifest.suiteHash !== hashSuite(rows.map((row) => ({ family: row.family, tier: row.tier, seed: row.seed, prompt: row.prompt, answer: row.expected })))) throw new Error("suite hash does not match recorded puzzles");
+    if (manifest.suiteHash !== hashSuite(rows.map((row) => ({ family: row.family, tier: row.tier, seed: row.seed, prompt: row.prompt, answer: row.expected })), String(manifest.suiteVersion))) throw new Error("suite hash does not match recorded puzzles");
   }
   return { model: rows[0].adapter, rows, manifest, source: { file, sha256: digest(text) } };
 }
@@ -120,7 +152,7 @@ export function readRuns(dir: string): RecordedRun[] {
 
 export function buildReport(runs: RecordedRun[], excludedFamilies: string[] = []) {
   if (!runs.length || new Set(runs.map((run) => run.model)).size !== runs.length) throw new Error("empty report or duplicate model runs");
-  if (excludedFamilies.some((family) => !familyByName(family))) throw new Error("unknown excluded family");
+  if (excludedFamilies.some((family) => ![...FAMILIES, ...FRONTIER_FAMILIES, ...AGENT_FAMILIES].some((f) => f.name === family))) throw new Error("unknown excluded family");
   const keys = runs[0].rows.map(rowKey).sort();
   const puzzles = new Map<string, [string, string]>();
   const provenance = runs[0].manifest ? "versioned" : "legacy";

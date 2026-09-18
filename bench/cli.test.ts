@@ -43,6 +43,16 @@ describe("CLI and run artifacts", () => {
     expect(refused.stderr).toContain("--max-requests");
   });
 
+  test("the agent suite requires an agent-capable adapter and agent adapters refuse unaided suites", async () => {
+    expect((await cli("--suite", "agent", "--adapter", "echo", "--seeds", "1")).code).not.toBe(0);
+    expect((await cli("--adapter", "agent:openai:test-model", "--seeds", "1")).code).not.toBe(0);
+    const ok = await cli("--suite", "agent", "--adapter", "oracle", "--families", "autostep", "--tiers", "5", "--seeds", "1");
+    expect(ok.code).toBe(0);
+    const rows = ok.stdout.trim().split("\n").map((line) => JSON.parse(line));
+    expect(rows[0].protocol).toBe("clankdar-agent-protocol-v1");
+    expect(rows[0].suiteVersion).toBe("clankdar-agent-v0");
+  });
+
   test("unknown flags and malformed selections fail", async () => {
     for (const args of [["--wat"], ["--adapter", "oracle", "--concurrency", "0"], ["--adapter", "oracle", "--seeds", "2-1"], ["--adapter", "oracle", "--families", "typo"]]) {
       expect((await cli(...args)).code).not.toBe(0);

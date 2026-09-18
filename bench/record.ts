@@ -2,7 +2,8 @@ import { closeSync, mkdirSync, openSync, writeSync } from "node:fs";
 import { dirname } from "node:path";
 import { execFileSync } from "node:child_process";
 import { randomUUID } from "node:crypto";
-import { SCORER_VERSION, SUITE_VERSION } from "../ladder/mod.ts";
+import { SCORER_VERSION, AGENT_SUITE_VERSION } from "../ladder/mod.ts";
+import { AGENT_PROTOCOL_VERSION } from "./adapters.ts";
 import type { Adapter } from "./adapter.ts";
 import { prepareSuite, runBench, summarize, type BenchOptions } from "./run.ts";
 
@@ -37,8 +38,9 @@ export function runManifest(adapter: Adapter, opts: BenchOptions) {
   } catch {}
   return {
     type: "run", schemaVersion: 2, runId: opts.runId ?? randomUUID(), startedAt: new Date().toISOString(),
-    mode: "benchmark", adapter: adapter.name, suiteVersion: SUITE_VERSION, scorerVersion: SCORER_VERSION,
+    mode: "benchmark", adapter: adapter.name, suiteVersion: suite.suiteVersion, scorerVersion: SCORER_VERSION,
     suiteHash: suite.suiteHash, instances: suite.instances.length, seeds: [...opts.seeds].sort((a, b) => a - b),
+    ...(suite.suiteVersion === AGENT_SUITE_VERSION ? { protocol: AGENT_PROTOCOL_VERSION } : {}),
     cells: [...new Set(suite.instances.map((i) => `${i.family}:t${i.tier}`))],
     config: adapter.config ?? {}, concurrency: opts.concurrency ?? 4, timeoutMs: opts.timeoutMs ?? 120_000,
     source: { revision, dirty }, runtime: `bun@${Bun.version}`,

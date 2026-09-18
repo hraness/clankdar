@@ -1,13 +1,15 @@
 import { createHash, randomUUID } from "node:crypto";
 import { AdapterError, type Adapter, type BenchResult, type BenchSummary, type CellSummary } from "./adapter.ts";
 import { answerFormat, canonicalAnswer, scoreAnswer, SCORER_VERSION, MAX_ANSWER_LENGTH, type Instance } from "../ladder/family.ts";
-import { suiteCells, SUITE_VERSION } from "../ladder/mod.ts";
+import { suiteCells, suiteVersion, SUITE_VERSION, type SuiteName } from "../ladder/mod.ts";
 import { oracle } from "./adapters.ts";
 import { wilson } from "./stats.ts";
 
 export interface BenchOptions {
   families?: string[];
   tiers?: number[];
+  /** Which registered suite to draw cells from. */
+  suite?: SuiteName;
   /** Seeds to draw per (family, tier) cell. */
   seeds: number[];
   /** Max in-flight solver calls. */
@@ -17,17 +19,18 @@ export interface BenchOptions {
   onResult?: (r: BenchResult) => void;
 }
 
-export function hashSuite(instances: readonly Instance[], version = SUITE_VERSION): string {
+export function hashSuite(instances: readonly Instance[], version: string): string {
   const ordered = [...instances].sort((a, b) => a.family.localeCompare(b.family, "en") || a.tier - b.tier || a.seed - b.seed);
   return createHash("sha256").update(JSON.stringify([version, ...ordered.map((i) => [i.family, i.tier, i.seed, i.prompt, i.answer, answerFormat(i.family)])])).digest("hex");
 }
 
-export function prepareSuite(opts: BenchOptions): { instances: Instance[]; suiteHash: string } {
+export function prepareSuite(opts: BenchOptions): { instances: Instance[]; suiteHash: string; suiteVersion: string } {
   if (!opts.seeds.length || opts.seeds.length > 1000 || new Set(opts.seeds).size !== opts.seeds.length || opts.seeds.some((seed) => !Number.isInteger(seed) || seed < 0 || seed > 0xffffffff)) throw new Error("supply 1..1000 distinct uint32 seeds");
   const concurrency = opts.concurrency ?? 4;
   const timeoutMs = opts.timeoutMs ?? 120_000;
   if (!Number.isInteger(concurrency) || concurrency < 1 || concurrency > 64) throw new Error("concurrency must be an integer in 1..64");
   if (!Number.isInteger(timeoutMs) || timeoutMs < 1 || timeoutMs > 600_000) throw new Error("timeoutMs must be an integer in 1..600000");
+  const version = suiteVersion(opts.suite ?? "v2");
   const cells = suiteCells(opts);
   if (cells.length * opts.seeds.length > 10_000) throw new Error("suite exceeds 10000 instances");
   const seeds = [...opts.seeds].sort((a, b) => a - b);
@@ -35,13 +38,13 @@ export function prepareSuite(opts: BenchOptions): { instances: Instance[]; suite
   for (const instance of instances) {
     if (!instance.prompt || instance.prompt.length > 65_536 || canonicalAnswer(instance.answer, answerFormat(instance.family)) === null) throw new Error(`invalid generated instance: ${instance.family}:${instance.tier}:${instance.seed}`);
   }
-  const suiteHash = hashSuite(instances);
-  return { instances, suiteHash };
+  const suiteHash = hashSuite(instances, version);
+  return { instances, suiteHash, suiteVersion: version };
 }
 
 /** Run an adapter over a suite slice and return one result row per instance. */
 export async function runBench(adapter: Adapter, opts: BenchOptions): Promise<BenchResult[]> {
-  const { instances, suiteHash } = prepareSuite(opts);
+  const { instances, suiteHash, suiteVersion } = prepareSuite(opts);
   const runId = opts.runId ?? randomUUID();
   const results = new Array<BenchResult>(instances.length);
   const stop = new AbortController();
@@ -55,7 +58,7 @@ export async function runBench(adapter: Adapter, opts: BenchOptions): Promise<Be
       const signal = AbortSignal.any([stop.signal, controller.signal]);
       let timer: ReturnType<typeof setTimeout> | undefined;
       const result: BenchResult = {
-        type: "result", schemaVersion: 2, runId, suiteVersion: SUITE_VERSION, suiteHash, scorerVersion: SCORER_VERSION,
+        type: "result", schemaVersion: 2, runId, suiteVersion, suiteHash, scorerVersion: SCORER_VERSION,
         adapter: adapter.name, family: inst.family, tier: inst.tier, seed: inst.seed,
         prompt: inst.prompt, expected: inst.answer, response: "", pass: false, finalAnswerMatch: false, latencyMs: 0,
       };
@@ -64,7 +67,14 @@ export async function runBench(adapter: Adapter, opts: BenchOptions): Promise<Be
         const timeout = new Promise<never>((_, reject) => {
           timer = setTimeout(() => { controller.abort(); reject(new DOMException("timeout", "TimeoutError")); }, opts.timeoutMs ?? 120_000);
         });
-        const solved = await Promise.race([adapter === oracle ? Promise.resolve(inst.answer) : adapter.solve(puzzle, { signal }), timeout]);
+        // Agent-capable adapters play the TOOL/FINAL protocol against the
+        // instance's server-side env; other adapters get a single text turn.
+        const attempt = adapter === oracle
+          ? Promise.resolve(inst.answer)
+          : adapter.agent && inst.env
+            ? adapter.agent(puzzle, inst.env, { signal })
+            : adapter.solve(puzzle, { signal });
+        const solved = await Promise.race([attempt, timeout]);
         const detail = typeof solved === "string" ? { text: solved } : solved;
         if (!detail || typeof detail.text !== "string" || detail.text.length > MAX_ANSWER_LENGTH) throw new AdapterError("response_too_large");
         const { text, ...metadata } = detail;

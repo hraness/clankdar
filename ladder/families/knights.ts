@@ -1,5 +1,5 @@
 import type { Family } from "../family.ts";
-import { rng, type Rng } from "../rng.ts";
+import { rng, mixSeed, type Rng } from "../rng.ts";
 
 type Claim = { text: string; pred: (a: boolean[]) => boolean };
 
@@ -47,19 +47,13 @@ function claim(r: Rng, s: number, n: number): Claim {
   };
 }
 
-/**
- * Tiers 3-4: knights and knaves. Conjunctive and counting claims break the
- * complement symmetry of pure equivalence statements; every emitted puzzle is
- * brute-forced to have exactly one consistent assignment.
- */
-export const knights: Family = {
-  name: "knights",
-  tiers: [3, 4],
-  generate(tier, seed) {
-    const r = rng(seed);
-    const n = tier === 3 ? 3 : 4;
-    const letters = [...Array(n).keys()].map(L);
-    for (let attempt = 0; attempt < 800; attempt++) {
+const TIER_SIZE: Record<number, number> = { 3: 3, 4: 4, 5: 5, 6: 6 };
+
+function build(tier: number, seed: number) {
+  const r = rng(seed);
+  const n = TIER_SIZE[tier];
+  const letters = [...Array(n).keys()].map(L);
+  for (let attempt = 0; attempt < 4_000; attempt++) {
       const claims = [...Array(n).keys()].map((s) => claim(r, s, n));
       const sols: number[] = [];
       for (let mask = 0; mask < 1 << n; mask++) {
@@ -72,13 +66,30 @@ export const knights: Family = {
         .map((l, i) => `${l}=${mask & (1 << i) ? "knight" : "knave"}`)
         .join(" ");
       return {
-        family: this.name,
+        family: "knights" as const,
         tier,
         seed,
         prompt: `On an island, knights always tell the truth and knaves always lie. ${claims.map((c) => c.text).join(" ")} For each person, are they a knight or a knave? Reply in the form "A=knight B=knave ..." using the letters in order.`,
         answer,
       };
-    }
-    throw new Error(`knights: no unique puzzle for seed ${seed}`);
-  },
+  }
+  throw new Error(`knights: no unique puzzle for seed ${seed}`);
+}
+
+/**
+ * Tiers 3-4: knights and knaves. Conjunctive and counting claims break the
+ * complement symmetry of pure equivalence statements; every emitted puzzle is
+ * brute-forced to have exactly one consistent assignment.
+ */
+export const knights: Family = {
+  name: "knights",
+  tiers: [3, 4],
+  generate: build,
+};
+
+/** Frontier pool: tiers 5-6 with five and six islanders. */
+export const knightsDeep: Family = {
+  name: "knights",
+  tiers: [5, 6],
+  generate: (tier, seed) => ({ ...build(tier, mixSeed(`knights:t${tier}`, seed)), seed }),
 };

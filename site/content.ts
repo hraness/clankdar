@@ -34,6 +34,8 @@ function renderResults(report: CalibrationReport, base: string, caption: string,
 
 export const renderPilot = (report: CalibrationReport): string => renderResults(report, "/benchmark/pilot-v0", "Screened legacy pilot: 190 instances per model, minus provider errors. One response per instance. No tools.", [0, 1, 2, 3, 4, 5]);
 export const renderV2 = (report: CalibrationReport): string => renderResults(report, "/benchmark/v2-calibration-0", "Held-out v2 calibration: 500 instances per model, minus provider errors. One response per instance. No tools.", [0, 1, 2, 3, 4, 5, 6]);
+export const renderFrontier = (report: CalibrationReport): string => renderResults(report, "/benchmark/frontier-v0", "Held-out frontier calibration: 340 instances per model. One response per instance. No tools. Deeper tiers for eight scalable families.", [4, 5, 6, 7]) + "<p class='note'>Frontier cells use parameters beyond the v2 floor and are not comparable to v2 scores. The lower overall pass rates are intentional; the purpose is a steeper ceiling, not a fair comparison to v2.</p>";
+export const renderAgent = (report: CalibrationReport): string => renderResults(report, "/benchmark/agent-v0", "Held-out bounded tool-agent calibration: 120 episodes per model. Up to 16 tool calls, 24 turns, 4,096 output tokens. Transcripts are replayable.", [5, 6, 7]) + "<p class='note'>This is a separate track. Scores do not estimate base-model capability and are not comparable to unaided runs.</p>";
 
 export function renderProfiles(report: CalibrationReport): string {
   const results = profileReport(report);

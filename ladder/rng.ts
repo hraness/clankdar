@@ -9,6 +9,13 @@ export type Rng = {
   chance(p: number): boolean;
 };
 
+/** FNV-1a mix of a label into a seed: decorrelates streams across cells that share a seed. */
+export function mixSeed(label: string, seed: number): number {
+  let h = 0x811c9dc5;
+  for (const c of label) { h ^= c.charCodeAt(0); h = Math.imul(h, 0x01000193); }
+  return (seed ^ h) >>> 0;
+}
+
 export function rng(seed: number): Rng {
   if (!Number.isInteger(seed) || seed < 0 || seed > 0xffffffff) throw new Error("seed must be a uint32 integer");
   let state = seed;

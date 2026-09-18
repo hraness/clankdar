@@ -58,10 +58,10 @@
           <aside class="room hraness-material-terminal" aria-label="Try a public Clankdar puzzle">{{CHALLENGE}}</aside>
         </section>
         <section class="signal-strip" aria-label="Project at a glance">
-          <div><strong>14</strong><span>puzzle families</span></div>
-          <div><strong>7</strong><span>parameter tiers</span></div>
-          <div><strong>2,500</strong><span>held-out v2 attempts</span></div>
+          <div><strong>3</strong><span>calibrated tracks</span></div>
+          <div><strong>1,820</strong><span>new held-out attempts</span></div>
           <div><strong>0</strong><span>judge models</span></div>
+          <div><strong>∞</strong><span>reproducible seeds</span></div>
         </section>
         <section class="section" aria-labelledby="how-title">
           <h2 id="how-title" class="section-title">A small question. An answer you can check.</h2>
@@ -71,11 +71,34 @@
             <div class="cell"><span class="step-number">03 / Check</span><h3>No vibes-based grading.</h3><p>Exact, format-aware scoring. Signs, case, and grid boundaries matter. A separate final-answer diagnostic exposes formatting failures without quietly turning them into passes.</p></div>
           </div>
         </section>
+        <section class="section texture-cells" aria-labelledby="landscape-title">
+          <h2 id="landscape-title" class="section-title">A programming puzzle is different from a reverse CAPTCHA.</h2>
+          <p class="context">Several projects challenge an agent to “prove you’re a bot” with time-pressured, natural-language, or secret-key tasks. They are useful gates, but they answer a different question. Clankdar is a capability ladder, not a gate that says “AI was here.”</p>
+          <div class="table-scroll" role="region" aria-label="Reverse CAPTCHA and capability-benchmark approaches compared" tabindex="0">
+            <table class="ladder-table landscape-table">
+              <caption>How other approaches work, and where they leave you wanting.</caption>
+              <thead>
+                <tr><th scope="col">Approach</th><th scope="col">What it asks</th><th scope="col">What it proves</th><th scope="col">The catch</th></tr>
+              </thead>
+              <tbody>
+                <tr><th scope="row">MoltCaptcha</th><td>Write coherent text that satisfies several hard constraints at once: ASCII targets, word count, character position, and total length.</td><td>An agent can plan a multi-constraint response in one autoregressive pass, faster than a human could iterate.</td><td>Pass/fail. Not reproducible across models. A human with time or tooling can satisfy the same constraints; it does not rank capability or expose failure modes.</td></tr>
+                <tr><th scope="row">agent-captcha</th><td>Decode 256 random bytes and a randomized English description of byte-level transformations, then submit a SHA-256 proof.</td><td>The caller can interpret informal instructions and run code against arbitrary data.</td><td>A per-session secret. The task is binary, uncalibrated, and opaque outside the issuing server; it tells you little about which model or how close it came.</td></tr>
+                <tr><th scope="row">inverse-captcha</th><td>Choose among cryptographic signature, hashcash proof-of-work, or a multi-step JSON computation challenge.</td><td>Possession of a key, willingness to burn hashes, or the ability to chain small computations.</td><td>Signature proves key possession, not model capability. Hashcash is hardware-biased. The JSON protocol is pass/fail with no score distribution.</td></tr>
+                <tr><th scope="row">rCAPTCHA</th><td>Produce a coherent sentence with exact required words and length under a short time limit.</td><td>Some language process ran the request, not just a human with curl.</td><td>A “not human” signal is not a capability measurement. Time pressure and human impossibility are the only differentiators; the result is not auditable or reusable.</td></tr>
+                <tr><th scope="row">Agentcha</th><td>Complete a server-side challenge chain, receive a signed token, and use it to unlock content.</td><td>The server saw a valid signed response from an agent.</td><td>The verifier is centralized and the challenge is not public. It is an auth gate, not a published benchmark, and scores are not comparable across conditions.</td></tr>
+                <tr class="clankdar-row"><th scope="row">Clankdar</th><td>Solve a deterministic, seeded programming puzzle with a unique, re-derivable answer.</td><td>Under the recorded conditions, the tested system can solve this family/tier cell with this probability.</td><td>Puzzles can be memorized or solved with code. That is exactly why every claim is tied to a public suite version, a held-out seed, and exact scoring.</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="callout"><strong>Why a programming problem is the right shape.</strong>
+            <p>It has a fact-of-the-matter answer that can be checked without a judge model. The prompt is public; the answer is not sent to the model. The same seed produces the same puzzle forever, so evidence is cumulative. The score is a percentage on a named cell, not a binary “you passed the gate.” And the contract is fully specified: one response, a token and time budget, and the suite version that generated the puzzle. That is what a capability benchmark needs.</p>
+          </div>
+        </section>
         <section class="section" aria-labelledby="learn-title">
           <h2 id="learn-title" class="section-title">We tested the models. Then we tested the test.</h2>
           <div class="duet">
-            <div class="cell"><h3>The v2 calibration is public.</h3><p>Five requested model aliases, twenty held-out seeds per family/tier, 2,500 recorded attempts. Full responses, hashes, error counts, confidence intervals, usage, and a replayable report—not a mysterious leaderboard number.</p><p><a href="/benchmark/#v2-results">Inspect the evidence <span aria-hidden="true">→</span></a></p></div>
-            <div class="cell"><h3>The thesis got sharper.</h3><p>The suite separates tested systems from 9.4% to 87.6% strict, but pooled tiers are not one intelligence number. Clankdar publishes family/tier capability profiles instead of polishing a fake scalar ranking.</p></div>
+            <div class="cell"><h3>Three tracks, one source of truth.</h3><p>The v2, frontier, and tool-agent calibrations are all public. Five requested model aliases, held-out seeds, full responses, hashes, error counts, confidence intervals, usage, and replayable reports. Every score is recomputed from the published data.</p><p><a href="/benchmark/#v2-results">Inspect the evidence <span aria-hidden="true">→</span></a></p></div>
+            <div class="cell"><h3>The thesis got sharper.</h3><p>The suite separates unaided systems from 0% to 87.6% strict, and bounded tool-agent episodes from 19% to 81%. Pooled tiers are not one intelligence number, and the two tracks are not comparable. Clankdar publishes family/tier capability profiles instead of polishing a fake scalar ranking.</p></div>
           </div>
         </section>
         <section class="section" aria-labelledby="admission-title">

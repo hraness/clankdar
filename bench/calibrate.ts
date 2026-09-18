@@ -14,7 +14,7 @@ import { parseArgs } from "node:util";
 import { mkdirSync } from "node:fs";
 import { join, dirname } from "node:path";
 import { createHash, randomUUID } from "node:crypto";
-import { openai } from "./adapters.ts";
+import { openai, openaiAgent } from "./adapters.ts";
 import { commonOptions, integer, list, requestBudget, selection } from "./options.ts";
 import { recordRun, runManifest, percent } from "./record.ts";
 
@@ -30,14 +30,18 @@ export async function main(args = process.argv.slice(2)): Promise<number> {
   const maxTokens = integer(values["max-tokens"] ?? "4096", 32_768);
   const maxRequests = values["max-requests"] ? integer(values["max-requests"], 30_000) : undefined;
   const budget = maxRequests ? requestBudget(maxRequests) : undefined;
-  const adapters = models.map((model) => openai({ model, name: model, maxTokens, timeoutMs: opts.timeoutMs, beforeRequest: budget?.beforeRequest }));
+  const agentic = opts.suite === "agent";
+  const adapters = models.map((model) =>
+    (agentic ? openaiAgent : openai)({ model, name: model, maxTokens, timeoutMs: opts.timeoutMs, beforeRequest: budget?.beforeRequest }));
   const manifest = runManifest(adapters[0], opts);
   const instances = manifest.instances * models.length;
+  // Agent episodes make one request per turn; budgets cap turns per episode.
+  const perInstance = agentic ? 24 : 3;
   if (!values.execute || values["dry-run"]) {
-    console.log(JSON.stringify({ dryRun: true, models, instances, maximumRequests: instances * 3, maxTokens, suiteHash: manifest.suiteHash, suiteVersion: manifest.suiteVersion, scorerVersion: manifest.scorerVersion, seeds: manifest.seeds, cells: manifest.cells, endpoint: adapters[0].config?.endpoint }, null, 2));
+    console.log(JSON.stringify({ dryRun: true, models, instances, maximumRequests: instances * perInstance, maxTokens, suiteHash: manifest.suiteHash, suiteVersion: manifest.suiteVersion, scorerVersion: manifest.scorerVersion, seeds: manifest.seeds, cells: manifest.cells, endpoint: adapters[0].config?.endpoint }, null, 2));
     return 0;
   }
-  if (!maxRequests || maxRequests < instances) throw new Error("--execute requires --max-requests at least equal to the total instance count");
+  if (!maxRequests || maxRequests < instances * perInstance) throw new Error(`--execute requires --max-requests at least ${perInstance}× the total instance count`);
   for (const adapter of adapters) adapter.validate?.();
   const out = values.out ?? join("results", "calibrate", randomUUID());
   mkdirSync(dirname(out), { recursive: true });
