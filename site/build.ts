@@ -23,6 +23,7 @@ const substitutions: Record<string, string> = {
 await rm(output, { recursive: true, force: true });
 await mkdir(resolve(output, "design"), { recursive: true });
 for (const name of ["styles.css", "icon.png", "apple-icon.png", "robots.txt", "sitemap.xml", "llms.txt"]) await cp(resolve(root, name), resolve(output, name));
+await cp(resolve(root, "icons"), resolve(output, "icons"), { recursive: true });
 const footerMarker = "<!-- hraness-site-footer -->";
 for (const page of pages) {
   let html = await readFile(resolve(root, page), "utf8");
