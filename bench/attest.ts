@@ -42,6 +42,10 @@ export interface Challenge {
   nonce: string;
   expiresAt: string;
   context?: string;
+  /** Opaque relying-party subject claim (e.g. an agent or session key id). */
+  subject?: string;
+  /** Gate session this challenge was issued under (clankdar-gate-v1). */
+  sessionId?: string;
   verifier: { keyId: string; publicKey: string };
 }
 
@@ -99,7 +103,23 @@ const privateKey = (jwk: unknown): KeyObject => {
   }
 };
 
-const publicJwk = (publicKeyB64: string): KeyObject => createPublicKey({ key: { kty: "OKP", crv: "Ed25519", x: publicKeyB64 }, format: "jwk" });
+/** Build a verifying key from a base64url Ed25519 JWK `x` member. */
+export const publicJwk = (publicKeyB64: string): KeyObject => createPublicKey({ key: { kty: "OKP", crv: "Ed25519", x: publicKeyB64 }, format: "jwk" });
+
+/** The base64url public key member derived from a verifier private JWK. */
+export const publicKeyOf = (jwk: VerifierJwk): string => (createPublicKey(privateKey(jwk)).export({ format: "jwk" }) as { x: string }).x;
+
+/** Sign a body's canonical serialization verbatim; returns base64url. */
+export const signBody = (body: unknown, jwk: VerifierJwk): string => b64url(sign(null, Buffer.from(canonical(body)), privateKey(jwk)));
+
+/** Verify a base64url Ed25519 signature over a body's canonical serialization. */
+export const verifyBodySignature = (body: unknown, signatureB64: string, publicKeyB64: string): boolean => {
+  try {
+    return cryptoVerify(null, Buffer.from(canonical(body)), publicJwk(publicKeyB64), Buffer.from(signatureB64, "base64url"));
+  } catch {
+    return false;
+  }
+};
 
 export const keyIdOf = (publicKeyB64: string): string => sha256(Buffer.from(publicKeyB64, "base64url")).slice(0, 16);
 
@@ -116,6 +136,8 @@ export interface IssueOptions {
   seed?: number;
   ttlSeconds?: number;
   context?: string;
+  subject?: string;
+  sessionId?: string;
   verifierJwk: VerifierJwk;
   now?: Date;
 }
@@ -130,7 +152,9 @@ export function issueChallenge(opts: IssueOptions): { challenge: Challenge; tick
   const ttl = opts.ttlSeconds ?? 300;
   if (!Number.isInteger(ttl) || ttl < 10 || ttl > 86_400) throw new Error("ttl must be 10..86400 seconds");
   if (opts.context !== undefined && (typeof opts.context !== "string" || opts.context.length > 256)) throw new Error("context must be a string up to 256 chars");
-  const publicKey = (createPublicKey(privateKey(opts.verifierJwk)).export({ format: "jwk" }) as { x: string }).x;
+  if (opts.subject !== undefined && (typeof opts.subject !== "string" || !opts.subject.length || opts.subject.length > 256)) throw new Error("subject must be a nonempty string up to 256 chars");
+  if (opts.sessionId !== undefined && (typeof opts.sessionId !== "string" || !/^gs_[A-Za-z0-9_-]{12}$/.test(opts.sessionId))) throw new Error("sessionId must be a gate session id");
+  const publicKey = publicKeyOf(opts.verifierJwk);
   const instance = family.generate(opts.tier, seed);
   const now = opts.now ?? new Date();
   const challenge: Challenge = {
@@ -138,6 +162,8 @@ export function issueChallenge(opts: IssueOptions): { challenge: Challenge; tick
     suiteVersion: version, family: family.name, tier: opts.tier, prompt: instance.prompt,
     seedCommit: "", nonce: b64url(randomBytes(12)), expiresAt: new Date(now.getTime() + ttl * 1000).toISOString(),
     ...(opts.context !== undefined ? { context: opts.context } : {}),
+    ...(opts.subject !== undefined ? { subject: opts.subject } : {}),
+    ...(opts.sessionId !== undefined ? { sessionId: opts.sessionId } : {}),
     verifier: { keyId: "", publicKey },
   };
   challenge.verifier.keyId = keyIdOf(challenge.verifier.publicKey);
