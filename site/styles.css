@@ -21,8 +21,7 @@ ul, ol { padding: 0; }
 .page { max-width: 1248px; min-height: 100svh; margin: auto; padding: 0 64px; display: flex; flex-direction: column; }
 .masthead { display: flex; align-items: center; justify-content: space-between; gap: 24px; padding: 22px 0; }
 .wordmark { text-decoration: none; font-size: 25px; font-weight: 650; letter-spacing: -0.04em; display: inline-flex; align-items: center; }
-.mark { width: 24px; height: 24px; margin-right: 9px; fill: currentColor; }
-.mark-accent { fill: var(--focus); }
+.mark { width: 24px; height: 24px; margin-right: 9px; }
 .site-nav { display: inline-flex; align-items: center; gap: 20px; font-size: 14px; }
 .site-nav a { text-decoration: none; }
 .site-nav a[aria-current="page"] { color: var(--focus); }
@@ -186,4 +185,4 @@ code { font-family: var(--font-mono, ui-monospace, "SFMono-Regular", Consolas, m
 .header-actions .hraness-design-theme-toggle__trigger { min-width: 44px; min-height: 44px; border-color: var(--hraness-material-seam); box-shadow: var(--hraness-material-lift); }
 .header-actions .hraness-design-theme-toggle__popover { box-shadow: var(--hraness-material-lift); }
 @media (max-width: 640px) { .introduction { padding-inline: 18px; margin-inline: -18px; } .header-actions { gap: 12px; } }
-@media (forced-colors: active) { .room, .hraness-design-theme-toggle__trigger, .hraness-design-theme-toggle__popover { border: 1px solid CanvasText; } .mark-accent { fill: LinkText; } }
+@media (forced-colors: active) { .room, .hraness-design-theme-toggle__trigger, .hraness-design-theme-toggle__popover { border: 1px solid CanvasText; } }
