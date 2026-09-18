@@ -206,6 +206,49 @@ export function buildReport(runs: RecordedRun[], excludedFamilies: string[] = []
 
 export type CalibrationReport = ReturnType<typeof buildReport>;
 
+export interface AgentDiagnostics {
+  model: string;
+  episodes: number;
+  providerErrors: number;
+  finalEmitted: number;
+  budgetExhausted: number;
+  meanToolCalls: number | null;
+  meanTurns: number | null;
+  toolErrors: { protocol: number; unknownTool: number; invalidArgs: number; callBudget: number };
+}
+
+/**
+ * Per-model tool-agent episode metrics derived from recorded episode details.
+ * Provider errors (no episode recorded) stay separate from in-episode failures:
+ * budget exhaustion means the model never emitted FINAL within the turn cap.
+ */
+export function agentDiagnostics(runs: RecordedRun[]): AgentDiagnostics[] {
+  const mean = (values: number[]) => (values.length ? values.reduce((a, b) => a + b, 0) / values.length : null);
+  return runs.map((run) => {
+    const episodes = run.rows.filter((row) => row.detail?.turns !== undefined);
+    const toolErrors = { protocol: 0, unknownTool: 0, invalidArgs: 0, callBudget: 0 };
+    for (const row of episodes) {
+      for (const entry of row.detail?.transcript ?? []) {
+        if (entry.role !== "tool" || entry.ok) continue;
+        if (entry.tool === "protocol") toolErrors.protocol++;
+        else if (entry.text === "budget_exhausted") toolErrors.callBudget++;
+        else if (entry.text.startsWith("unknown_tool")) toolErrors.unknownTool++;
+        else if (entry.text === "invalid_arguments") toolErrors.invalidArgs++;
+      }
+    }
+    return {
+      model: run.model,
+      episodes: episodes.length,
+      providerErrors: run.rows.length - episodes.length,
+      finalEmitted: episodes.filter((row) => row.detail?.episodeError === undefined).length,
+      budgetExhausted: episodes.filter((row) => row.detail?.episodeError === "budget_exhausted").length,
+      meanToolCalls: mean(episodes.map((row) => row.detail!.toolCalls ?? 0)),
+      meanTurns: mean(episodes.map((row) => row.detail!.turns ?? 0)),
+      toolErrors,
+    };
+  });
+}
+
 export function main(args = process.argv.slice(2)): void {
   const { values, positionals } = parseArgs({ args, options: { json: { type: "string" }, exclude: { type: "string" }, help: { type: "boolean", short: "h" } }, allowPositionals: true, strict: true });
   if (values.help) { console.log("usage: bun report RUN-DIRECTORY [--json NEW-report.json] [--exclude family,...]"); return; }

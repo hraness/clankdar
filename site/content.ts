@@ -1,5 +1,5 @@
 import { FAMILIES, familyByName, SUITE_VERSION } from "../ladder/mod.ts";
-import type { CalibrationReport } from "../bench/report.ts";
+import type { AgentDiagnostics, CalibrationReport } from "../bench/report.ts";
 import { CAPABILITY_PROFILES, profileReport } from "../bench/profiles.ts";
 
 export const escapeHtml = (value: string | number): string => String(value).replace(/[&<>"']/g, (char) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[char]!);
@@ -26,8 +26,11 @@ function renderResults(report: CalibrationReport, base: string, caption: string,
     return `<tr><th scope="row"><span class="model-name">${escapeHtml(model.model)}</span></th><td class="score">${pct(score.strict)}</td><td>${pct(score.finalAnswer)}</td><td>${interval}</td><td>${score.passed}/${score.n}</td><td>${score.errors}</td></tr>`;
   }).join("\n");
   const tierRows = report.models.map((model) => `<tr><th scope="row">${escapeHtml(model.model)}</th>${tiers.map((tier) => `<td>${pct(model.byTier[tier]?.strict ?? null)}</td>`).join("")}</tr>`).join("\n");
+  const cellsWithData = report.cells.filter((cell) => report.models.some((model) => model.byCell[cell]));
+  const cellRows = cellsWithData.map((cell) => `<tr><th scope="row"><code>${escapeHtml(cell)}</code></th>${report.models.map((model) => { const s = model.byCell[cell]; return `<td>${pct(s?.strict ?? null)}<small>${s ? `${s.passed}/${s.n}` : ""}</small></td>`; }).join("")}</tr>`).join("\n");
   const downloads = report.sources.map((source) => `<li><a href="${base}/${escapeHtml(source.file)}" download>${escapeHtml(source.file)}</a></li>`).join("\n");
   return `<div class="table-scroll" role="region" aria-label="Model comparison, scroll horizontally for all columns" tabindex="0"><table class="ladder-table results-table"><caption>${caption}</caption><thead><tr><th scope="col">Requested model</th><th scope="col">Strict</th><th scope="col">Final block</th><th scope="col">Strict 95% interval</th><th scope="col">Pass / valid</th><th scope="col">Errors</th></tr></thead><tbody>${rows}</tbody></table></div>
+<details class="report-details"><summary>Show strict pass rates by cell</summary><div class="table-scroll" role="region" aria-label="Per-cell results" tabindex="0"><table class="ladder-table results-table cell-table"><caption>Strict pass rates and counts per family/tier cell; cells are the stable unit of comparison.</caption><thead><tr><th scope="col">Cell</th>${report.models.map((model) => `<th scope="col">${escapeHtml(model.model)}</th>`).join("")}</tr></thead><tbody>${cellRows}</tbody></table></div></details>
 <details class="report-details"><summary>Show strict pass rates by tier</summary><div class="table-scroll" role="region" aria-label="Per-tier results" tabindex="0"><table class="ladder-table results-table"><caption>Tier aggregates describe different family mixtures and are not a scalar capability level.</caption><thead><tr><th scope="col">Requested model</th>${tiers.map((tier) => `<th scope="col">t${tier}</th>`).join("")}</tr></thead><tbody>${tierRows}</tbody></table></div></details>
 <details class="report-details"><summary>Download attempt records</summary><p>Gzipped JSONL, one file per model. The report recomputes every score from the retained responses.</p><ul class="doc-list dataset-links">${downloads}</ul></details>`;
 }
@@ -35,7 +38,16 @@ function renderResults(report: CalibrationReport, base: string, caption: string,
 export const renderPilot = (report: CalibrationReport): string => renderResults(report, "/benchmark/pilot-v0", "Screened legacy pilot: 190 instances per model, minus provider errors. One response per instance. No tools.", [0, 1, 2, 3, 4, 5]);
 export const renderV2 = (report: CalibrationReport): string => renderResults(report, "/benchmark/v2-calibration-0", "Held-out v2 calibration: 500 instances per model, minus provider errors. One response per instance. No tools.", [0, 1, 2, 3, 4, 5, 6]);
 export const renderFrontier = (report: CalibrationReport): string => renderResults(report, "/benchmark/frontier-v0", "Held-out frontier calibration: 340 instances per model. One response per instance. No tools. Deeper tiers for eight scalable families.", [4, 5, 6, 7]) + "<p class='note'>Frontier cells use parameters beyond the v2 floor and are not comparable to v2 scores. The lower overall pass rates are intentional; the purpose is a steeper ceiling, not a fair comparison to v2.</p>";
-export const renderAgent = (report: CalibrationReport): string => renderResults(report, "/benchmark/agent-v0", "Held-out bounded tool-agent calibration: 120 episodes per model. Up to 16 tool calls, 24 turns, 4,096 output tokens. Transcripts are replayable.", [5, 6, 7]) + "<p class='note'>This is a separate track. Scores do not estimate base-model capability and are not comparable to unaided runs.</p>";
+export function renderAgent(report: CalibrationReport, diagnostics: AgentDiagnostics[]): string {
+  const diagRows = diagnostics.map((diag) => {
+    const emitted = diag.episodes ? pct(diag.finalEmitted / diag.episodes) : "—";
+    const toolFailures = diag.toolErrors.protocol + diag.toolErrors.unknownTool + diag.toolErrors.invalidArgs + diag.toolErrors.callBudget;
+    return `<tr><th scope="row"><span class="model-name">${escapeHtml(diag.model)}</span></th><td>${emitted}</td><td>${diag.budgetExhausted}</td><td>${diag.meanToolCalls === null ? "—" : diag.meanToolCalls.toFixed(1)}</td><td>${diag.meanTurns === null ? "—" : diag.meanTurns.toFixed(1)}</td><td>${toolFailures}<small>protocol ${diag.toolErrors.protocol} · unknown ${diag.toolErrors.unknownTool} · args ${diag.toolErrors.invalidArgs} · budget ${diag.toolErrors.callBudget}</small></td></tr>`;
+  }).join("\n");
+  return renderResults(report, "/benchmark/agent-v0", "Held-out bounded tool-agent calibration: 120 episodes per model. Up to 16 tool calls, 24 turns, 4,096 output tokens. Transcripts are replayable.", [5, 6, 7]) + `
+<details class="report-details"><summary>Show episode diagnostics</summary><div class="table-scroll" role="region" aria-label="Episode diagnostics" tabindex="0"><table class="ladder-table results-table"><caption>Protocol and effort metrics from recorded episodes. FINAL emitted and budget exhaustion describe protocol adherence, not correctness.</caption><thead><tr><th scope="col">Requested model</th><th scope="col">FINAL emitted</th><th scope="col">Budget exhausted</th><th scope="col">Mean tool calls</th><th scope="col">Mean turns</th><th scope="col">Failed tool calls</th></tr></thead><tbody>${diagRows}</tbody></table></div></details>
+<p class="note">This is a separate track. Scores do not estimate base-model capability and are not comparable to unaided runs.</p>`;
+}
 
 export function renderProfiles(report: CalibrationReport): string {
   const results = profileReport(report);
