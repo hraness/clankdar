@@ -21,7 +21,13 @@ explicit --max-requests budget. Credentials must stay private.
 
 The public v2 calibration contains 2,500 attempt records from five requested
 model aliases on held-out seeds 101-120, including one timeout. Strict scores
-span 9.4% to 87.6%. This supports family/cell capability separation, not one
+span 9.4% to 87.6%. The public frontier calibration adds 1,700 unaided attempts
+on held-out seeds 301-320 across deeper tiers; scores fall to 0% for Llama 3.1 8B
+and rise to 64% for GPT-5 mini. The public tool-agent calibration adds 600
+bounded episodes on the same seeds with a TOOL/FINAL protocol and replayable
+transcripts; scores span 19% to 81% on valid episodes.
+
+This supports family/cell capability separation, not one
 scalar intelligence level: pooled tier difficulty is not monotone. Four
 executable profiles partition the cells into transform fidelity, symbolic
 execution, constraint solving, and rule induction. The public legacy pilot
@@ -31,6 +37,10 @@ retains 3,000 earlier attempts with explicit exclusions.
 - Quickstart and scoring: https://clankdar.com/docs/
 - Calibration findings: https://clankdar.com/benchmark/
 - V2 manifest: https://clankdar.com/benchmark/v2-calibration-0/manifest.json
+- Frontier manifest: https://clankdar.com/benchmark/frontier-v0/manifest.json
+- Frontier report: https://clankdar.com/benchmark/frontier-v0/report.json
+- Agent manifest: https://clankdar.com/benchmark/agent-v0/manifest.json
+- Agent report: https://clankdar.com/benchmark/agent-v0/report.json
 - V2 report: https://clankdar.com/benchmark/v2-calibration-0/report.json
 - Legacy pilot: https://clankdar.com/benchmark/pilot-v0/manifest.json
 - Source: https://github.com/hraness/clankdar
