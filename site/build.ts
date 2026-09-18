@@ -6,6 +6,7 @@ import { supportFooter } from "./support-footer.ts";
 import { renderAgent, renderChallenge, renderFrontier, renderPilot, renderProfiles, renderTiers, renderV2 } from "./content.ts";
 import { verifyPilot } from "../bench/pilot.ts";
 import { verifyCalibration } from "../bench/archive.ts";
+import { agentDiagnostics, readRuns } from "../bench/report.ts";
 import { SUITE_VERSION, SCORER_VERSION } from "../ladder/mod.ts";
 import { CAPABILITY_PROFILES, profileReport } from "../bench/profiles.ts";
 const root = import.meta.dir;
@@ -16,8 +17,9 @@ const pilot = verifyPilot(resolve(root, "benchmark/pilot-v0"));
 const v2 = verifyCalibration(resolve(root, "benchmark/v2-calibration-0"));
 const frontier = verifyCalibration(resolve(root, "benchmark/frontier-v0"));
 const agent = verifyCalibration(resolve(root, "benchmark/agent-v0"));
+const agentDiag = agentDiagnostics(readRuns(resolve(root, "benchmark/agent-v0")));
 const substitutions: Record<string, string> = {
-  "{{CHALLENGE}}": renderChallenge(), "{{TIERS}}": renderTiers(), "{{PILOT_RESULTS}}": renderPilot(pilot), "{{V2_RESULTS}}": renderV2(v2), "{{FRONTIER_RESULTS}}": renderFrontier(frontier), "{{AGENT_RESULTS}}": renderAgent(agent), "{{PROFILE_RESULTS}}": renderProfiles(v2),
+  "{{CHALLENGE}}": renderChallenge(), "{{TIERS}}": renderTiers(), "{{PILOT_RESULTS}}": renderPilot(pilot), "{{V2_RESULTS}}": renderV2(v2), "{{FRONTIER_RESULTS}}": renderFrontier(frontier), "{{AGENT_RESULTS}}": renderAgent(agent, agentDiag), "{{PROFILE_RESULTS}}": renderProfiles(v2),
   "{{SUITE_VERSION}}": SUITE_VERSION, "{{SCORER_VERSION}}": SCORER_VERSION,
 };
 await rm(output, { recursive: true, force: true });
@@ -41,6 +43,7 @@ const files = ["paper-theme.css", "product-marketing-preset.css", "lantern-mater
 for (const name of files) await cp(resolve(kit, name), resolve(output, "design", name));
 await cp(resolve(kit, "fonts/nebula-sans"), resolve(output, "design/fonts/nebula-sans"), { recursive: true });
 await cp(resolve(kit, "fonts/instrument-serif"), resolve(output, "design/fonts/instrument-serif"), { recursive: true });
+await cp(resolve(kit, "fonts/geist-mono"), resolve(output, "design/fonts/geist-mono"), { recursive: true });
 await cp(resolve(kit, "marketing-assets"), resolve(output, "design/marketing-assets"), { recursive: true });
 await cp(resolve(kit, "../LICENSE"), resolve(output, "design/LICENSE"));
 const result = await Bun.build({ entrypoints: [resolve(root, "appearance.ts")], outdir: output, naming: "appearance.js", target: "browser", format: "iife", minify: true });

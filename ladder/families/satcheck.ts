@@ -1,18 +1,10 @@
 import type { Family, ToolEnv } from "../family.ts";
+import { mixSeed } from "../rng.ts";
 import { sat } from "./sat.ts";
 import type { Clause } from "./sat.ts";
 
-/**
- * Agent pool: a unique-solution 3-SAT instance plus a bounded `check` tool
- * that reports whether a candidate assignment satisfies the formula. The
- * budget (4 calls) is far below the search space, so the tool supports
- * verification, not brute force.
- */
-export const satcheck: Family = {
-  name: "satcheck",
-  tiers: [5],
-  generate(tier, seed) {
-    const base = sat.generate(tier, seed);
+function build(tier: number, seed: number, satSeed: number) {
+    const base = sat.generate(tier, satSeed);
     const n = base.answer.length;
     const clauses: Clause[] = [...base.prompt.matchAll(/\(([^)]+)\)/g)].map((m) =>
       m[1].split(" ∨ ").map((t) => (Number(t.replace("¬", "").slice(1)) << 1) | (t.startsWith("¬") ? 0 : 1)) as Clause,
@@ -29,10 +21,9 @@ export const satcheck: Family = {
         },
       },
     };
-    const body = base.prompt.replace(
-      `Reply with only the ${n}-digit assignment as bits, in order x0 first through x${n - 1} last.`,
-      `Submit via FINAL: the ${n}-digit assignment as bits, in order x0 first through x${n - 1} last.`,
-    );
+    const tail = `Reply with only the ${n}-digit assignment as bits, in order x0 first through x${n - 1} last.`;
+    const body = base.prompt.replace(tail, `Submit via FINAL: the ${n}-digit assignment as bits, in order x0 first through x${n - 1} last.`);
+    if (body === base.prompt) throw new Error("satcheck: sat prompt tail did not match");
     return {
       family: "satcheck" as const,
       tier,
@@ -48,5 +39,28 @@ ${body}`,
       answer: base.answer,
       env,
     };
-  },
+}
+
+/**
+ * Frozen agent-v0 pool: delegates to sat.generate with the raw seed, so its
+ * sat:t5 instances are identical to the frontier pool's — kept only to
+ * regenerate the published agent-v0 archive.
+ */
+export const satcheckV0: Family = {
+  name: "satcheck",
+  tiers: [5],
+  generate: (tier, seed) => build(tier, seed, seed),
+};
+
+/**
+ * Agent v1+: a unique-solution 3-SAT instance plus a bounded `check` tool
+ * that reports whether a candidate assignment satisfies the formula. The
+ * budget (4 calls) is far below the search space, so the tool supports
+ * verification, not brute force. The seed is mixed under this family's own
+ * label so instances do not overlap the frontier sat pool.
+ */
+export const satcheck: Family = {
+  name: "satcheck",
+  tiers: [5],
+  generate: (tier, seed) => build(tier, seed, mixSeed("satcheck:t5", seed)),
 };

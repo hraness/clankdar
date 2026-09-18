@@ -1,8 +1,8 @@
 import { describe, expect, test } from "bun:test";
-import { mkdtempSync } from "node:fs";
-import { join } from "node:path";
+import { mkdtempSync, readdirSync } from "node:fs";
+import { join, resolve } from "node:path";
 import { tmpdir } from "node:os";
-import { AGENT_FAMILIES } from "../ladder/mod.ts";
+import { AGENT_FAMILIES, AGENT_FAMILIES_V0, FRONTIER_FAMILIES } from "../ladder/mod.ts";
 import type { Adapter } from "./adapter.ts";
 import { oracle } from "./adapters.ts";
 import { runBench } from "./run.ts";
@@ -186,7 +186,7 @@ describe("agent bench integration", () => {
     expect(results).toHaveLength(2);
     for (const row of results) {
       expect(row.pass).toBe(true);
-      expect(row.suiteVersion).toBe("clankdar-agent-v0");
+      expect(row.suiteVersion).toBe("clankdar-agent-v1");
       expect(row.seed).toBeGreaterThanOrEqual(401);
       const detail = row.detail as { transcript?: unknown[]; toolCalls?: number };
       expect(Array.isArray(detail.transcript)).toBe(true);
@@ -210,7 +210,7 @@ describe("agent bench integration", () => {
   test("the manifest records the agent protocol version", () => {
     const manifest = runManifest(oracle, { suite: "agent", families: ["autostep"], tiers: [5], seeds: [405] });
     expect(manifest.protocol).toBe("clankdar-agent-protocol-v1");
-    expect(manifest.suiteVersion).toBe("clankdar-agent-v0");
+    expect(manifest.suiteVersion).toBe("clankdar-agent-v1");
   });
 
   test("recorded agent runs rescore and replay through the file format", async () => {
@@ -220,5 +220,32 @@ describe("agent bench integration", () => {
     const outcomes = replayRun(path);
     expect(outcomes).toHaveLength(2);
     expect(outcomes.every((o) => o.replayed)).toBe(true);
+  });
+
+  test("the frozen v0 pools regenerate the published archives exactly", () => {
+    const dir = resolve(import.meta.dir, "../site/benchmark");
+    // replayRun regenerates each recorded instance via poolForVersion and throws
+    // if prompt or answer drifted — the frozen-pool guarantee.
+    for (const file of readdirSync(join(dir, "agent-v0")).filter((f) => f.endsWith(".jsonl.gz"))) {
+      const outcomes = replayRun(join(dir, "agent-v0", file));
+      expect(outcomes.every((o) => o.replayed || o.reason?.startsWith("episode error"))).toBe(true);
+    }
+    for (const file of readdirSync(join(dir, "frontier-v0")).filter((f) => f.endsWith(".jsonl.gz"))) {
+      const outcomes = replayRun(join(dir, "frontier-v0", file));
+      expect(outcomes.every((o) => o.reason === "unaided row")).toBe(true);
+    }
+  }, 120_000);
+
+  test("v1 satcheck decorrelates from the frontier sat stream and v1 CA pools avoid convergent rules", () => {
+    const satcheckV0 = AGENT_FAMILIES_V0.find((f) => f.name === "satcheck")!;
+    const satcheckV1 = AGENT_FAMILIES.find((f) => f.name === "satcheck")!;
+    const seeds = Array.from({ length: 20 }, (_, i) => i + 1);
+    expect(seeds.every((seed) => satcheckV0.generate(5, seed).answer === satcheckV1.generate(5, seed).answer)).toBe(false);
+    const automataV1 = FRONTIER_FAMILIES.find((f) => f.name === "automata")!;
+    expect(automataV1.generate(6, 3).prompt).toContain("rule ");
+    const autostepV1 = AGENT_FAMILIES.find((f) => f.name === "autostep")!;
+    for (const family of [autostepV1, automataV1]) {
+      for (const tier of family.tiers) for (let seed = 0; seed < 40; seed++) expect(family.generate(tier, seed).prompt).not.toMatch(/rule (182|250)\b/);
+    }
   });
 });

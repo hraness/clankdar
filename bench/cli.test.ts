@@ -50,7 +50,7 @@ describe("CLI and run artifacts", () => {
     expect(ok.code).toBe(0);
     const rows = ok.stdout.trim().split("\n").map((line) => JSON.parse(line));
     expect(rows[0].protocol).toBe("clankdar-agent-protocol-v1");
-    expect(rows[0].suiteVersion).toBe("clankdar-agent-v0");
+    expect(rows[0].suiteVersion).toBe("clankdar-agent-v1");
   });
 
   test("unknown flags and malformed selections fail", async () => {

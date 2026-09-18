@@ -54,6 +54,7 @@
           <a href="#profiles">Profiles</a>
           <a href="#landscape">Landscape</a>
           <a href="#artifacts">Run artifacts</a>
+          <a href="#agent">Tool-agent track</a>
           <a href="#exchange">Admission design</a>
           <a href="#modes">Modes</a>
           <a href="#verification">Verification</a>
@@ -83,6 +84,11 @@ bun bench --adapter openai:gpt-4o-mini --tiers 0-3 --seeds 101-110 \
           <pre class="code"><code>CLANKDAR_BASE_URL=https://ai-gateway.vercel.sh/v1 bun calibrate \
   --models openai/gpt-4.1,google/gemini-2.5-pro --seeds 101-110</code></pre>
           <p>This is also a dry run. Add <code>--execute --max-requests N --out NEW-DIRECTORY</code> after inspecting it. Gateway model IDs use the provider’s spelling, often <code>provider/model</code>; the <code>openai:</code> prefix selects the adapter only in <code>bun bench</code>. Loopback HTTP endpoints support local models without an API key; remote endpoints require HTTPS.</p>
+          <h3>Run the other suites.</h3>
+          <pre class="code"><code>bun bench --list
+bun bench --suite frontier --adapter openai:gpt-4.1 --seeds 301-320
+bun bench --suite agent --adapter agent:openai:gpt-4.1 --seeds 301-320</code></pre>
+          <p><code>frontier</code> is the deeper unaided pool: same one-response contract, harder cell parameters. <code>agent</code> is the bounded tool track and requires an agent-capable adapter (<code>agent:openai:&lt;model&gt;</code>); unaided adapters are refused, and agent adapters refuse unaided suites. Agent episodes make several provider requests per instance — budget <code>--max-requests</code> accordingly.</p>
         </section>
 
         <section class="doc-section" id="scoring" aria-labelledby="scoring-title">
@@ -145,6 +151,23 @@ bun report site/benchmark/v2-calibration-0
 bun bench/archive.ts verify site/benchmark/v2-calibration-0
 bun bench/pilot.ts verify site/benchmark/pilot-v0</code></pre>
           <p>The public <a href="/benchmark/#v2-results">v2 calibration</a> contains 2,500 saved attempts on held-out seeds 101–120. Replaying its archive verifies hashes and recomputes every published score; calling a model again need not reproduce the same response. The report rejects mixed versions, duplicate instances, changed prompt/answer pairs, and different model coverage. The earlier pilot remains available as explicitly labeled legacy evidence.</p>
+        </section>
+
+        <section class="doc-section" id="agent" aria-labelledby="agent-title">
+          <h2 id="agent-title">The tool-agent track.</h2>
+          <p>The <code>agent</code> suite runs a bounded multi-turn protocol instead of the one-response contract. Each instance carries a deterministic, server-side tool environment — the model sees the prompt and a growing transcript, never the environment internals.</p>
+          <pre class="code"><code>TOOL &lt;name&gt; {json-args}    // one tool call
+FINAL &lt;answer&gt;            // submit and end the episode</code></pre>
+          <p>Every model reply must be exactly one action line. Anything else is a protocol error and wastes a turn. Budgets are hard per-cell caps: <b>4–12 tool calls</b>, <b>8–16 turns</b>, <b>4,096 characters</b> per tool output. An episode ends on <code>FINAL</code> or with <code>budget_exhausted</code>. Tools are pure functions over the instance — no shell, filesystem, network, or secrets.</p>
+          <p>Transcripts are recorded per attempt and replayed against regenerated environments on verification, so a published score is backed by deterministic tool execution, not a claimed one. The agent manifest records the protocol version (<code>clankdar-agent-protocol-v1</code>) alongside the usual run metadata.</p>
+          <p>On the <a href="/benchmark/#agent-results">benchmark page</a>, the episode-diagnostics table adds four more signals:</p>
+          <ul class="doc-list">
+            <li><b>FINAL emitted</b> — how often the model ended the episode by actually submitting an answer rather than hitting the turn cap.</li>
+            <li><b>Budget exhausted</b> — episodes that never emitted <code>FINAL</code>. The scorer still grades the last reply text, so a bare answer on the final turn can pass; in practice these almost never satisfy the contract.</li>
+            <li><b>Mean tool calls / turns</b> — effort under the recorded budget. A cheap solve reads differently from an expensive one.</li>
+            <li><b>Failed tool calls</b> — protocol violations, unknown tools, invalid arguments, and call-budget hits, split by kind.</li>
+          </ul>
+          <div class="callout"><strong>Agent scores are not unaided scores.</strong><p>They measure planning and tool use under one declared contract and budget. Do not compare them to unaided runs, and do not treat a passed agent episode as evidence of real-world tool access or safe behavior — the environments are synthetic and replayable by design.</p></div>
         </section>
 
         <section class="doc-section" id="exchange" aria-labelledby="exchange-title">

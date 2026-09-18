@@ -2,6 +2,12 @@ import type { Family } from "../family.ts";
 import { rng, mixSeed } from "../rng.ts";
 
 const RULES = [30, 54, 60, 90, 110, 150, 182, 250];
+/**
+ * Frontier v1+: 182 (self OR right) and 250 (left OR right) converge to
+ * all-ones rows within the deep-tier step budgets, so a constant answer
+ * scores ~10-15% on these cells. Replacements keep the pool chaotic.
+ */
+const RULES_STABLE = [30, 54, 60, 90, 110, 150, 22, 73];
 
 function step(row: number[], rule: number): number[] {
   const w = row.length;
@@ -22,10 +28,10 @@ const TIER_PARAMS: Record<number, { w: number; steps: number }> = {
   7: { w: 25, steps: 10 },
 };
 
-function build(tier: number, seed: number) {
+function build(tier: number, seed: number, rules: readonly number[] = RULES) {
   const r = rng(seed);
   const { w, steps } = TIER_PARAMS[tier];
-  const rule = r.pick(RULES);
+  const rule = r.pick(rules);
   let row: number[] = Array.from({ length: w }, () => (r.chance(0.4) ? 1 : 0));
   if (!row.some(Boolean)) row[r.int(w)] = 1;
   const start = row.join("");
@@ -46,11 +52,18 @@ export const automata: Family = {
   generate: build,
 };
 
-/** Frontier pool: tiers 6-7 with wider rows and deeper evolution. */
-export const automataDeep: Family = {
+/** Frozen frontier-v0 pool: regenerates the published archive exactly. */
+export const automataDeepV0: Family = {
   name: "automata",
   tiers: [6, 7],
   generate: (tier, seed) => ({ ...build(tier, mixSeed(`automata:t${tier}`, seed)), seed }),
+};
+
+/** Frontier v1+: same stream, non-convergent rule pool only. */
+export const automataDeep: Family = {
+  name: "automata",
+  tiers: [6, 7],
+  generate: (tier, seed) => ({ ...build(tier, mixSeed(`automata:t${tier}`, seed), RULES_STABLE), seed }),
 };
 
 export const _internals = { step };

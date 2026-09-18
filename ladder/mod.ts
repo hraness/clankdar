@@ -1,9 +1,14 @@
 export type { Family, Instance, Puzzle, AnswerFormat } from "./family.ts";
 export { normalize, answersMatch, answerFormat, canonicalAnswer, scoreAnswer, SCORER_VERSION } from "./family.ts";
 export const SUITE_VERSION = "clankdar-suite-v2";
-export const FRONTIER_SUITE_VERSION = "clankdar-frontier-v0";
-export const AGENT_SUITE_VERSION = "clankdar-agent-v0";
-export const KNOWN_SUITE_VERSIONS: readonly string[] = Object.freeze([SUITE_VERSION, FRONTIER_SUITE_VERSION, AGENT_SUITE_VERSION]);
+/** Published frozen suite: deeper unaided cells incl. the legacy CA rule pool. */
+export const FRONTIER_SUITE_VERSION_V0 = "clankdar-frontier-v0";
+export const FRONTIER_SUITE_VERSION = "clankdar-frontier-v1";
+/** Published frozen suite: satcheck shared the frontier sat stream; CA pool included convergent rules. */
+export const AGENT_SUITE_VERSION_V0 = "clankdar-agent-v0";
+export const AGENT_SUITE_VERSION = "clankdar-agent-v1";
+export const AGENT_SUITE_VERSIONS: ReadonlySet<string> = new Set([AGENT_SUITE_VERSION_V0, AGENT_SUITE_VERSION]);
+export const KNOWN_SUITE_VERSIONS: readonly string[] = Object.freeze([SUITE_VERSION, FRONTIER_SUITE_VERSION_V0, FRONTIER_SUITE_VERSION, AGENT_SUITE_VERSION_V0, AGENT_SUITE_VERSION]);
 export type SuiteName = "v2" | "frontier" | "agent";
 export { answerCommitment, verifyAnswer } from "./commit.ts";
 export { rng } from "./rng.ts";
@@ -20,15 +25,15 @@ import { knights, knightsDeep } from "./families/knights.ts";
 import { registervm, registervmDeep } from "./families/registervm.ts";
 import { sudoku } from "./families/sudoku.ts";
 import { cryptarithm, cryptarithmDeep } from "./families/cryptarithm.ts";
-import { automata, automataDeep } from "./families/automata.ts";
+import { automata, automataDeep, automataDeepV0 } from "./families/automata.ts";
 import { hiddenfn } from "./families/hiddenfn.ts";
 import { gridxf, gridxfDeep } from "./families/gridxf.ts";
 import { sat } from "./families/sat.ts";
 import { bitcircuit } from "./families/bitcircuit.ts";
 import { bitmatrix } from "./families/bitmatrix.ts";
 import { relayvm } from "./families/relayvm.ts";
-import { autostep } from "./families/autostep.ts";
-import { satcheck } from "./families/satcheck.ts";
+import { autostep, autostepV0 } from "./families/autostep.ts";
+import { satcheck, satcheckV0 } from "./families/satcheck.ts";
 
 function freeze(families: readonly Family[]): readonly Family[] {
   return Object.freeze(families.map((family) => Object.freeze({
@@ -49,9 +54,10 @@ export const FAMILIES: readonly Family[] = freeze([
 ]);
 
 /**
- * The unpublished frontier pool: deeper unaided cells. Tier numbers continue
+ * The published frontier pool: deeper unaided cells. Tier numbers continue
  * each family's own scale (automata t6 is harder than t5); the suite version
- * keeps results strictly separate from v2 evidence.
+ * keeps results strictly separate from v2 evidence. v1 swaps the convergent
+ * CA rules 182/250 for non-convergent ones.
  */
 export const FRONTIER_FAMILIES: readonly Family[] = freeze([
   sat, bitmatrix, bitcircuit,
@@ -59,12 +65,22 @@ export const FRONTIER_FAMILIES: readonly Family[] = freeze([
 ]);
 
 /**
- * The unpublished bounded tool-agent pool: instances carry deterministic
+ * The published bounded tool-agent pool: instances carry deterministic
  * server-side tool environments and prompts documenting the TOOL/FINAL
- * protocol. Results are never comparable to unaided suites.
+ * protocol. Results are never comparable to unaided suites. v1 decorrelates
+ * satcheck from the frontier sat stream and uses non-convergent CA rules.
  */
 export const AGENT_FAMILIES: readonly Family[] = freeze([
   relayvm, autostep, satcheck,
+]);
+
+/** Frozen pools that exactly regenerate the published v0 archives. */
+export const FRONTIER_FAMILIES_V0: readonly Family[] = freeze([
+  sat, bitmatrix, bitcircuit,
+  knightsDeep, registervmDeep, cryptarithmDeep, automataDeepV0, gridxfDeep,
+]);
+export const AGENT_FAMILIES_V0: readonly Family[] = freeze([
+  relayvm, autostepV0, satcheckV0,
 ]);
 
 export function suiteVersion(name: SuiteName): string {
@@ -77,7 +93,9 @@ export function suitePool(name: SuiteName): readonly Family[] {
 
 export function poolForVersion(version: string): readonly Family[] {
   if (version === SUITE_VERSION) return FAMILIES;
+  if (version === FRONTIER_SUITE_VERSION_V0) return FRONTIER_FAMILIES_V0;
   if (version === FRONTIER_SUITE_VERSION) return FRONTIER_FAMILIES;
+  if (version === AGENT_SUITE_VERSION_V0) return AGENT_FAMILIES_V0;
   if (version === AGENT_SUITE_VERSION) return AGENT_FAMILIES;
   throw new Error(`unknown suite version: ${version}`);
 }
