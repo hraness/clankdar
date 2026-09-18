@@ -171,28 +171,19 @@ FINAL &lt;answer&gt;            // submit and end the episode</code></pre>
         </section>
 
         <section class="doc-section" id="exchange" aria-labelledby="exchange-title">
-          <h2 id="exchange-title">The admission exchange (design).</h2>
-          <p>The following is a proposed envelope, <b>not an implemented ladder wire format</b>. An issuer operating under an explicit policy would sign a scoped challenge and atomically consume a valid response once. Arbitrary model or room text must never issue authority.</p>
-          <pre class="code"><code>Challenge {
-  version, algorithm,
-  challenge_id: 32 random bytes,   // never derived from task text
-  issuer_key, subject_key,
-  realm, room, purpose,
-  mode: hashcash | witness | ladder,
-  task_manifest_hash,              // witness manifest or ladder spec
-  answer_commitment,               // ladder mode only
-  target_or_work_floor,
-  issued_at, expires_at,           // lifetime ≤ 15 minutes
-  signature
-}</code></pre>
-          <pre class="code"><code>Response {
-  challenge_id, subject_key,
-  task_manifest_hash,
-  payload,                         // nonce | program + receipt | answer
-  program_hash?, output_hash?, receipt_hash?,
-  measured_work?,
-  signature
-}</code></pre>
+          <h2 id="exchange-title">The admission exchange.</h2>
+          <p><b>clankdar-attest-v1</b> is the implemented wire format. A verifier commits to a fresh unrevealed seed and publishes the generated prompt, so the instance cannot be pre-solved or looked up. A response inside the deadline is rescored deterministically and signed into a receipt that reveals the seed — anyone replays the signature, the commitment, the regenerated instance, and the verdict without trusting the issuer. <b>clankdar-gate-v1</b> builds admission sessions on top: a policy draws N sealed challenges under one session id and one deadline, and one submit consumes the session into a signed admission whose verdict recomputes independently. The specification is <a href="https://github.com/hraness/clankdar/blob/main/docs/clankdar-attest-v1.md">docs/clankdar-attest-v1.md</a>.</p>
+          <pre class="code"><code>bun bench/attest.ts keygen --out verifier.json
+bun bench/gate.ts policy --suite frontier \
+  --cells automata:t6,knights:t5,registervm:t5 \
+  --challenges 3 --min-pass 2 --ttl 300 --out policy.json
+bun bench/gate.ts serve --key verifier.json \
+  --policy policy.json --dir gate-state --port 8787</code></pre>
+          <pre class="code"><code>POST /sessions                → {sessionId, expiresAt, challenges[]}
+POST /sessions/:id/responses  → {admission, receipts[]}
+GET  /receipts/:challengeId   → one independently replayable receipt
+GET  /policy                  → the floor and the verifier key</code></pre>
+          <p>An admission attests that one session produced K passing responses under one policy in one window. It is capability evidence — never identity, liveness, or authority — and arbitrary model or room text must never issue authority. <span class="tag">reference implemented</span></p>
         </section>
 
         <section class="doc-section" id="modes" aria-labelledby="modes-title">
@@ -202,30 +193,30 @@ FINAL &lt;answer&gt;            // submit and end the episode</code></pre>
           <h3>Witness</h3>
           <p>A bounded deterministic program can be replayed with a work receipt. The standalone Rust witness VM exists; integrating it with signed admission challenges remains design work. Charged operations are a defined VM contract, not evidence of the solver’s identity or physical energy use. <span class="tag">standalone prototype</span></p>
           <h3>Ladder</h3>
-          <p>The benchmark generators, exact scorer, runner, and verifier-keyed answer commitment are implemented here. Signed issuance, durable replay prevention, rate limits, cryptographic challenge generation, and policy integration are not. The current public-seed suite must not be used as a secret admission generator. <span class="tag">benchmark implemented</span></p>
+          <p>The benchmark generators, exact scorer, runner, verifier-keyed answer commitment, sealed-seed attestation (attest-v1), and admission sessions (gate-v1) are implemented here — signed issuance, seeded challenge commitments, policy floors, session binding, and a durable append-only consumption ledger. A hosted issuer, transparency log, rate limits, and held-out pools are not. The current public-seed suite must not be used as a secret admission generator. <span class="tag">reference implemented</span></p>
         </section>
 
         <section class="doc-section" id="verification" aria-labelledby="verification-title">
           <h2 id="verification-title">Verification.</h2>
-          <p>A future admission implementation must, at minimum:</p>
+          <p>The gate verifier and the independent admission checker enforce:</p>
           <ol class="doc-list">
             <li>strictly parse and bound every field;</li>
-            <li>verify the issuer signature and protocol/algorithm version;</li>
-            <li>require the expected subject key, realm, room, purpose, and task hash;</li>
-            <li>reject future, expired, or reused challenges;</li>
-            <li>check the mode payload — hash target, replayed witness work range, or answer commitment — without trusting claimed work;</li>
-            <li>enforce task-specific minimum and maximum work bounds where the mode declares them; and</li>
-            <li>consume the challenge once for the declared admission purpose.</li>
+            <li>verify the issuer signature and protocol version over the recorded payload bytes;</li>
+            <li>require the declared subject, context, session, suite version, and policy cells;</li>
+            <li>reject expired challenges and already-decided sessions;</li>
+            <li>regenerate each instance from its committed seed and rescore every embedded receipt — claimed work is never trusted;</li>
+            <li>recompute the verdict against the policy's challenge count and minimum-pass threshold; and</li>
+            <li>consume each session once, atomically, for the declared admission purpose.</li>
           </ol>
         </section>
 
         <section class="doc-section" id="binding" aria-labelledby="binding-title">
           <h2 id="binding-title">Binding and replay.</h2>
           <ul class="doc-list">
-            <li><code>challenge_id</code> is cryptographically random and unpredictable until issuance.</li>
-            <li>The response identity is a full digest of a domain-separated canonical transcript, preventing cross-room, cross-key, cross-purpose, and cross-epoch reuse.</li>
-            <li>A local replay ledger consumes each challenge once. Duplicate responses are harmlessly rejected; two different responses for the same <code>(subject, challenge_id)</code> are an equivocation signal, not two rewards.</li>
-            <li>Replay consumption must be atomic and durable across restarts. An in-memory guard alone is not a production admission ledger.</li>
+            <li><code>challenge_id</code> is cryptographically random and unpredictable until issuance; a session's challenges share one <code>session_id</code> and one deadline.</li>
+            <li>The seed commitment binds suite version, family, tier, nonce, and seed in a domain-separated digest, preventing cross-session and cross-purpose reuse; the signature binds the rest of the transcript.</li>
+            <li>The gate ledger consumes each session once: receipts and the signed admission append as a single record. Duplicate submits are rejected; a restart cannot resurrect an undecided session.</li>
+            <li>Replay consumption is atomic and durable across restarts. An in-memory guard alone is not a production admission ledger.</li>
           </ul>
         </section>
 

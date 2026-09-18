@@ -91,6 +91,36 @@ score. Decision-makers should predeclare relevant cells, conditions, sample
 sizes, thresholds, and error treatment rather than selecting a policy after
 seeing a candidate's results.
 
+## Attestation and admission gates
+
+`clankdar-attest-v1` seals a fresh seed behind a commitment so a challenge
+instance cannot be pre-solved; `clankdar-gate-v1` builds admission sessions on
+top: N sealed challenges, one deadline, one signed verdict.
+
+```console
+bun bench/attest.ts keygen --out verifier.json
+bun bench/gate.ts policy --suite frontier --cells automata:t6,knights:t5,registervm:t5 \
+  --challenges 3 --min-pass 2 --ttl 300 --out policy.json
+bun bench/gate.ts issue --key verifier.json --policy policy.json --out session.json
+bun bench/gate.ts submit --key verifier.json --session session.json --responses responses.json
+bun bench/gate.ts check admission.json
+bun bench/gate.ts serve --key verifier.json --policy policy.json --dir gate-state --port 8787
+```
+
+`serve` exposes `POST /sessions`, `POST /sessions/:id/responses`,
+`GET /receipts/:challengeId`, and `GET /policy`; sessions and decisions persist
+in an append-only ledger that consumes each session exactly once across
+restarts. `gate probe` points the same machinery at your own model endpoint
+and keeps the signed admissions as replayable score-band evidence. The wire
+format, checking procedure, and threat model are specified in
+[docs/clankdar-attest-v1.md](docs/clankdar-attest-v1.md).
+
+An admission attests that one session produced K passing responses under one
+policy in one window. It is not identity, liveness, or authority: challenges
+can be delegated, and a verifier can always answer its own oracle, so relying
+parties should issue their own challenges and treat foreign admissions as
+issuer-claimed.
+
 ## Scoring and protocol boundaries
 
 `clankdar-score-v2` compares the whole response using a family-specific answer
