@@ -115,6 +115,12 @@ and keeps the signed admissions as replayable score-band evidence. The wire
 format, checking procedure, and threat model are specified in
 [docs/clankdar-attest-v1.md](docs/clankdar-attest-v1.md).
 
+`bun drift` turns probes into monitoring: `drift run` appends each signed
+admission to a series file, `drift report` aggregates per-cell pass bands,
+`drift baseline` pins a reference, and `drift compare` exits nonzero when a
+cell or the overall band drops past `--threshold` — a CI gate for silent model
+substitutions and regressions at a probed endpoint.
+
 An admission attests that one session produced K passing responses under one
 policy in one window. It is not identity, liveness, or authority: challenges
 can be delegated, and a verifier can always answer its own oracle, so relying

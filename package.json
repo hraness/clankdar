@@ -6,6 +6,7 @@
   "scripts": {
     "bench": "bun bench/cli.ts",
     "gate": "bun bench/gate.ts",
+    "drift": "bun bench/drift.ts",
     "calibrate": "bun bench/calibrate.ts",
     "report": "bun bench/report.ts",
     "check": "bun run typecheck && bun test && bun run build:site",
