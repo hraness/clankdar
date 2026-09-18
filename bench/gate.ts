@@ -26,7 +26,7 @@
  * issuer-claimed.
  */
 import { parseArgs } from "node:util";
-import { randomBytes, verify as cryptoVerify } from "node:crypto";
+import { randomBytes, randomInt, verify as cryptoVerify } from "node:crypto";
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import {
@@ -141,7 +141,7 @@ export function issueSession(opts: {
   const policy = parsePolicy(opts.policy);
   const now = opts.now ?? new Date();
   const sessionId = `gs_${randomBytes(9).toString("base64url")}`;
-  const pick = opts.pick ?? ((bound: number) => randomBytes(4).readUInt32BE(0) % bound);
+  const pick = opts.pick ?? ((bound: number) => randomInt(bound));
   const cells = policy.cells.map(cellOf);
   const tickets: Ticket[] = [];
   const challenges: Challenge[] = [];
@@ -341,8 +341,8 @@ export function serveGate(opts: {
           });
           opts.store.issueSession(session);
           return json({ sessionId: session.sessionId, expiresAt: session.expiresAt, challenges }, 201);
-        } catch (error) {
-          return err(400, message(error));
+        } catch {
+          return err(400, "session request rejected");
         }
       }
       const submitMatch = new RegExp(`^/sessions/(${SESSION_ID.source.slice(1, -1)})/responses$`).exec(pathname);
@@ -365,8 +365,8 @@ export function serveGate(opts: {
           });
           opts.store.decide(entry.session.sessionId, admission, receipts);
           return json({ admission, receipts });
-        } catch (error) {
-          return err(400, message(error));
+        } catch {
+          return err(400, "response submission rejected");
         }
       }
       return err(404, "not found");
