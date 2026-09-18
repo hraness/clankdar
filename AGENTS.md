@@ -1,9 +1,9 @@
 # Contents
 
-- `ladder/` owns versioned deterministic benchmark generators, typed scoring, and the experimental keyed commitment helper. `FAMILIES` is the frozen published v2 pool; `FRONTIER_FAMILIES` (deeper unaided cells) and `AGENT_FAMILIES` (bounded tool-agent cells with server-side `env` tools) are separate unpublished pools.
+- `ladder/` owns versioned deterministic benchmark generators, typed scoring, and the experimental keyed commitment helper. `FAMILIES` is the frozen published v2 pool; `FRONTIER_FAMILIES` (deeper unaided cells) and `AGENT_FAMILIES` (bounded tool-agent cells with server-side `env` tools) are the current published pools. The `*_V0` constants are frozen pools that exactly regenerate the published `frontier-v0`/`agent-v0` archives; `poolForVersion` must keep every published suite version regenerable forever.
 - `bench/` owns bounded adapters, CLI run artifacts, comparison reports, pilot replay, and `agent.ts`/`replay.ts` — the TOOL/FINAL protocol loop and deterministic transcript verifier for the agent track.
 - `site/` owns the static marketing and documentation pages for clankdar.com.
-- `site/benchmark/pilot-v0/` is the intentional public legacy-data archive; private runtime results stay in ignored `results/`.
+- `site/benchmark/` holds the published calibration archives: `pilot-v0` (intentional legacy data), `v2-calibration-0`, `frontier-v0`, and `agent-v0`; private runtime results stay in ignored `results/`.
 - `site/build.ts` is the bundling entry; `site/dist/` is generated output.
 - `vercel.json` sets the static build, output directory, and content security headers.
 

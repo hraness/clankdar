@@ -10,16 +10,18 @@ function step(row: number[], rule: number): number[] {
 }
 
 const RULES = [30, 54, 60, 90, 110, 150, 182, 250];
+/** Agent v1+: convergent rules 182/250 collapse to all-ones rows (see automata.ts). */
+const RULES_STABLE = [30, 54, 60, 90, 110, 150, 22, 73];
 const TIER_PARAMS: Record<number, { w: number; steps: number }> = {
   5: { w: 17, steps: 5 },
   6: { w: 21, steps: 7 },
   7: { w: 25, steps: 10 },
 };
 
-function build(tier: number, seed: number) {
+function build(tier: number, seed: number, rules: readonly number[] = RULES) {
   const r = rng(mixSeed(`autostep:t${tier}`, seed));
   const { w, steps } = TIER_PARAMS[tier];
-  const rule = r.pick(RULES);
+  const rule = r.pick(rules);
   let row: number[] = Array.from({ length: w }, () => (r.chance(0.4) ? 1 : 0));
   if (!row.some(Boolean)) row[r.int(w)] = 1;
   const start = row.join("");
@@ -56,9 +58,16 @@ After exactly ${steps} steps, what is the row? Reply via FINAL with only the ${w
   };
 }
 
-/** Agent pool: cellular-automaton evaluation with a per-step tool. */
-export const autostep: Family = {
+/** Frozen agent-v0 pool: regenerates the published archive exactly. */
+export const autostepV0: Family = {
   name: "autostep",
   tiers: [5, 6, 7],
   generate: build,
+};
+
+/** Agent v1+: cellular-automaton evaluation with a per-step tool. */
+export const autostep: Family = {
+  name: "autostep",
+  tiers: [5, 6, 7],
+  generate: (tier, seed) => build(tier, seed, RULES_STABLE),
 };

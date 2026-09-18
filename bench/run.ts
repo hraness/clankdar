@@ -34,7 +34,13 @@ export function prepareSuite(opts: BenchOptions): { instances: Instance[]; suite
   const cells = suiteCells(opts);
   if (cells.length * opts.seeds.length > 10_000) throw new Error("suite exceeds 10000 instances");
   const seeds = [...opts.seeds].sort((a, b) => a - b);
-  const instances = cells.flatMap(({ family, tier }) => seeds.map((seed) => family.generate(tier, seed)));
+  const instances = cells.flatMap(({ family, tier }) => seeds.map((seed) => {
+    try {
+      return family.generate(tier, seed);
+    } catch (error) {
+      throw new Error(`generation failed at ${family.name}:t${tier}:s${seed}: ${error instanceof Error ? error.message : String(error)}`);
+    }
+  }));
   for (const instance of instances) {
     if (!instance.prompt || instance.prompt.length > 65_536 || canonicalAnswer(instance.answer, answerFormat(instance.family)) === null) throw new Error(`invalid generated instance: ${instance.family}:${instance.tier}:${instance.seed}`);
   }

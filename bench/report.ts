@@ -230,7 +230,9 @@ export function agentDiagnostics(runs: RecordedRun[]): AgentDiagnostics[] {
     for (const row of episodes) {
       for (const entry of row.detail?.transcript ?? []) {
         if (entry.role !== "tool" || entry.ok) continue;
-        if (entry.tool === "protocol") toolErrors.protocol++;
+        // Classify by recorded outcome text: an unknown tool named "protocol"
+        // would record "unknown_tool protocol", not a protocol violation.
+        if (entry.text.startsWith("protocol_error")) toolErrors.protocol++;
         else if (entry.text === "budget_exhausted") toolErrors.callBudget++;
         else if (entry.text.startsWith("unknown_tool")) toolErrors.unknownTool++;
         else if (entry.text === "invalid_arguments") toolErrors.invalidArgs++;

@@ -43,6 +43,7 @@ const files = ["paper-theme.css", "product-marketing-preset.css", "lantern-mater
 for (const name of files) await cp(resolve(kit, name), resolve(output, "design", name));
 await cp(resolve(kit, "fonts/nebula-sans"), resolve(output, "design/fonts/nebula-sans"), { recursive: true });
 await cp(resolve(kit, "fonts/instrument-serif"), resolve(output, "design/fonts/instrument-serif"), { recursive: true });
+await cp(resolve(kit, "fonts/geist-mono"), resolve(output, "design/fonts/geist-mono"), { recursive: true });
 await cp(resolve(kit, "marketing-assets"), resolve(output, "design/marketing-assets"), { recursive: true });
 await cp(resolve(kit, "../LICENSE"), resolve(output, "design/LICENSE"));
 const result = await Bun.build({ entrypoints: [resolve(root, "appearance.ts")], outdir: output, naming: "appearance.js", target: "browser", format: "iife", minify: true });

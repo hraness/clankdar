@@ -69,11 +69,11 @@
 
         <section class="doc-section" id="agent-results" aria-labelledby="agent-title">
           <h2 id="agent-title">Tool-agent 0: bounded, replayable episodes.</h2>
-          <p>Recorded September 17, 2026 through Vercel AI Gateway: five requested model aliases, six family/tier cells, and held-out seeds 301–320. Each episode is a <code>TOOL name {args}</code> / <code>FINAL answer</code> protocol with a hard budget of 16 tool calls, 24 turns, and 4,096 output tokens. Tool environments are deterministic server-side closures; the transcript is recorded and replayed against regenerated environments.</p>
+          <p>Recorded September 17, 2026 through Vercel AI Gateway: five requested model aliases, six family/tier cells, and held-out seeds 301–320. Each episode is a <code>TOOL name {args}</code> / <code>FINAL answer</code> protocol with per-cell budgets of 4–12 tool calls and 8–16 turns, and 4,096 characters per tool output. Tool environments are deterministic server-side closures; the transcript is recorded and replayed against regenerated environments.</p>
           <div class="callout"><strong>This is a separate track.</strong><p>Tool-agent scores measure planning and tool use under the recorded budget. They do not estimate base-model capability and are not comparable to the unaided runs. Some provider errors appear as episode failures, not wrong answers.</p></div>
           {{AGENT_RESULTS}}
           <p><b>Strict</b> is the benchmark result. <b>Final block</b> is a formatting diagnostic only. Inspect the <a href="/benchmark/agent-v0/manifest.json">manifest</a>, <a href="/benchmark/agent-v0/report.json" download>full report</a>, and the per-episode transcripts.</p>
-          <p class="note">Tool-use budgets are arbitrary; they describe behavior under the recorded contract, not a certified safe or capable agent. The public tasks can be memorized or solved with code.</p>
+          <p class="note">Tool-use budgets are arbitrary; they describe behavior under the recorded contract, not a certified safe or capable agent. The public tasks can be memorized or solved with code. The <code>satcheck:t5</code> instances in this archive share their ground truth with the frontier <code>sat:t5</code> cell — the suite was corrected to <code>clankdar-agent-v1</code> so future runs decorrelate the two tracks. One run was recorded at a source revision marked dirty in the manifest; every transcript still replays exactly against the published suite.</p>
         </section>
 
         <section class="doc-section" id="signal" aria-labelledby="signal-title">

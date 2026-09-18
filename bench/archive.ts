@@ -4,7 +4,7 @@ import { gzipSync } from "node:zlib";
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { buildReport, readRuns } from "./report.ts";
 import { replayRun } from "./replay.ts";
-import { AGENT_SUITE_VERSION } from "../ladder/mod.ts";
+import { AGENT_SUITE_VERSIONS } from "../ladder/mod.ts";
 import { AGENT_PROTOCOL_VERSION } from "./adapters.ts";
 
 const sha256 = (value: Uint8Array | string) => createHash("sha256").update(value).digest("hex");
@@ -45,7 +45,7 @@ export function publishCalibration(source: string, target: string, id: string, l
   writeFileSync(join(target, "report.json"), reportBytes, { flag: "wx" });
   artifacts.push({ file: "report.json", sha256: sha256(reportBytes), bytes: Buffer.byteLength(reportBytes) });
   const manifests = runs.map((run) => run.manifest!);
-  const track = manifests[0].suiteVersion === AGENT_SUITE_VERSION ? "tool-agent" : "unaided";
+  const track = AGENT_SUITE_VERSIONS.has(String(manifests[0].suiteVersion)) ? "tool-agent" : "unaided";
   const manifest = {
     schemaVersion: 1,
     id,
