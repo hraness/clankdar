@@ -51,7 +51,8 @@ hosted issuer surface run self-hosted as experimental references (sealed-seed
 issuance, durable session ledger, signed admissions, subject-bound receipts,
 transparency log with published heads and linear suffix consistency proofs,
 provider-neutral head-witness intake with configured-provider polling,
-held-out pools, drift monitor).
+held-out pools, optional bearer-key write auth with per-key mint quotas,
+drift monitor).
 The verifier-keyed HMAC helper is only a building block. The benchmark RNG is
 non-cryptographic and must not issue secret admission puzzles. Public tasks
 can be memorized, solved with code, or delegated.

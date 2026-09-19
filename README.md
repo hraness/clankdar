@@ -184,10 +184,17 @@ signed head an external witness pins), and `GET /tlog/proof/:sessionId`
 (inclusion evidence). `bun hosted head` prints that head for pinning;
 holdout pools and the rate-limit flags pass through. The state dir stays
 `0700` — published entries carry record digests, never seeds or responses.
-This publishes evidence, not trust: the issuer can still self-mint. A checker
-can submit heads to the provider-neutral witness intake — or configure the
-witness to poll this endpoint — but a private fork stays invisible until
-both views reach one witness.
+`bun hosted serve --auth-keys state/keys.jsonl` optionally requires
+`Authorization: Bearer clk_…` on `POST /sessions`; `bun hosted keys
+issue|list|revoke` manages the append-only key file (tokens print once and
+store as SHA-256; revocations are appended records), and per-key mint
+quotas compose the gate's ledger-derived limits. Client keys authorize
+ledger writes — they are not identity — and the submit path stays
+unauthenticated: the live session id is the capability. This publishes
+evidence, not trust: the issuer can still self-mint. A checker can submit
+heads to the provider-neutral witness intake — or configure the witness to
+poll this endpoint — but a private fork stays invisible until both views
+reach one witness.
 
 `clankdar-holdout-v1` covers issuer-private cells: `bun holdout gen` mints a
 pool of published generator cells re-parameterized by secret labels, and gate

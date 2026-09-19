@@ -233,6 +233,77 @@ describe("hosted CLI", () => {
     }
   }, 15_000);
 
+  test("keys issue/list/revoke manage the key file; serve --auth-keys enforces it", async () => {
+    const dir = mkdtempSync(join(tmpdir(), "clankdar-hosted-"));
+    writeFileSync(join(dir, "verifier.json"), JSON.stringify(verifier.privateJwk));
+    writeFileSync(join(dir, "policy.json"), JSON.stringify(policy));
+    const keysPath = join(dir, "state", "keys.jsonl");
+
+    // issue prints the raw token once and reports the key's quota.
+    const issued = hostedBin("keys", "issue", "--keys", keysPath, "--name", "agent-7", "--quota-mints", "5", "--quota-window", "1h", "--quota-open", "3");
+    const [issueCode, issueOut] = await Promise.all([issued.exited, new Response(issued.stdout).text()]);
+    expect(issueCode).toBe(0);
+    const { keyId, token, quota } = JSON.parse(issueOut);
+    expect(token).toMatch(/^clk_[A-Za-z0-9_-]{32}$/);
+    expect(quota).toEqual({ openSessions: 3, mintsPerWindow: { max: 5, seconds: 3600 } });
+
+    // list shows the key's metadata — never the token or its hash.
+    const listed = hostedBin("keys", "list", "--keys", keysPath);
+    const [listCode, listOut] = await Promise.all([listed.exited, new Response(listed.stdout).text()]);
+    expect(listCode).toBe(0);
+    const views = JSON.parse(listOut);
+    expect(views).toHaveLength(1);
+    expect(views[0]).toMatchObject({ keyId, name: "agent-7", revoked: false, mints: 0 });
+    expect(listOut).not.toContain(token);
+
+    // serve --auth-keys: 401 without a token, 201 with it, quota and ledger
+    // mint records accumulate under the key.
+    const probe = Bun.serve({ port: 0, fetch: () => new Response() });
+    const port = probe.port;
+    probe.stop(true);
+    const proc = hostedBin("serve", "--key", join(dir, "verifier.json"), "--policy", join(dir, "policy.json"), "--dir", join(dir, "state"), "--auth-keys", keysPath, "--port", String(port));
+    try {
+      const reader = proc.stderr.getReader();
+      let banner = "";
+      while (!banner.includes("\n")) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        banner += new TextDecoder().decode(value, { stream: true });
+      }
+      reader.releaseLock();
+      const url = /listening at (http:\/\/\S+)/.exec(banner)?.[1];
+      expect(url).toBeTruthy();
+      expect(banner).toContain("bearer auth");
+      expect((await fetch(`${url}/sessions`, { method: "POST", body: "{}" })).status).toBe(401);
+      expect((await fetch(`${url}/sessions`, { method: "POST", body: "{}", headers: { authorization: `Bearer ${token}` } })).status).toBe(201);
+    } finally {
+      proc.kill();
+      await proc.exited;
+    }
+
+    // revoke appends; list folds it in.
+    const revoked = hostedBin("keys", "revoke", "--keys", keysPath, "--key-id", keyId);
+    const [revokeCode] = await Promise.all([revoked.exited, new Response(revoked.stdout).text()]);
+    expect(revokeCode).toBe(0);
+    const listedAgain = hostedBin("keys", "list", "--keys", keysPath);
+    const [, listOut2] = await Promise.all([listedAgain.exited, new Response(listedAgain.stdout).text()]);
+    expect(JSON.parse(listOut2)[0]).toMatchObject({ keyId, revoked: true, mints: 1 });
+  }, 30_000);
+
+  test("keys issue rejects a dangling --quota-window or --quota-mints", async () => {
+    const dir = mkdtempSync(join(tmpdir(), "clankdar-hosted-"));
+    const keysPath = join(dir, "keys.jsonl");
+    for (const args of [
+      ["keys", "issue", "--keys", keysPath, "--quota-window", "1h"],
+      ["keys", "issue", "--keys", keysPath, "--quota-mints", "5"],
+    ]) {
+      const proc = hostedBin(...args);
+      const [code, stderr] = await Promise.all([proc.exited, new Response(proc.stderr).text()]);
+      expect(code).toBe(2);
+      expect(stderr).toContain("requires --quota-");
+    }
+  }, 15_000);
+
   test("serve refuses a --pool that does not cover the policy's held-out cells", async () => {
     const dir = mkdtempSync(join(tmpdir(), "clankdar-hosted-"));
     writeFileSync(join(dir, "verifier.json"), JSON.stringify(verifier.privateJwk));
