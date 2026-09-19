@@ -35,6 +35,7 @@ import {
 } from "./attest.ts";
 import { poolForVersion, suiteVersion, type SuiteName } from "../ladder/mod.ts";
 import { answerFormat, canonicalAnswer, MAX_ANSWER_LENGTH } from "../ladder/family.ts";
+import { holdoutCell, parsePool, type HoldoutPool } from "./holdout.ts";
 import { adapterByName, openai } from "./adapters.ts";
 import type { Adapter } from "./adapter.ts";
 import { integer, requestBudget } from "./options.ts";
@@ -95,13 +96,21 @@ export interface Admission {
   signature: string;
 }
 
-const cellOf = (cell: string): { family: string; tier: number } => {
+const cellOf = (cell: string): { family: string; tier: number; holdout: boolean } => {
+  const hold = /^h:([a-z0-9]+):t(\d+)$/.exec(cell);
+  if (hold) return { family: hold[1], tier: Number(hold[2]), holdout: true };
   const match = /^([a-z0-9]+):t(\d+)$/.exec(cell)!;
-  return { family: match[1], tier: Number(match[2]) };
+  return { family: match[1], tier: Number(match[2]), holdout: false };
 };
 
-/** Strictly parse and bound a gate policy; every cell must exist in the suite pool. */
-export function parsePolicy(value: unknown): GatePolicy {
+/**
+ * Strictly parse and bound a gate policy. Published cells (`family:tN`) must
+ * exist in the suite pool; held-out cells (`h:family:tN`) resolve against
+ * `opts.pool` — when no pool is supplied (the checker path), their syntax is
+ * bound-checked but pool membership stays unverifiable until the challenge
+ * list is examined.
+ */
+export function parsePolicy(value: unknown, opts?: { pool?: HoldoutPool }): GatePolicy {
   const fail = (message: string): never => {
     throw new Error(`invalid gate policy: ${message}`);
   };
@@ -112,8 +121,14 @@ export function parsePolicy(value: unknown): GatePolicy {
   const suite = p.suite as SuiteName;
   const cells = p.cells as string[];
   if (new Set(cells).size !== cells.length) fail("cells must be distinct");
+  if (cells.some((c) => c.startsWith("h:")) && opts?.pool !== undefined && opts.pool.suite !== suite) fail("holdout pool is for a different suite");
   const pool = poolForVersion(suiteVersion(suite));
   for (const cell of cells) {
+    const hold = /^h:([a-z0-9]+):t(\d+)$/.exec(cell);
+    if (hold) {
+      if (opts?.pool !== undefined && !holdoutCell(opts.pool, hold[1], Number(hold[2]))) fail(`cell is not in the holdout pool: ${cell}`);
+      continue;
+    }
     const parsed = /^([a-z0-9]+):t(\d+)$/.exec(cell);
     const family = parsed && pool.find((f) => f.name === parsed[1]);
     if (!parsed || !family || !family.tiers.includes(Number(parsed[2]))) fail(`unknown cell for suite ${p.suite}: ${cell}`);
@@ -134,15 +149,18 @@ export function issueSession(opts: {
   subject?: string;
   context?: string;
   verifierJwk: VerifierJwk;
+  /** Pool supplying the policy's `h:` cells; required when the policy names any. */
+  pool?: HoldoutPool;
   now?: Date;
   pick?: (bound: number) => number;
   seedBase?: number;
 }): { session: GateSession; challenges: Challenge[] } {
-  const policy = parsePolicy(opts.policy);
+  const policy = parsePolicy(opts.policy, { pool: opts.pool });
   const now = opts.now ?? new Date();
   const sessionId = `gs_${randomBytes(9).toString("base64url")}`;
   const pick = opts.pick ?? ((bound: number) => randomInt(bound));
   const cells = policy.cells.map(cellOf);
+  if (cells.some((c) => c.holdout) && opts.pool === undefined) throw new Error("policy names held-out cells but no holdout pool was supplied");
   const tickets: Ticket[] = [];
   const challenges: Challenge[] = [];
   for (let i = 0; i < policy.challenges; i++) {
@@ -152,6 +170,7 @@ export function issueSession(opts: {
       seed: opts.seedBase !== undefined ? opts.seedBase + i : undefined,
       ttlSeconds: policy.ttlSeconds, context: opts.context, subject: opts.subject,
       sessionId, verifierJwk: opts.verifierJwk, now,
+      holdoutPool: cell.holdout ? opts.pool : undefined,
     });
     tickets.push(issued.ticket);
     challenges.push(issued.challenge);
@@ -177,6 +196,8 @@ export function submitSession(opts: {
   responses: Record<string, string>;
   /** Optional respondent key proof; session-scoped, so the same object embeds in every minted receipt. */
   subjectProof?: SubjectProof;
+  /** Pool that minted the session's held-out challenges; required when any carry `heldout`. */
+  pool?: HoldoutPool;
   verifierJwk: VerifierJwk;
   now?: Date;
 }): { receipts: Receipt[]; admission: Admission } {
@@ -193,8 +214,8 @@ export function submitSession(opts: {
   for (const ticket of session.tickets) {
     const response = opts.responses[ticket.challenge.challengeId];
     if (typeof response !== "string" || canonicalAnswer(response, answerFormat(ticket.challenge.family)) === null) continue;
-    const receipt = verifyResponse({ ticket, response, subjectProof: opts.subjectProof, verifierJwk: opts.verifierJwk, now });
-    const replay = checkReceipt(receipt);
+    const receipt = verifyResponse({ ticket, response, subjectProof: opts.subjectProof, pool: opts.pool, verifierJwk: opts.verifierJwk, now });
+    const replay = checkReceipt(receipt, { pool: opts.pool });
     if (!replay.ok) throw new Error(`minted receipt does not verify: ${replay.reason}`);
     receipts.push(receipt);
     if (replay.verdict) passed++;
@@ -213,6 +234,8 @@ export interface AdmissionCheck {
   ok: boolean;
   verdict?: boolean;
   passed?: number;
+  /** Receipts whose held-out cells could not be replayed without the pool — signed and committed, but issuer-claimed scores. */
+  unreplayed?: number;
   reason?: string;
 }
 
@@ -220,9 +243,11 @@ export interface AdmissionCheck {
  * Independently replay an admission: payload signature, then every embedded
  * receipt through `checkReceipt`, then session binding, policy coverage,
  * completeness, deadline, and verdict arithmetic. Trusts nothing beyond the
- * recorded episode.
+ * recorded episode. Held-out challenges (`h:` policy cells, `heldout`
+ * challenge markers) replay only with the committed pool; without it they
+ * still count but surface in `unreplayed`.
  */
-export function checkAdmission(admission: Admission): AdmissionCheck {
+export function checkAdmission(admission: Admission, opts?: { pool?: HoldoutPool }): AdmissionCheck {
   const fail = (reason: string): AdmissionCheck => ({ ok: false, reason });
   if (admission?.protocol !== GATE_PROTOCOL || typeof admission.payload !== "string" || typeof admission.signature !== "string") return fail("not a gate admission");
   let body: AdmissionBody;
@@ -234,7 +259,7 @@ export function checkAdmission(admission: Admission): AdmissionCheck {
   if (body?.kind !== "admission" || typeof body.sessionId !== "string" || !SESSION_ID.test(body.sessionId)) return fail("malformed admission payload");
   let policy: GatePolicy;
   try {
-    policy = parsePolicy(body.policy);
+    policy = parsePolicy(body.policy, { pool: opts?.pool });
   } catch (error) {
     return fail(`invalid embedded policy: ${error instanceof Error ? error.message : String(error)}`);
   }
@@ -245,11 +270,18 @@ export function checkAdmission(admission: Admission): AdmissionCheck {
   const byId = new Map<string, Challenge>();
   let publicKey = "";
   let expiresAt = "";
+  let holdPoolKey = "";
   for (const challenge of challenges) {
     if (challenge?.protocol !== ATTEST_PROTOCOL || challenge.kind !== "challenge") return fail("malformed challenge in admission");
     if (challenge.sessionId !== body.sessionId) return fail("challenge is not bound to this session");
     if (challenge.suiteVersion !== version) return fail("challenge suite disagrees with the policy");
-    if (!validCells.has(`${challenge.family}:t${challenge.tier}`)) return fail("challenge cell is outside the policy");
+    const cellId = `${challenge.family}:t${challenge.tier}`;
+    if (challenge.heldout !== undefined) {
+      if (typeof challenge.heldout !== "object" || typeof challenge.heldout.poolKey !== "string" || !/^[0-9a-f]{64}$/.test(challenge.heldout.poolKey)) return fail("malformed heldout marker");
+      if (!validCells.has(`h:${cellId}`)) return fail("challenge cell is outside the policy");
+      if (!holdPoolKey) holdPoolKey = challenge.heldout.poolKey;
+      else if (challenge.heldout.poolKey !== holdPoolKey) return fail("held-out challenges mix pools");
+    } else if (!validCells.has(cellId)) return fail("challenge cell is outside the policy");
     if (!expiresAt) expiresAt = challenge.expiresAt;
     else if (challenge.expiresAt !== expiresAt) return fail("session challenges do not share one deadline");
     if (!publicKey) publicKey = challenge.verifier?.publicKey ?? "";
@@ -271,8 +303,9 @@ export function checkAdmission(admission: Admission): AdmissionCheck {
   const answered = new Set<string>();
   let subjectKey: string | undefined;
   let passed = 0;
+  let unreplayed = 0;
   for (const receipt of receipts) {
-    const replay = checkReceipt(receipt);
+    const replay = checkReceipt(receipt, { pool: opts?.pool });
     if (!replay.ok) return fail(`embedded receipt does not verify: ${replay.reason}`);
     const receiptBody = JSON.parse(receipt.payload) as { challenge: Challenge; subjectProof?: SubjectProof };
     const receiptChallenge = receiptBody.challenge;
@@ -285,12 +318,13 @@ export function checkAdmission(admission: Admission): AdmissionCheck {
       else if (receiptBody.subjectProof.publicKey !== subjectKey) return fail("receipts mix subject keys");
     }
     if (replay.verdict) passed++;
+    if (replay.replayable === false) unreplayed++;
   }
   const verdict = body.verdict;
   if (!verdict || verdict.passed !== passed || verdict.required !== policy.minPass || verdict.pass !== (passed >= policy.minPass)) return fail("verdict does not rescore");
   const decided = Date.parse(verdict.decidedAt);
   if (!Number.isFinite(decided) || decided > Date.parse(expiresAt)) return fail("decision is later than the session deadline");
-  return { ok: true, verdict: verdict.pass, passed };
+  return { ok: true, verdict: verdict.pass, passed, ...(unreplayed ? { unreplayed } : {}) };
 }
 
 const message = (error: unknown): string => (error instanceof Error ? error.message : String(error));
@@ -349,10 +383,12 @@ export function serveGate(opts: {
   verifierJwk: VerifierJwk;
   store: GateStore;
   rateLimits?: GateRateLimits;
+  /** Pool supplying the policy's `h:` cells; required when the policy names any. */
+  pool?: HoldoutPool;
   host?: string;
   port?: number;
 }): { url: string; close: () => void } {
-  const policy = parsePolicy(opts.policy);
+  const policy = parsePolicy(opts.policy, { pool: opts.pool });
   const rateLimits = parseRateLimits(opts.rateLimits);
   const publicKey = publicKeyOf(opts.verifierJwk);
   const json = (data: unknown, status = 200) =>
@@ -389,7 +425,7 @@ export function serveGate(opts: {
         }
         try {
           const { session, challenges } = issueSession({
-            policy, verifierJwk: opts.verifierJwk,
+            policy, verifierJwk: opts.verifierJwk, pool: opts.pool,
             subject: body.subject === undefined ? undefined : String(body.subject),
             context: body.context === undefined ? undefined : String(body.context),
           });
@@ -417,7 +453,7 @@ export function serveGate(opts: {
         try {
           const { receipts, admission } = submitSession({
             session: entry.session, responses: responses as Record<string, string>,
-            subjectProof: body.subjectProof as SubjectProof | undefined, verifierJwk: opts.verifierJwk,
+            subjectProof: body.subjectProof as SubjectProof | undefined, pool: opts.pool, verifierJwk: opts.verifierJwk,
           });
           opts.store.decide(entry.session.sessionId, admission, receipts);
           return json({ admission, receipts });
@@ -442,21 +478,23 @@ export async function probe(opts: {
   adapter: Adapter;
   rounds: number;
   outDir?: string;
+  /** Pool supplying the policy's `h:` cells; required when the policy names any. */
+  pool?: HoldoutPool;
 }): Promise<{ rounds: number; sessions: number; passed: number; admitted: number; admissions: Admission[] }> {
-  const policy = parsePolicy(opts.policy);
+  const policy = parsePolicy(opts.policy, { pool: opts.pool });
   if (policy.suite === "agent") throw new Error("probe supports unaided suites (v2, frontier); the agent track needs recorded tool episodes");
   if (opts.outDir) mkdirSync(opts.outDir, { recursive: true, mode: 0o700 });
   const admissions: Admission[] = [];
   let passed = 0;
   let admitted = 0;
   for (let round = 0; round < opts.rounds; round++) {
-    const { session, challenges } = issueSession({ policy, verifierJwk: opts.verifierJwk });
+    const { session, challenges } = issueSession({ policy, verifierJwk: opts.verifierJwk, pool: opts.pool });
     const responses: Record<string, string> = {};
     for (const challenge of challenges) {
       const solved = await opts.adapter.solve({ family: challenge.family, tier: challenge.tier, prompt: challenge.prompt });
       responses[challenge.challengeId] = typeof solved === "string" ? solved : solved.text;
     }
-    const { admission } = submitSession({ session, responses, verifierJwk: opts.verifierJwk });
+    const { admission } = submitSession({ session, responses, verifierJwk: opts.verifierJwk, pool: opts.pool });
     const verdict = (JSON.parse(admission.payload) as AdmissionBody).verdict;
     if (verdict.pass) admitted++;
     passed += verdict.passed;
@@ -475,12 +513,12 @@ function loadJson(path: string): unknown {
 }
 
 const USAGE = `usage: gate <command>
-  policy --suite v2|frontier|agent --cells f:t1,g:t2 --challenges N --min-pass M --ttl SEC [--out policy.json]
-  issue --key K --policy P [--subject S] [--context C] [--seed N] [--out session.json]
-  submit --key K --session S --responses R.json [--subject-key KEY.json] [--out admission.json]
-  check ADMISSION.json
-  serve --key K --policy P --dir STATE [--host H] [--port N] [--open-total N] [--open-per-subject N] [--issue-window MAX:SEC]
-  probe --key K --policy P --adapter A --rounds N [--out DIR] [--execute --max-requests N --max-tokens N --timeout-ms N]`;
+  policy --suite v2|frontier|agent --cells f:t1,g:t2[,h:f:t3] --challenges N --min-pass M --ttl SEC [--pool POOL.json] [--out policy.json]
+  issue --key K --policy P [--subject S] [--context C] [--seed N] [--pool POOL.json] [--out session.json]
+  submit --key K --session S --responses R.json [--subject-key KEY.json] [--pool POOL.json] [--out admission.json]
+  check ADMISSION.json [--pool POOL.json]
+  serve --key K --policy P --dir STATE [--host H] [--port N] [--pool POOL.json] [--open-total N] [--open-per-subject N] [--issue-window MAX:SEC]
+  probe --key K --policy P --adapter A --rounds N [--pool POOL.json] [--out DIR] [--execute --max-requests N --max-tokens N --timeout-ms N]`;
 
 export async function main(args = process.argv.slice(2)): Promise<void> {
   const [command, ...rest] = args;
@@ -491,7 +529,7 @@ export async function main(args = process.argv.slice(2)): Promise<void> {
       suite: { type: "string" }, cells: { type: "string" }, challenges: { type: "string" }, "min-pass": { type: "string" },
       ttl: { type: "string" }, subject: { type: "string" }, context: { type: "string" }, seed: { type: "string" },
       responses: { type: "string" }, "subject-key": { type: "string" }, dir: { type: "string" }, host: { type: "string" }, port: { type: "string" },
-      adapter: { type: "string" }, rounds: { type: "string" },
+      adapter: { type: "string" }, rounds: { type: "string" }, pool: { type: "string" },
       "open-total": { type: "string" }, "open-per-subject": { type: "string" }, "issue-window": { type: "string" },
       execute: { type: "boolean" }, "max-requests": { type: "string" }, "max-tokens": { type: "string" }, "timeout-ms": { type: "string" },
       help: { type: "boolean", short: "h" },
@@ -505,14 +543,15 @@ export async function main(args = process.argv.slice(2)): Promise<void> {
   const need = (...names: (string | undefined)[]) => {
     if (names.some((n) => n === undefined)) throw new Error(`${command} requires more options.\n${USAGE}`);
   };
-  const policy = () => parsePolicy(loadJson(values.policy!));
+  const loadPool = () => (values.pool !== undefined ? parsePool(loadJson(values.pool)) : undefined);
+  const policy = () => parsePolicy(loadJson(values.policy!), { pool: loadPool() });
 
   if (command === "policy") {
     need(values.suite, values.cells, values.challenges, values["min-pass"], values.ttl);
     const built = parsePolicy({
       suite: values.suite, cells: values.cells!.split(",").map((c) => c.trim()),
       challenges: Number(values.challenges), minPass: Number(values["min-pass"]), ttlSeconds: Number(values.ttl),
-    });
+    }, { pool: loadPool() });
     if (values.out) writeFileSync(values.out, JSON.stringify(built, null, 2) + "\n", { flag: "wx" });
     else console.log(JSON.stringify(built, null, 2));
     return;
@@ -521,7 +560,7 @@ export async function main(args = process.argv.slice(2)): Promise<void> {
     need(values.key, values.policy);
     const { session, challenges } = issueSession({
       policy: policy(), verifierJwk: loadJson(values.key!) as VerifierJwk,
-      subject: values.subject, context: values.context,
+      subject: values.subject, context: values.context, pool: loadPool(),
       seedBase: values.seed !== undefined ? Number(values.seed) : undefined,
     });
     if (values.out) {
@@ -539,14 +578,14 @@ export async function main(args = process.argv.slice(2)): Promise<void> {
     if (values["subject-key"] !== undefined && !session.tickets?.length) throw new Error("session has no challenges to bind a subject proof to");
     const subjectProof = values["subject-key"] !== undefined ? subjectProofFor(session.tickets[0].challenge, loadJson(values["subject-key"]) as VerifierJwk) : undefined;
     const { receipts, admission } = submitSession({
-      session, responses, subjectProof, verifierJwk: loadJson(values.key!) as VerifierJwk,
+      session, responses, subjectProof, pool: loadPool(), verifierJwk: loadJson(values.key!) as VerifierJwk,
     });
     if (values.out) writeFileSync(values.out, JSON.stringify({ admission, receipts }, null, 2) + "\n", { flag: "wx" });
     else console.log(JSON.stringify({ admission, receipts }, null, 2));
     return;
   }
   if (command === "check") {
-    const result = checkAdmission(loadJson(positionals[0] ?? "") as Admission);
+    const result = checkAdmission(loadJson(positionals[0] ?? "") as Admission, { pool: loadPool() });
     console.log(JSON.stringify(result));
     if (!result.ok) process.exitCode = 2;
     return;
@@ -565,6 +604,7 @@ export async function main(args = process.argv.slice(2)): Promise<void> {
     const gate = serveGate({
       policy: policy(), verifierJwk: loadJson(values.key!) as VerifierJwk, store,
       rateLimits: Object.keys(rateLimits).length ? rateLimits : undefined,
+      pool: loadPool(),
       host: values.host, port: values.port !== undefined ? integer(values.port, 65535) : undefined,
     });
     console.error(`clankdar-gate listening at ${gate.url} (policy: ${policy().challenges} challenges, ${policy().minPass} required, ${policy().ttlSeconds}s)`);
@@ -587,7 +627,7 @@ export async function main(args = process.argv.slice(2)): Promise<void> {
       return;
     }
     if (remote && (!budget || budget.used() + p.challenges * rounds > integer(values["max-requests"]!, 30_000))) throw new Error("--execute requires --max-requests at least challenges × rounds");
-    const result = await probe({ policy: p, verifierJwk: loadJson(values.key!) as VerifierJwk, adapter, rounds, outDir: values.out });
+    const result = await probe({ policy: p, verifierJwk: loadJson(values.key!) as VerifierJwk, adapter, rounds, outDir: values.out, pool: loadPool() });
     console.error(`${adapter.name}: ${result.admitted}/${result.rounds} sessions admitted, ${result.passed}/${result.sessions} challenges passed`);
     console.log(JSON.stringify({ adapter: adapter.name, rounds: result.rounds, challenges: result.sessions, passed: result.passed, admitted: result.admitted }, null, 2));
     return;

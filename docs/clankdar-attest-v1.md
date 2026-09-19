@@ -410,9 +410,12 @@ session is issuer-claimed only.
   external anchoring — is not implemented.
 - **Per-family solver scripts.** Public generators admit canned solvers:
   a receipt proves "access to a solver for this cell," still real friction
-  for anti-spam, weaker as a competence claim. Held-out pools restore the
-  stronger claim at the cost of weaker public verifiability — not
-  implemented.
+  for anti-spam, weaker as a competence claim. Held-out pools (§15)
+  re-parameterize published generators with secret labels so the instance
+  stream is unpublished — they defeat instance lookup and per-cell
+  precomputation, but a general solver for the family still solves them,
+  and third-party checkers without the pool cannot replay the score (the
+  signature, commitment, timing, and subject proof still verify).
 - **Not sybil resistance.** One strong solver backs unlimited identities;
   the gate prices each admission, never proves uniqueness.
 - **Suite decay.** Published cells get trained on. Suites are versioned;
@@ -513,3 +516,95 @@ Commands (reference: `bench/badge.ts`):
   the caller (`tlog build` + `tlog prove`).
 - `check badge.json` → `{ok, subject, admissions, verdicts:{pass},
   logged}`; exit 2 on failure.
+
+## 15. Held-out pools (holdout-v1)
+
+A holdout pool re-parameterizes published generator cells with secret
+labels so the issued instance stream is unpublished. It is the
+issuer-side answer to per-cell precomputation: a solver cannot look up or
+pre-solve instances it has never seen a sample of, while the issuer still
+produces receipts under the same sealed-seed attestation protocol.
+
+### Pool file
+
+```json
+{
+  "protocol": "clankdar-holdout-v1",
+  "suite": "frontier",
+  "poolKey": "<sha256 hex>",
+  "cells": [{ "family": "sat", "tier": 4, "label": "<base64url>" }]
+}
+```
+
+- `suite` names the published generator pool the labels re-parameterize.
+- `label` is a secret base64url string (>=128 bits) — it is the only
+  private material. The held-out instance for a cell is
+  `generate(tier, mixSeed(label, seed))`: the label decorrelates the
+  cell's stream from the published one while the public `seed` stays the
+  caller seed recorded in the receipt.
+- `poolKey` commits the whole pool:
+  `sha256(canonical({protocol, suite, cells}))`. Checkers recompute it
+  from the file; a mismatched key means a tampered or wrong pool.
+
+The file is issuer-private (mode `0600` in the reference CLI) until the
+issuer chooses disclosure.
+
+### Challenge marker and policy cells
+
+A challenge minted from a pool carries `heldout: {poolKey}`; its
+`family`/`tier` name base-suite cells and `suiteVersion` names the base
+suite. In a gate policy, held-out cells are written `h:family:tN` (e.g.
+`h:sat:t4`) alongside published `family:tN` cells — the issuer's pool
+must contain every `h:` cell the policy names, and the pool's `suite`
+must equal the policy's. Within one admission all held-out challenges
+carry the same `poolKey`.
+
+### Checking
+
+`checkReceipt(receipt, {pool?})` produces three outcomes:
+
+- **Verified** — the checker holds a pool whose `poolKey` matches the
+  marker and which contains the cell: the instance regenerates from
+  `label + seed` and the full attest procedure runs (prompt, answer,
+  rescore, timing, subject proof).
+- **Invalid** — signature, commitment, shape, binding, or (for pool
+  holders) pool membership/regeneration fails. A challenge naming a cell
+  absent from its committed pool is fabricated and fails outright.
+- **Issuer-claimed** — `ok:true` with `replayable:false`: no matching
+  pool was supplied, so the envelope (signature, seed commitment, timing,
+  subject proof, answer-format and expected-answer canonicality) verified
+  but the instance and score could not be replayed. Relying parties
+  decide whether issuer-claimed cells satisfy their policy.
+
+`checkAdmission(admission, {pool?})` applies the same rules: `h:` cells
+are validated against the pool when supplied and syntactically otherwise;
+the checker reports `unreplayed` — the count of receipts whose scores
+could not be independently regenerated.
+
+### Honest limits
+
+- A held-out cell is the *same puzzle family* under an unpublished
+  parameterization. It defeats instance memorization, lookup, and
+  stream-specific tuning; a solver that handles the family class still
+  solves it. Unpublished puzzle *types* require generator delivery
+  outside this document.
+- Without the pool, `poolKey` commits to *a* pool, not to a *sound* one —
+  the issuer could have labeled degenerate cells. Deferred disclosure is
+  the accountability hook: publish the pool and every historical
+  held-out receipt upgrades to fully verifiable, including the soundness
+  of the cell list.
+- Pool compromise reveals only labels; rotating to a fresh pool changes
+  `poolKey` and leaves prior receipts verifiable under the retired pool.
+
+Commands (reference: `bench/holdout.ts`, `bench/attest.ts`,
+`bench/gate.ts`):
+
+- `holdout gen --suite frontier --cells sat:t4,knights:t5 --out
+  pool.json` mints a pool with fresh secret labels (writes `0600`).
+- `holdout info pool.json` re-parses and prints the commitment.
+- `attest issue --holdout pool.json`, `attest verify --pool pool.json`,
+  `attest check receipt.json --pool pool.json` mint, decide, and check
+  standalone held-out episodes.
+- `gate ... --pool pool.json` on `policy`, `issue`, `submit`, `check`,
+  `serve`, and `probe` wires the pool through sessions; `serve` with an
+  `h:` policy requires it.
