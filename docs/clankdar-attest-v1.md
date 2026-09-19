@@ -348,13 +348,19 @@ Commands (reference: `bench/tlog.ts`):
   an identical head is a no-op, not an error.
 - `equivocate --heads heads.jsonl` compares the registry's heads under
   each issuer key and exits 2 on a proven fork.
+- `compare LOG_A.json LOG_B.json` decides whether two full logs under one
+  issuer key are identical, strict-prefix consistent, or forked (§17).
+- `witness-serve --heads heads.jsonl [--host H] [--port N]` exposes the
+  provider-neutral common intake in §18.
 
 ### Head witnessing
 
 A **head registry** (`heads.jsonl`) is the checker side of fork
 detection: an append-only local record of the signed heads an operator
-has witnessed, one verbatim `TlogHead` per line, indexed by
-`verifier.keyId`. Replay mirrors the ledger rules — a torn tail is
+has witnessed, one normalized `TlogHead` per line, indexed by
+`verifier.keyId`. Unknown members are tolerated at intake but stripped
+before storage because the signature covers only the protocol fields.
+Replay mirrors the ledger rules — a torn tail is
 dropped, mid-file corruption or a line that fails head shape or
 signature verification is fatal (a recorded head is evidence; an
 unverifiable one is corruption), and a file over 1,000,000 lines is
@@ -386,10 +392,11 @@ oracle — and a single log cannot detect a fork alone: an issuer could
 show different parties different logs. Fork detection is now implemented
 as local head comparison: `witness` accumulates every head an operator
 sees and `equivocate` proves the same-count and same-tip cases from the
-signed heads themselves. What is still missing is transport — heads must
-reach a common witness before they can be compared — so gossip, witnessed
-co-signing, and external anchoring remain future work, as do ancestry
-proofs for different-length forks. What the log buys is enumerability:
+signed heads themselves. `witness-serve` (§18) adds explicit common intake,
+and full-log comparison (§17) decides different-length forks when both
+views are available. What is still missing is automatic discovery and
+transport — polling, gossip, witnessed co-signing, external anchoring —
+and compact suffix proofs. What the log buys is enumerability:
 every session and decision the issuer stands behind is committed,
 ordered, and replayable, so an admission that does not trace to a logged
 session is issuer-claimed only.
@@ -407,9 +414,10 @@ session is issuer-claimed only.
   against the issuance transparency log (§11): an admission that does not
   trace to a logged session is issuer-claimed only. The log is issuer-keyed,
   so fork detection needs published-head comparison; the reference
-  implements a local witness registry (§11) that proves same-count and
-  same-tip forks, but head transport — gossip, witnessed co-signing,
-  external anchoring — is not implemented.
+  implements local and HTTP witness intake (§11, §18), same-count and
+  same-tip findings from heads, and full-log fork comparison (§17). It does
+  not implement provider polling, gossip, witnessed co-signing, or external
+  anchoring.
 - **Per-family solver scripts.** Public generators admit canned solvers:
   a receipt proves "access to a solver for this cell," still real friction
   for anti-spam, weaker as a competence claim. Held-out pools (§15)
@@ -662,11 +670,12 @@ still fork: nothing stops it from serving one log to one client and a
 different log to another. The signed head is the accountability hook: a
 witness that pins `/tlog/head` output over time, or across vantage
 points, accumulates exactly the signed artifacts `equivocate` compares.
-But heads still have to reach a common witness before they can be
-compared, and that transport — gossip, witnessed co-signing, external
-anchoring — remains unimplemented. This is a reference surface, not a
-production deployment: TLS termination, client authentication on the
-write path, and high-availability operation are out of scope.
+Heads still have to reach a common witness before they can be compared.
+The explicit intake in §18 accepts them; automatic polling, gossip,
+witnessed co-signing, and external anchoring remain unimplemented. This
+is a reference surface, not a production deployment: TLS termination,
+client authentication on the write path, and high-availability operation
+are out of scope.
 
 ## 17. Fork comparison over published logs
 
@@ -700,3 +709,45 @@ views reach one verifier. Logs signed by different verifier keys are not
 comparable (they are not one issuer's histories). A strict-prefix result
 does not prove the shorter log was issued first — head timestamps are
 issuer-chosen.
+
+## 18. Provider-neutral head witness
+
+`tlog witness-serve --heads HEADS.jsonl [--host H] [--port N]` exposes an
+explicit common intake for signed tlog heads. It is multi-provider by
+construction: every `TlogHead` embeds an Ed25519 public key, its derived
+`keyId`, and the signature, so the witness needs no provider registry or
+provider-specific adapter. Findings are always scoped to one `keyId`;
+heads under different keys never conflict.
+
+HTTP surface:
+
+- `POST /heads` accepts one `TlogHead` (maximum 16 KiB). The witness checks
+  protocol, shape, timestamp, derived `keyId`, and Ed25519 signature before
+  appending. Unknown members are accepted for forward compatibility but
+  stripped before storage because they are not covered by the v1 signature.
+  An identical signed claim is idempotent. The response reports `recorded`,
+  total `witnessed` heads, `providerHeads` for this key, and any proven
+  `equivocation` for the submitted key.
+- `GET /heads?keyId=K&after=N&limit=M` returns a bounded page (default 100,
+  maximum 1,000). `keyId` is optional; when present it isolates one provider.
+  `next` is the next offset or null.
+- `GET /equivocation/:keyId` runs §11 head comparison for exactly one
+  provider key.
+- `GET /healthz` reports process health.
+
+The backing file is the same append-only registry used by `tlog witness`
+and `tlog equivocate`, so CLI and HTTP observations converge on one evidence
+format. A provider key rotation starts a new independent history unless an
+external identity system links the keys; Clankdar does not infer that link.
+
+### Honest limits
+
+The service is an experimental intake, not gossip or a production witness.
+It does not discover providers, poll `/tlog/head`, co-sign observations,
+anchor them externally, authenticate submitters, impose provider quotas, or
+replicate its registry. Anyone can submit a valid harvested head, and a
+provider controlling a signing key can create enough valid heads to consume
+the registry bound. A private fork remains invisible until both signed views
+reach this or another common witness. TLS termination, abuse controls,
+high-availability storage, and witness-to-witness transport belong outside
+this reference process.

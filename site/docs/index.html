@@ -188,8 +188,10 @@ GET  /policy                  → the floor and the verifier key</code></pre>
           <pre class="code"><code>bun bench/tlog.ts build --dir gate-state --key verifier.json --out tlog.json
 bun bench/tlog.ts check tlog.json                     → recompute the chain and head signature
 bun bench/tlog.ts prove tlog.json --session gs_…      → inclusion evidence for one session
-bun bench/tlog.ts admit tlog.json admission.json      → admission check + logged history</code></pre>
-          <p>The log binds <em>this</em> issuer's history under <em>its own</em> key. It does not stop self-minting — a verifier can always answer its own oracle — and it cannot detect a fork alone: equivocation is visible only by comparing heads the issuer published elsewhere, and gossip, witnessed co-signing, and external anchoring are not implemented. What the log buys is enumerability: an admission that does not trace to a logged session is issuer-claimed only.</p>
+bun bench/tlog.ts admit tlog.json admission.json      → admission check + logged history
+bun bench/tlog.ts compare log-a.json log-b.json       → prove a fork or a consistent prefix
+bun bench/tlog.ts witness-serve --heads heads.jsonl   → multi-provider signed-head intake</code></pre>
+          <p>The log binds <em>this</em> issuer's history under <em>its own</em> key. It does not stop self-minting — a verifier can always answer its own oracle — and it cannot detect a fork alone. The provider-neutral witness accepts self-describing signed heads under many verifier keys and reports conflicts per key, without a central provider registry. It does not discover providers automatically; polling, gossip, witnessed co-signing, and external anchoring are not implemented. What the log buys is enumerability: an admission that does not trace to a logged session is issuer-claimed only.</p>
           <p>An admission attests that one session produced K passing responses under one policy in one window. It is capability evidence — never identity, liveness, or authority — and arbitrary model or room text must never issue authority. <span class="tag">reference implemented</span></p>
         </section>
 

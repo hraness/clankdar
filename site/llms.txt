@@ -49,7 +49,8 @@ retains 3,000 earlier attempts with explicit exclusions.
 A production hosted admission service is not implemented — the gate and the
 hosted issuer surface run self-hosted as experimental references (sealed-seed
 issuance, durable session ledger, signed admissions, subject-bound receipts,
-transparency log with published heads, held-out pools, drift monitor).
+transparency log with published heads, provider-neutral head-witness intake,
+held-out pools, drift monitor).
 The verifier-keyed HMAC helper is only a building block. The benchmark RNG is
 non-cryptographic and must not issue secret admission puzzles. Public tasks
 can be memorized, solved with code, or delegated.
