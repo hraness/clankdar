@@ -81,7 +81,9 @@ describe("tlog build and check", () => {
     const ledgerPath = join(dir, "gate-state.jsonl");
     appendFileSync(ledgerPath, '{"type":"sessio');
     expect(readLedger(dir)).toHaveLength(2);
-    writeFileSync(ledgerPath, readFileSync(ledgerPath, "utf8").replace(/\n/, "\nnot-json\n"));
+    const lines = readFileSync(ledgerPath, "utf8").split("\n");
+    lines.splice(1, 0, "not-json");
+    writeFileSync(ledgerPath, lines.join("\n"));
     expect(() => readLedger(dir)).toThrow("corrupt at record 2");
   });
 
