@@ -415,9 +415,10 @@ export interface EquivocationReport {
  * A `count` that decreases in `issuedAt` order is only a warning
  * (`"head counts regress"`): issue timestamps are issuer-controlled, so a
  * regression is soft evidence. Whether a shorter head is an ancestor of a
- * longer one cannot be decided here — the registry stores heads, not
- * entries — so different-count pairs with different tips are undecidable
- * and unreported.
+ * longer one cannot be decided from heads alone — the registry stores
+ * heads, not entries — so different-count pairs with different tips are
+ * undecidable here and unreported. When a verifier holds both published
+ * logs, `compareLogs` decides that case by walking the chains.
  */
 export function findEquivocation(heads: TlogHead[]): EquivocationReport {
   const byKey = new Map<string, TlogHead[]>();
@@ -464,6 +465,63 @@ export function findEquivocation(heads: TlogHead[]): EquivocationReport {
   return report;
 }
 
+export interface ForkReport {
+  /** False on a proven fork or on input that cannot be compared. */
+  ok: boolean;
+  /** True only on a proven fork: two valid signed chains that diverge. */
+  equivocation: boolean;
+  keyId?: string;
+  /**
+   * When there is no fork: how the shared prefixes relate —
+   * "identical" (same chain), "a-prefix-of-b", or "b-prefix-of-a" (one log
+   * is a strict ancestor of the other — growth or a stale copy, both
+   * consistent).
+   */
+  relation?: "identical" | "a-prefix-of-b" | "b-prefix-of-a";
+  /** On a proven fork: the first index whose entryHash differs. */
+  forkIndex?: number;
+  counts?: [number, number];
+  reason?: string;
+}
+
+/**
+ * Compare two published logs for a cryptographic fork — the case
+ * `findEquivocation` cannot decide from heads alone. Both logs must pass
+ * `checkLog` (full chain recompute + signed head) and share one verifier
+ * key; then the first index whose `entryHash` differs is a proven
+ * equivocation: each chain commits to its own history under the same
+ * issuer key. `ok` is false on a proven fork (matching
+ * `EquivocationReport`'s polarity) and on incomparable input — the
+ * `equivocation` flag distinguishes them.
+ *
+ * Honest limit: this detects a fork only between two logs a verifier
+ * actually holds. An issuer can fork privately — serve different logs to
+ * different parties — and nothing is detected until both views reach one
+ * verifier. A compact proof (a divergent suffix under each head) is future
+ * work; today the evidence is the two published logs themselves.
+ */
+export function compareLogs(a: unknown, b: unknown): ForkReport {
+  const checkA = checkLog(a);
+  if (!checkA.ok) return { ok: false, equivocation: false, reason: `left log failed check: ${checkA.reason}` };
+  const checkB = checkLog(b);
+  if (!checkB.ok) return { ok: false, equivocation: false, reason: `right log failed check: ${checkB.reason}` };
+  const logA = a as TransparencyLog;
+  const logB = b as TransparencyLog;
+  const keyId = logA.head.verifier.keyId;
+  if (logB.head.verifier.keyId !== keyId) {
+    return { ok: false, equivocation: false, reason: "logs are signed by different verifier keys" };
+  }
+  const counts: [number, number] = [logA.entries.length, logB.entries.length];
+  const shared = Math.min(counts[0], counts[1]);
+  for (let i = 0; i < shared; i++) {
+    if (logA.entries[i].entryHash !== logB.entries[i].entryHash) {
+      return { ok: false, equivocation: true, keyId, forkIndex: i, counts, reason: `chains diverge at index ${i}` };
+    }
+  }
+  const relation = counts[0] === counts[1] ? "identical" : counts[0] < counts[1] ? "a-prefix-of-b" : "b-prefix-of-a";
+  return { ok: true, equivocation: false, keyId, relation, counts };
+}
+
 function loadJson(path: string): unknown {
   try {
     return JSON.parse(readFileSync(path, "utf8"));
@@ -478,7 +536,8 @@ const USAGE = `usage: tlog <command>
   prove TLOG.json --session gs_xxx
   admit TLOG.json ADMISSION.json
   witness --heads HEADS.jsonl TLOG.json
-  equivocate --heads HEADS.jsonl`;
+  equivocate --heads HEADS.jsonl
+  compare TLOG_A.json TLOG_B.json`;
 
 export function main(args = process.argv.slice(2)): void {
   const [command, ...rest] = args;
@@ -543,6 +602,13 @@ export function main(args = process.argv.slice(2)): void {
     need(values.heads);
     const report = findEquivocation(readHeads(values.heads!));
     console.log(JSON.stringify(report, null, 2));
+    if (!report.ok) process.exitCode = 2;
+    return;
+  }
+  if (command === "compare") {
+    need(positionals[0], positionals[1]);
+    const report = compareLogs(loadJson(positionals[0]!), loadJson(positionals[1]!));
+    console.log(JSON.stringify(report));
     if (!report.ok) process.exitCode = 2;
     return;
   }

@@ -6,7 +6,7 @@ import { canonical, generateVerifier, signBody } from "./attest.ts";
 import { issueSession, submitSession, type Admission, type GatePolicy, type GateSession } from "./gate.ts";
 import { GateStore } from "./store.ts";
 import {
-  buildLog, checkLoggedAdmission, checkLog, findEquivocation, isSignedHead, proveSession,
+  buildLog, checkLoggedAdmission, checkLog, compareLogs, findEquivocation, isSignedHead, proveSession,
   readHeads, readLedger, signHead, TLOG_PROTOCOL, witnessHead,
   type TlogHead, type TransparencyLog,
 } from "./tlog.ts";
@@ -418,5 +418,99 @@ describe("tlog witness/equivocate CLI", () => {
     expect(JSON.parse(bad.stdout).ok).toBe(false);
     expect((await tlog("equivocate", "--heads", heads)).code).toBe(0); // nothing was recorded
     expect(JSON.parse((await tlog("equivocate", "--heads", join(dir, "absent.jsonl"))).stdout)).toEqual({ ok: true, checked: 0 });
+  });
+});
+
+describe("tlog compare", () => {
+  test("identical chains are consistent — a reissued head is not a fork", () => {
+    const { dir } = makeLedger(2);
+    const first = buildLog({ dir, verifierJwk: verifier.privateJwk, now });
+    const reissued = buildLog({ dir, verifierJwk: verifier.privateJwk, now: later });
+    expect(first.head.signature).not.toBe(reissued.head.signature); // different heads, same chain
+    expect(compareLogs(first, reissued)).toMatchObject({ ok: true, equivocation: false, keyId: verifier.keyId, relation: "identical", counts: [4, 4] });
+  });
+
+  test("growth is a strict prefix, not a fork", () => {
+    const { dir } = makeLedger(1);
+    const short = buildLog({ dir, verifierJwk: verifier.privateJwk, now });
+    const store = GateStore.open(dir);
+    const second = issueSession({ policy, verifierJwk: verifier.privateJwk, now, pick: () => 0, seedBase: 920_000 });
+    store.issueSession(second.session);
+    const decided = submitSession({ session: second.session, responses: answersOf(second.session), verifierJwk: verifier.privateJwk, now: later });
+    store.decide(second.session.sessionId, decided.admission, decided.receipts);
+    store.close();
+    const long = buildLog({ dir, verifierJwk: verifier.privateJwk, now: built });
+    expect(compareLogs(short, long)).toMatchObject({ ok: true, equivocation: false, relation: "a-prefix-of-b", counts: [2, 4] });
+    expect(compareLogs(long, short)).toMatchObject({ ok: true, equivocation: false, relation: "b-prefix-of-a", counts: [4, 2] });
+  });
+
+  test("two independently-run ledgers fork at index 0", () => {
+    const report = compareLogs(makeLog(1).log, makeLog(1).log);
+    expect(report).toMatchObject({ ok: false, equivocation: true, keyId: verifier.keyId, forkIndex: 0, counts: [2, 2] });
+  });
+
+  test("a shared prefix then divergence finds the real fork index — undecidable from heads", () => {
+    // The same issued+decided records written into two ledgers commit the
+    // same digests, so both chains share entries 0..1. Each ledger then
+    // continues differently — A gets one more session, B gets two — so
+    // both chains have an entry at index 2 committing different content.
+    // The heads alone (count 4 vs 6, different tips) are exactly the case
+    // findEquivocation cannot decide; the chains decide it at index 2.
+    const shared = issueSession({ policy, verifierJwk: verifier.privateJwk, now, pick: () => 0, seedBase: 910_000 });
+    const sharedDecision = submitSession({ session: shared.session, responses: answersOf(shared.session), verifierJwk: verifier.privateJwk, now: later });
+    const dirA = mkdtempSync(join(tmpdir(), "clankdar-tlog-"));
+    const dirB = mkdtempSync(join(tmpdir(), "clankdar-tlog-"));
+    for (const [dir, seeds] of [[dirA, [910_100]], [dirB, [910_200, 910_300]]] as const) {
+      const store = GateStore.open(dir);
+      store.issueSession(shared.session);
+      store.decide(shared.session.sessionId, sharedDecision.admission, sharedDecision.receipts);
+      for (const seedBase of seeds) {
+        const session = issueSession({ policy, verifierJwk: verifier.privateJwk, now, pick: () => 0, seedBase });
+        store.issueSession(session.session);
+        const decision = submitSession({ session: session.session, responses: answersOf(session.session), verifierJwk: verifier.privateJwk, now: later });
+        store.decide(session.session.sessionId, decision.admission, decision.receipts);
+      }
+      store.close();
+    }
+    const logA = buildLog({ dir: dirA, verifierJwk: verifier.privateJwk, now: built });
+    const logB = buildLog({ dir: dirB, verifierJwk: verifier.privateJwk, now: built });
+    expect(findEquivocation([logA.head, logB.head])).toEqual({ ok: true, checked: 2 }); // heads cannot decide
+    const report = compareLogs(logA, logB);
+    expect(report).toMatchObject({ ok: false, equivocation: true, keyId: verifier.keyId, forkIndex: 2, counts: [4, 6] });
+    expect(report.reason).toContain("index 2");
+  });
+
+  test("logs under different verifier keys are incomparable", () => {
+    const otherLog = buildLog({ dir: makeLedger(1).dir, verifierJwk: other.privateJwk, now: built });
+    const report = compareLogs(makeLog(1).log, otherLog);
+    expect(report).toMatchObject({ ok: false, equivocation: false });
+    expect(report.reason).toContain("different verifier keys");
+  });
+
+  test("an invalid log is incomparable, not a fork", () => {
+    const { log } = makeLog(1);
+    const tampered = { ...log, head: { ...log.head, count: 9 } };
+    const report = compareLogs(log, tampered);
+    expect(report).toMatchObject({ ok: false, equivocation: false });
+    expect(report.reason).toContain("right log failed check");
+  });
+});
+
+describe("tlog compare CLI", () => {
+  test("exits 0 on consistent logs and 2 on a proven fork", async () => {
+    const a = makeLedger(1);
+    const b = makeLedger(1);
+    const outA = join(a.dir, "a.json");
+    const outB = join(b.dir, "b.json");
+    writeFileSync(outA, JSON.stringify(buildLog({ dir: a.dir, verifierJwk: verifier.privateJwk, now: built })));
+    writeFileSync(outB, JSON.stringify(buildLog({ dir: b.dir, verifierJwk: verifier.privateJwk, now: built })));
+
+    const same = await tlog("compare", outA, outA);
+    expect(same.code).toBe(0);
+    expect(JSON.parse(same.stdout)).toMatchObject({ ok: true, equivocation: false, relation: "identical" });
+
+    const fork = await tlog("compare", outA, outB);
+    expect(fork.code).toBe(2);
+    expect(JSON.parse(fork.stdout)).toMatchObject({ ok: false, equivocation: true, forkIndex: 0 });
   });
 });
