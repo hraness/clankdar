@@ -340,6 +340,12 @@ Commands (reference: `bench/tlog.ts`):
   decisionIndex, head}` — the inclusion evidence a third party needs:
   `check` the log, then confirm the session was issued (sessionIndex) and
   its decision logged (decisionIndex; null while undecided).
+- `prove tlog.json --from-count N` emits a
+  `clankdar-tlog-consistency-v1` proof (§19): the suffix entries the log
+  added after the `count:N` boundary a verifier pinned.
+- `check-proof proof.json --old-head head.json` (or `--old-tip HEX
+  --old-count N`) replays that suffix against the pin — a pinned-head
+  holder confirms growth without fetching or re-checking the whole log.
 - `admit tlog.json ADMISSION.json [--pool POOL.json]` runs the full §8
   admission check AND requires the admission's `sessionId` to have both a
   session and a decision entry in a log that itself verifies. Held-out
@@ -398,9 +404,12 @@ sees and `equivocate` proves the same-count and same-tip cases from the
 signed heads themselves. `witness-serve` (§18) adds explicit common
 intake plus automatic polling of configured providers, and full-log
 comparison (§17) decides different-length forks when both views are
-available. What is still missing is provider discovery and
+available, and §19 lets a pinned-head holder verify later growth from a
+linear suffix proof. What is still missing is provider discovery and
 witness-to-witness transport — gossip, witnessed co-signing, external
-anchoring — and compact suffix proofs. What the log buys is enumerability:
+anchoring — and logarithmic Merkle proofs: the chain is a linear hash
+chain by design, so consistency evidence is a linear suffix, not a
+Merkle path. What the log buys is enumerability:
 every session and decision the issuer stands behind is committed,
 ordered, and replayable, so an admission that does not trace to a logged
 session is issuer-claimed only.
@@ -455,8 +464,9 @@ pool disclosure via `check_logged_admission_with_pool`/`tlog admit --pool`),
 and holdout-v1 pools, receipts, and admissions against TypeScript-generated
 fixtures. Its rooms dogfood issues, submits, and decides gate admissions
 pinned to a room floor and verifier key; it fails closed on held-out scores
-unless they were replayed. badge-v1, head witnessing, fork comparison, and
-the hosted HTTP surfaces are TypeScript-only for now.
+unless they were replayed. badge-v1, head witnessing, fork comparison,
+consistency proofs, and the hosted HTTP surfaces are TypeScript-only for
+now.
 
 ## 14. Portable subject badges (badge-v1)
 
@@ -720,8 +730,10 @@ are walked to the first index whose `entryHash` differs:
 
 ### Honest limits
 
-The evidence is the two published logs themselves; there is no compact
-suffix proof yet. Comparison detects a fork only between two logs a
+The evidence is the two published logs themselves — a consistency proof
+(§19) can show a log extends a pinned head, but it cannot show two logs
+diverge, so there is still no compact fork proof. Comparison detects a
+fork only between two logs a
 verifier actually holds — an issuer can still fork privately, serving
 different logs to different parties, and nothing is detected until both
 views reach one verifier. Logs signed by different verifier keys are not
@@ -805,3 +817,74 @@ reach this or another common witness — polling only closes the transport
 gap for providers the operator already chose to configure. TLS
 termination, abuse controls, high-availability storage, and
 witness-to-witness transport belong outside this reference process.
+
+## 19. Append-only consistency proofs (tlog-consistency-v1)
+
+A client that pinned a signed head at count `N` — a witnessed `TlogHead`
+from §11/§18, or a remembered `{count, tip}` — can verify that a later,
+larger log is a chain-extension of what it pinned without replaying the
+whole chain. `clankdar-tlog-consistency-v1` is that proof: the
+transparency-log analogue of a CT consistency proof, carried by the
+linear hash chain rather than a Merkle tree.
+
+```json
+{
+  "protocol": "clankdar-tlog-consistency-v1",
+  "oldCount": 4,
+  "oldTip": "<entryHash of entry oldCount-1; 64 zeroes at genesis>",
+  "newCount": 8,
+  "newTip": "<entryHash of the last entry — equal to head.head>",
+  "suffix": [ "<TlogHashedEntry>", "..." ],
+  "head": "<TlogHead>"
+}
+```
+
+`suffix` is `entries[oldCount..newCount)` — the new entries only. Its
+first entry's `prev` IS the linkage back to the pinned tip: in a linear
+hash chain, the entry after the boundary commits to the boundary hash, so
+the suffix carries its own anchor and needs no auxiliary hashes.
+
+### Producing and checking
+
+- `tlog prove tlog.json --from-count N` emits the proof for the boundary
+  after entry `N` — `0` is genesis (the whole log, equivalent to full
+  replay) and `count` is an empty suffix.
+- `tlog check-proof proof.json --old-head head.json` verifies against a
+  witnessed signed head; `--old-tip HEX --old-count N` verifies against a
+  bare remembered pin. A nonzero `oldCount` with neither is unverifiable
+  and the checker fails closed — only the genesis boundary (the public
+  64-zero constant) is self-authenticating.
+
+A checker MUST:
+
+1. require `protocol`, nonnegative integer counts with `oldCount ≤
+   newCount`, 64-hex `oldTip`/`newTip`, and `suffix.length === newCount −
+   oldCount`;
+2. resolve the trusted boundary from the pin, never from the proof's own
+   claims: a signed-head pin MUST pass the §11 signed-head checks and have
+   `count === oldCount`; then `proof.oldTip` MUST equal the pinned tip;
+3. replay the suffix: `suffix[i].index === oldCount+i`, every field
+   well-formed, `suffix[0].prev === oldTip`, each later `prev` linking the
+   previous `entryHash`, and every `entryHash` recomputing;
+4. require the recomputed tip to equal `newTip` — an empty suffix is
+   valid iff `oldTip === newTip`;
+5. require `head` to pass the §11 signed-head checks with `count ===
+   newCount` and `head === newTip`, and — when the pin was a signed head —
+   signed by the same `verifier.keyId`.
+
+### Security statement
+
+The proof is sound because the chain is linear: the first suffix entry's
+`prev` is the old tip by construction, so matching it against a trusted
+pin and recomputing the suffix to the signed new tip proves extension.
+It proves ONLY that the new log extends the pinned head, and ONLY IF the
+pinned head was authentic — the verifier must have obtained it through
+head witnessing (§11, §18) or an equivalent trusted channel. It does NOT
+prove the new log is the issuer's only extension: an issuer can fork
+after the boundary and both forks verify against the same pin, so fork
+accountability still needs both views to reach a common witness. The
+proof is compact in growth — `O(newCount − oldCount)` entries — not O(1)
+or Merkle-logarithmic; the log is a linear hash chain by design.
+Finally, suffix entries are hash-checked but NOT replayed for ledger
+semantics — a decision may legitimately name a session issued before the
+boundary — so `checkLog` on the full log remains the semantic check.

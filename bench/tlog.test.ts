@@ -7,9 +7,10 @@ import { issueSession, submitSession, type Admission, type GatePolicy, type Gate
 import { generatePool, type HoldoutPool } from "./holdout.ts";
 import { GateStore } from "./store.ts";
 import {
-  buildLog, checkLoggedAdmission, checkLog, compareLogs, findEquivocation, isSignedHead, proveSession,
+  buildLog, checkConsistency, checkLoggedAdmission, checkLog, compareLogs, CONSISTENCY_PROTOCOL,
+  findEquivocation, isSignedHead, proveConsistency, proveSession,
   readHeads, readLedger, serveWitness, signHead, TLOG_PROTOCOL, witnessHead,
-  type TlogHead, type TransparencyLog,
+  type ConsistencyProof, type TlogHead, type TransparencyLog,
 } from "./tlog.ts";
 
 const verifier = generateVerifier();
@@ -868,4 +869,189 @@ describe("tlog witness provider polling", () => {
       provider.close();
     }
   }, 15_000);
+});
+
+/** Append `count` issued-and-decided sessions to an existing ledger dir. */
+const growLedger = (dir: string, count: number, seedBase = 940_000) => {
+  const store = GateStore.open(dir);
+  for (let i = 0; i < count; i++) {
+    const issued = issueSession({ policy, verifierJwk: verifier.privateJwk, now, pick: () => 0, seedBase: seedBase + i * 100 });
+    store.issueSession(issued.session);
+    const { receipts, admission } = submitSession({
+      session: issued.session, responses: answersOf(issued.session), verifierJwk: verifier.privateJwk, now: later,
+    });
+    store.decide(issued.session.sessionId, admission, receipts);
+  }
+  store.close();
+};
+
+describe("tlog consistency proofs", () => {
+  test("a grown log verifies against its earlier pinned head", () => {
+    const { dir } = makeLedger(1);
+    const first = buildLog({ dir, verifierJwk: verifier.privateJwk, now });
+    growLedger(dir, 2);
+    const grown = buildLog({ dir, verifierJwk: verifier.privateJwk, now: built });
+
+    const proof = proveConsistency(grown, first.head.count);
+    expect(proof.protocol).toBe(CONSISTENCY_PROTOCOL);
+    expect(proof).toMatchObject({ oldCount: 2, oldTip: first.head.head, newCount: 6, newTip: grown.head.head });
+    expect(proof.suffix).toEqual(grown.entries.slice(2));
+    expect(proof.suffix[0].prev).toBe(first.head.head); // the linkage boundary
+    expect(proof.head).toEqual(grown.head);
+
+    // A witnessed signed head and a bare count+tip pin both verify.
+    expect(checkConsistency(proof, { pinnedHead: first.head }))
+      .toEqual({ ok: true, oldCount: 2, newCount: 6, newTip: grown.head.head, keyId: verifier.keyId });
+    expect(checkConsistency(proof, { pinnedTip: { count: 2, tip: first.head.head } })).toMatchObject({ ok: true });
+  });
+
+  test("genesis proofs self-authenticate; an empty suffix proves a same-tip head", () => {
+    const { log } = makeLog(2);
+    const genesis = proveConsistency(log, 0);
+    expect(genesis.oldTip).toBe("0".repeat(64));
+    expect(genesis.suffix).toHaveLength(4); // the whole log — the full-replay degenerate case
+    expect(checkConsistency(genesis)).toMatchObject({ ok: true, oldCount: 0, newCount: 4 });
+    expect(checkConsistency(genesis, { pinnedTip: { count: 0, tip: "0".repeat(64) } })).toMatchObject({ ok: true });
+    const genesisHead = signHead(0, "0".repeat(64), verifier.privateJwk, now);
+    expect(checkConsistency(genesis, { pinnedHead: genesisHead })).toMatchObject({ ok: true });
+
+    // oldCount == newCount — nothing grew — is valid only while the tip is unchanged.
+    const still = proveConsistency(log, log.entries.length);
+    expect(still.suffix).toHaveLength(0);
+    expect(still.oldTip).toBe(log.head.head);
+    expect(checkConsistency(still, { pinnedHead: log.head })).toMatchObject({ ok: true, oldCount: 4, newCount: 4 });
+    const drifted = checkConsistency({ ...still, newTip: "e".repeat(64) }, { pinnedHead: log.head });
+    expect(drifted.ok).toBe(false);
+    expect(drifted.reason).toContain("does not recompute");
+  });
+
+  test("proveConsistency rejects out-of-range counts and logs that fail check", () => {
+    const { log } = makeLog(1);
+    expect(() => proveConsistency(log, -1)).toThrow("integer in 0..2");
+    expect(() => proveConsistency(log, 3)).toThrow("integer in 0..2");
+    expect(() => proveConsistency(log, 1.5)).toThrow("integer in 0..2");
+    const tampered = { ...log, head: { ...log.head, count: 9 } };
+    expect(() => proveConsistency(tampered, 0)).toThrow("failed check");
+    // A proof whose counts regress is malformed before any pin is consulted.
+    expect(checkConsistency({ ...proveConsistency(log, 0), oldCount: 9 }).reason).toContain("exceeds newCount");
+    expect(checkConsistency("nope", { pinnedHead: log.head }).reason).toContain("not a consistency proof");
+    expect(checkConsistency({ ...proveConsistency(log, 0), newCount: -1 }).reason).toContain("newCount is not");
+  });
+
+  test("tampering at the boundary, in the suffix, or in the head fails with a reason", () => {
+    const { dir } = makeLedger(1);
+    const first = buildLog({ dir, verifierJwk: verifier.privateJwk, now });
+    growLedger(dir, 1);
+    const grown = buildLog({ dir, verifierJwk: verifier.privateJwk, now: built });
+    const proof = proveConsistency(grown, 2);
+    const pinned = { pinnedHead: first.head };
+
+    const cases: [ConsistencyProof, string][] = [
+      // The prover cannot move the boundary — oldTip must equal the pin.
+      [{ ...proof, oldTip: "f".repeat(64) }, "does not match the pinned tip"],
+      // The linkage boundary: suffix[0].prev must BE the pinned tip.
+      [{ ...proof, suffix: proof.suffix.map((e, i) => (i === 0 ? { ...e, prev: "f".repeat(64) } : e)) }, "does not extend the pinned tip"],
+      // Suffix body tampered — the hash no longer recomputes.
+      [{ ...proof, suffix: proof.suffix.map((e, i) => (i === 1 ? { ...e, digest: "f".repeat(64) } : e)) }, "hash does not recompute"],
+      // An index shift breaks the position commitment.
+      [{ ...proof, suffix: proof.suffix.map((e, i) => (i === 0 ? { ...e, index: 9 } : e)) }, "wrong index"],
+      // A dropped suffix entry breaks the count delta.
+      [{ ...proof, suffix: proof.suffix.slice(1) }, "count delta"],
+      // The claimed new tip is not what the suffix recomputes to.
+      [{ ...proof, newTip: "b".repeat(64) }, "does not recompute to the new tip"],
+      // Freshly signed heads committing different claims are still rejected.
+      [{ ...proof, head: signHead(99, proof.newTip, verifier.privateJwk, now) }, "count does not match newCount"],
+      [{ ...proof, head: signHead(proof.newCount, "b".repeat(64), verifier.privateJwk, now) }, "does not commit to the new tip"],
+      [{ ...proof, head: { ...proof.head, signature: "AAAA" } }, "not a valid signed head"],
+      [{ ...proof, protocol: "clankdar-tlog-consistency-v0" as typeof CONSISTENCY_PROTOCOL }, "not a clankdar-tlog-consistency-v1 proof"],
+    ];
+    for (const [forged, reason] of cases) {
+      const result = checkConsistency(forged, pinned);
+      expect(result.ok).toBe(false);
+      expect(result.reason).toContain(reason);
+    }
+  });
+
+  test("the pin is the trust root — absent, mismatched, or foreign pins fail", () => {
+    const { dir } = makeLedger(1);
+    const first = buildLog({ dir, verifierJwk: verifier.privateJwk, now });
+    growLedger(dir, 1);
+    const grown = buildLog({ dir, verifierJwk: verifier.privateJwk, now: built });
+    const proof = proveConsistency(grown, 2);
+
+    // A nonzero boundary with no pin fails closed.
+    expect(checkConsistency(proof).reason).toContain("no pinned old head");
+    // A pin at the wrong count or tip cannot slide the boundary.
+    expect(checkConsistency(proof, { pinnedTip: { count: 1, tip: first.head.head } }).reason).toContain("does not match proof oldCount");
+    expect(checkConsistency(proof, { pinnedTip: { count: 2, tip: "b".repeat(64) } }).reason).toContain("does not match the pinned tip");
+    expect(checkConsistency(proof, { pinnedTip: { count: 2, tip: "zz" } }).reason).toContain("pinned tip is malformed");
+    // An unsigned head file is not a pin, and both pin forms at once are ambiguous.
+    expect(checkConsistency(proof, { pinnedHead: { ...first.head, signature: "AAAA" } }).reason).toContain("not a valid signed head");
+    expect(checkConsistency(proof, { pinnedHead: first.head, pinnedTip: { count: 2, tip: first.head.head } }).reason).toContain("not both");
+    // A forked log's own boundary never matches the pin — same count, its own tip.
+    const fork = makeLog(2).log; // same verifier, unrelated ledger, also 4 entries
+    expect(checkConsistency(proveConsistency(fork, 2), { pinnedHead: first.head }).reason).toContain("does not match the pinned tip");
+    // A head signed by a DIFFERENT key over the real tip is not this issuer's pin.
+    const alienPin = signHead(2, proof.oldTip, other.privateJwk, now);
+    expect(checkConsistency(proof, { pinnedHead: alienPin }).reason).toContain("different verifier key");
+  });
+});
+
+describe("tlog consistency CLI", () => {
+  test("prove --from-count → check-proof round-trips against a pinned head file", async () => {
+    const { dir } = makeLedger(1);
+    const keyFile = join(dir, "verifier.json");
+    const logA = join(dir, "tlog-a.json");
+    const headFile = join(dir, "head.json");
+    writeFileSync(keyFile, JSON.stringify(verifier.privateJwk));
+    expect((await tlog("build", "--dir", dir, "--key", keyFile, "--out", logA)).code).toBe(0);
+    const headA = (JSON.parse(readFileSync(logA, "utf8")) as TransparencyLog).head;
+    writeFileSync(headFile, JSON.stringify(headA));
+
+    growLedger(dir, 1);
+    const logB = join(dir, "tlog-b.json");
+    expect((await tlog("build", "--dir", dir, "--key", keyFile, "--out", logB)).code).toBe(0);
+
+    const proved = await tlog("prove", logB, "--from-count", "2");
+    expect(proved.code).toBe(0);
+    const proofFile = join(dir, "consistency.json");
+    writeFileSync(proofFile, proved.stdout);
+    const proof = JSON.parse(proved.stdout) as ConsistencyProof;
+    expect(proof).toMatchObject({ protocol: CONSISTENCY_PROTOCOL, oldCount: 2, oldTip: headA.head, newCount: 4 });
+    expect(proof.suffix).toHaveLength(2);
+
+    const viaHead = await tlog("check-proof", proofFile, "--old-head", headFile);
+    expect(viaHead.code).toBe(0);
+    expect(JSON.parse(viaHead.stdout)).toMatchObject({ ok: true, oldCount: 2, newCount: 4, keyId: verifier.keyId });
+    const viaTip = await tlog("check-proof", proofFile, "--old-count", "2", "--old-tip", headA.head);
+    expect(viaTip.code).toBe(0);
+    expect(JSON.parse(viaTip.stdout).ok).toBe(true);
+
+    // A nonzero boundary with no pin fails closed; genesis self-authenticates.
+    const unpinned = await tlog("check-proof", proofFile);
+    expect(unpinned.code).toBe(2);
+    expect(JSON.parse(unpinned.stdout).reason).toContain("no pinned old head");
+    const genesisFile = join(dir, "genesis.json");
+    const genesis = await tlog("prove", logB, "--from-count", "0");
+    expect(genesis.code).toBe(0);
+    writeFileSync(genesisFile, genesis.stdout);
+    expect((await tlog("check-proof", genesisFile)).code).toBe(0);
+
+    // A mismatched head file and a tampered boundary both exit 2.
+    const wrongHead = join(dir, "wrong-head.json");
+    writeFileSync(wrongHead, JSON.stringify(signHead(2, "b".repeat(64), verifier.privateJwk, now)));
+    expect((await tlog("check-proof", proofFile, "--old-head", wrongHead)).code).toBe(2);
+    const tamperedFile = join(dir, "consistency-tampered.json");
+    writeFileSync(tamperedFile, JSON.stringify({
+      ...proof, suffix: proof.suffix.map((e, i) => (i === 0 ? { ...e, prev: "f".repeat(64) } : e)),
+    }));
+    const bad = await tlog("check-proof", tamperedFile, "--old-head", headFile);
+    expect(bad.code).toBe(2);
+    expect(JSON.parse(bad.stdout).reason).toContain("does not extend the pinned tip");
+
+    // Flag misuse is a usage error, not a verdict.
+    expect((await tlog("prove", logB, "--session", "gs_x", "--from-count", "2")).code).toBe(2);
+    expect((await tlog("prove", logB, "--from-count", "99")).code).toBe(2);
+    expect((await tlog("check-proof", proofFile, "--old-tip", headA.head)).code).toBe(2);
+  });
 });

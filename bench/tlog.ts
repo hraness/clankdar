@@ -4,7 +4,8 @@
  *
  *   bun bench/tlog.ts build --dir gate-state/ --key verifier.json [--out tlog.json]
  *   bun bench/tlog.ts check tlog.json
- *   bun bench/tlog.ts prove tlog.json --session gs_xxx
+ *   bun bench/tlog.ts prove tlog.json --session gs_xxx | --from-count N
+ *   bun bench/tlog.ts check-proof proof.json --old-head head.json | --old-tip HEX --old-count N
  *   bun bench/tlog.ts admit tlog.json admission.json [--pool pool.json]
  *   bun bench/tlog.ts witness --heads heads.jsonl tlog.json
  *   bun bench/tlog.ts equivocate --heads heads.jsonl
@@ -33,7 +34,10 @@
  * discovery, gossip, witnessed co-signing, and external anchoring remain
  * future work.
  * `compare` decides different-length forks when both full logs are present;
- * the head registry alone cannot.
+ * the head registry alone cannot. `prove --from-count`/`check-proof` cover
+ * the cheap direction for a client that pinned an old head: a linear suffix
+ * proof that a new, larger log extends the pinned one — O(new−old) entries,
+ * not Merkle-logarithmic, since the chain is a linear hash chain by design.
  */
 import { parseArgs } from "node:util";
 import { createHash } from "node:crypto";
@@ -640,6 +644,160 @@ function parseProvidersFile(value: unknown): string[] | null {
   return [...urls];
 }
 
+export const CONSISTENCY_PROTOCOL = "clankdar-tlog-consistency-v1";
+
+/**
+ * Append-only growth evidence — the transparency-log analogue of a CT
+ * consistency proof, carried by the linear hash chain instead of a Merkle
+ * tree. A client that pinned a `count:oldCount` head verifies that a new,
+ * larger log extends what it pinned without replaying the prefix.
+ */
+export interface ConsistencyProof {
+  protocol: typeof CONSISTENCY_PROTOCOL;
+  /** Entries the verifier already pinned — the chain boundary. */
+  oldCount: number;
+  /** `entryHash` of entry `oldCount - 1` — the pinned head's tip (genesis zeroes at 0). */
+  oldTip: string;
+  newCount: number;
+  /** The tip the suffix recomputes to — equal to `head.head`. */
+  newTip: string;
+  /** Entries `oldCount..newCount`; `suffix[0].prev` is the linkage back to `oldTip`. */
+  suffix: TlogHashedEntry[];
+  /** The signed head committing to `newCount`/`newTip`. */
+  head: TlogHead;
+}
+
+/**
+ * Emit the entries a log added after entry `oldCount`, wrapped in a
+ * `clankdar-tlog-consistency-v1` proof. The log must pass `checkLog`
+ * first — only a verified chain is worth proving growth over. The proof
+ * is compact in growth only: it carries `newCount - oldCount` entries,
+ * linear in how much the log grew, not Merkle-logarithmic.
+ */
+export function proveConsistency(log: TransparencyLog, oldCount: number): ConsistencyProof {
+  const check = checkLog(log);
+  if (!check.ok) throw new Error(`transparency log failed check: ${check.reason}`);
+  if (!Number.isSafeInteger(oldCount) || oldCount < 0 || oldCount > log.entries.length) {
+    throw new Error(`oldCount must be an integer in 0..${log.entries.length}`);
+  }
+  const oldTip = oldCount === 0 ? GENESIS : log.entries[oldCount - 1].entryHash;
+  return {
+    protocol: CONSISTENCY_PROTOCOL,
+    oldCount,
+    oldTip,
+    newCount: log.entries.length,
+    newTip: log.head.head,
+    suffix: log.entries.slice(oldCount),
+    head: log.head,
+  };
+}
+
+/** The verifier's trust anchor for `checkConsistency` — one of the two, never both. */
+export interface ConsistencyTrust {
+  /** A signed head witnessed earlier (e.g. a recorded `/tlog/head`); validated before use. */
+  pinnedHead?: unknown;
+  /** Or a bare `{count, tip}` the verifier remembers trusting. */
+  pinnedTip?: { count: number; tip: string };
+}
+
+export interface ConsistencyCheck {
+  ok: boolean;
+  oldCount?: number;
+  newCount?: number;
+  newTip?: string;
+  /** The issuer key that signed the new head. */
+  keyId?: string;
+  reason?: string;
+}
+
+/**
+ * Verify that a log is a chain-extension of a previously pinned head.
+ * The chain is a linear hash chain, so the proof IS the suffix: if the
+ * first suffix entry's `prev` equals the tip the verifier already trusts
+ * and the suffix recomputes to `newTip` under a validly signed head, the
+ * new log extends the pinned one.
+ *
+ * The trust comes from `pinned`, never from the proof: `proof.oldCount`/
+ * `proof.oldTip` must MATCH the pin, so a prover cannot move the
+ * boundary. Only `oldCount:0` is self-trusting — the genesis tip is the
+ * public 64-zero constant — so a nonzero proof with no pin fails closed.
+ *
+ * Honest scope: this proves extension, not ledger semantics — suffix
+ * entries are hash-checked, but session/decision ordering rules are
+ * `checkLog`'s job on the full log. And it is sound ONLY IF the pinned
+ * head was authentic: it cannot show the new log is the issuer's ONLY
+ * extension (a post-boundary fork verifies against the same pin), so
+ * fork accountability still needs both views at one witness.
+ */
+export function checkConsistency(proof: unknown, pinned?: ConsistencyTrust): ConsistencyCheck {
+  const fail = (reason: string): ConsistencyCheck => ({ ok: false, reason });
+  if (!proof || typeof proof !== "object" || Array.isArray(proof)) return fail("not a consistency proof");
+  const p = proof as ConsistencyProof;
+  if (p.protocol !== CONSISTENCY_PROTOCOL) return fail("not a clankdar-tlog-consistency-v1 proof");
+  if (!Number.isSafeInteger(p.oldCount) || p.oldCount < 0) return fail("oldCount is not a nonnegative integer");
+  if (!Number.isSafeInteger(p.newCount) || p.newCount < 0) return fail("newCount is not a nonnegative integer");
+  if (typeof p.oldTip !== "string" || !HEX64.test(p.oldTip)) return fail("oldTip is malformed");
+  if (typeof p.newTip !== "string" || !HEX64.test(p.newTip)) return fail("newTip is malformed");
+  if (p.oldCount > p.newCount) return fail("oldCount exceeds newCount");
+  if (!Array.isArray(p.suffix)) return fail("suffix is not an array");
+  if (p.suffix.length !== p.newCount - p.oldCount) return fail("suffix length does not match the count delta");
+
+  // The boundary the suffix must extend comes from what the verifier
+  // already trusts — a witnessed signed head or a remembered count+tip —
+  // never from the proof's own claims.
+  let trustedTip: string;
+  let pinnedKeyId: string | undefined;
+  if (pinned?.pinnedHead !== undefined && pinned.pinnedTip !== undefined) {
+    return fail("supply either a pinned head or a pinned tip, not both");
+  } else if (pinned?.pinnedHead !== undefined) {
+    if (!isSignedHead(pinned.pinnedHead)) return fail("pinned head is not a valid signed head");
+    if (pinned.pinnedHead.count !== p.oldCount) {
+      return fail(`pinned head count ${pinned.pinnedHead.count} does not match proof oldCount ${p.oldCount}`);
+    }
+    trustedTip = pinned.pinnedHead.head;
+    pinnedKeyId = pinned.pinnedHead.verifier.keyId;
+  } else if (pinned?.pinnedTip !== undefined) {
+    const pin = pinned.pinnedTip;
+    if (!Number.isSafeInteger(pin.count) || pin.count < 0) return fail("pinned count is not a nonnegative integer");
+    if (typeof pin.tip !== "string" || !HEX64.test(pin.tip)) return fail("pinned tip is malformed");
+    if (pin.count !== p.oldCount) return fail(`pinned count ${pin.count} does not match proof oldCount ${p.oldCount}`);
+    trustedTip = pin.tip;
+  } else {
+    if (p.oldCount !== 0) return fail("no pinned old head supplied — only a genesis boundary (oldCount 0) is self-authenticating");
+    trustedTip = GENESIS;
+  }
+  if (p.oldTip !== trustedTip) return fail("proof oldTip does not match the pinned tip");
+
+  // Replay the suffix: index, shape, chain linkage, recomputed hash. The
+  // first entry's `prev` is the security-relevant boundary check.
+  let tip = p.oldTip;
+  for (let i = 0; i < p.suffix.length; i++) {
+    const entry = p.suffix[i];
+    const index = p.oldCount + i;
+    if (!entry || typeof entry !== "object") return fail(`entry ${index} is malformed`);
+    if (entry.index !== index) return fail(`entry ${index} has the wrong index`);
+    if (entry.type !== "session" && entry.type !== "decision") return fail(`entry ${index} has an unknown type`);
+    if (typeof entry.sessionId !== "string" || !entry.sessionId.length) return fail(`entry ${index} has no sessionId`);
+    if (typeof entry.digest !== "string" || !HEX64.test(entry.digest)) return fail(`entry ${index} has a malformed digest`);
+    if (typeof entry.prev !== "string" || !HEX64.test(entry.prev)) return fail(`entry ${index} has a malformed prev`);
+    if (typeof entry.entryHash !== "string" || !HEX64.test(entry.entryHash)) return fail(`entry ${index} has a malformed entryHash`);
+    if (entry.prev !== tip) return fail(i === 0 ? "suffix does not extend the pinned tip" : `entry ${index} breaks the chain`);
+    if (entryHashOf(entry) !== entry.entryHash) return fail(`entry ${index} hash does not recompute`);
+    tip = entry.entryHash;
+  }
+  if (tip !== p.newTip) return fail("suffix does not recompute to the new tip");
+
+  // The signed head must commit to exactly what the suffix recomputed,
+  // under the same issuer key the pin was made by.
+  if (!isSignedHead(p.head)) return fail("head is not a valid signed head");
+  if (p.head.count !== p.newCount) return fail("head count does not match newCount");
+  if (p.head.head !== p.newTip) return fail("head does not commit to the new tip");
+  if (pinnedKeyId !== undefined && p.head.verifier.keyId !== pinnedKeyId) {
+    return fail("new head is signed by a different verifier key than the pinned head");
+  }
+  return { ok: true, oldCount: p.oldCount, newCount: p.newCount, newTip: p.newTip, keyId: p.head.verifier.keyId };
+}
+
 /**
  * A head-witness service — the "common witness" the accountability story
  * needs. Any vantage (a checker polling an issuer's `/tlog/head`, another
@@ -893,7 +1051,8 @@ function loadJson(path: string): unknown {
 const USAGE = `usage: tlog <command>
   build --dir GATE_STATE_DIR --key VERIFIER.json [--out tlog.json]
   check TLOG.json
-  prove TLOG.json --session gs_xxx
+  prove TLOG.json --session gs_xxx | --from-count N
+  check-proof PROOF.json [--old-head HEAD.json | --old-tip HEX --old-count N]
   admit TLOG.json ADMISSION.json [--pool POOL.json]
   witness --heads HEADS.jsonl TLOG.json
   equivocate --heads HEADS.jsonl
@@ -909,6 +1068,8 @@ export function main(args = process.argv.slice(2)): void {
       session: { type: "string" }, heads: { type: "string" }, help: { type: "boolean", short: "h" },
       host: { type: "string" }, port: { type: "string" },
       providers: { type: "string" }, "poll-ms": { type: "string" },
+      "from-count": { type: "string" },
+      "old-head": { type: "string" }, "old-tip": { type: "string" }, "old-count": { type: "string" },
     },
     allowPositionals: true, strict: true,
   });
@@ -939,9 +1100,43 @@ export function main(args = process.argv.slice(2)): void {
     return;
   }
   if (command === "prove") {
-    need(positionals[0], values.session);
+    need(positionals[0]);
+    if (values.session !== undefined && values["from-count"] !== undefined) {
+      throw new Error(`prove takes either --session or --from-count, not both.\n${USAGE}`);
+    }
+    if (values["from-count"] !== undefined) {
+      const raw = values["from-count"];
+      if (!/^\d+$/.test(raw) || !Number.isSafeInteger(Number(raw))) {
+        throw new Error("--from-count must be a nonnegative integer");
+      }
+      const proof = proveConsistency(loadJson(positionals[0]!) as TransparencyLog, Number(raw));
+      console.log(JSON.stringify(proof, null, 2));
+      return;
+    }
+    need(values.session);
     const proof = proveSession(loadJson(positionals[0]!) as TransparencyLog, values.session!);
     console.log(JSON.stringify(proof, null, 2));
+    return;
+  }
+  if (command === "check-proof") {
+    need(positionals[0]);
+    let pinned: ConsistencyTrust | undefined;
+    if (values["old-head"] !== undefined) {
+      if (values["old-tip"] !== undefined || values["old-count"] !== undefined) {
+        throw new Error(`check-proof takes either --old-head or --old-tip/--old-count, not both.\n${USAGE}`);
+      }
+      pinned = { pinnedHead: loadJson(values["old-head"]!) };
+    } else if (values["old-tip"] !== undefined || values["old-count"] !== undefined) {
+      need(values["old-tip"], values["old-count"]);
+      const raw = values["old-count"]!;
+      if (!/^\d+$/.test(raw) || !Number.isSafeInteger(Number(raw))) {
+        throw new Error("--old-count must be a nonnegative integer");
+      }
+      pinned = { pinnedTip: { count: Number(raw), tip: values["old-tip"]! } };
+    }
+    const result = checkConsistency(loadJson(positionals[0]!), pinned);
+    console.log(JSON.stringify(result));
+    if (!result.ok) process.exitCode = 2;
     return;
   }
   if (command === "admit") {

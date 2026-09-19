@@ -143,7 +143,13 @@ issuer key — same count with different tips, or one tip at two counts — and
 warns on counts that regress in issue order. `tlog compare A.json B.json`
 decides the case heads cannot: two published logs under one key are walked
 to the first divergent index — a proven fork — or reported as a consistent
-prefix. `tlog witness-serve --heads heads.jsonl` is a provider-neutral common
+prefix. `tlog prove LOG --from-count N` emits a
+`clankdar-tlog-consistency-v1` proof that a larger log extends a previously
+pinned `count:N` head, and `tlog check-proof PROOF --old-head head.json`
+(or `--old-tip HEX --old-count N`) replays the suffix against the pin —
+O(new−old) entries, linear in growth rather than Merkle-logarithmic, since
+the log is a linear hash chain by design.
+`tlog witness-serve --heads heads.jsonl` is a provider-neutral common
 intake: any issuer's self-describing signed head can be submitted, heads are
 indexed by their embedded `keyId`, bounded pages can filter by key, and
 conflict reports stay isolated per provider. It needs no provider registry.
