@@ -36,7 +36,7 @@ import {
 import { poolForVersion, suiteVersion, type SuiteName } from "../ladder/mod.ts";
 import { answerFormat, canonicalAnswer, MAX_ANSWER_LENGTH } from "../ladder/family.ts";
 import { holdoutCell, parsePool, type HoldoutPool } from "./holdout.ts";
-import { adapterByName, openai } from "./adapters.ts";
+import { adapterByName, cli, openai } from "./adapters.ts";
 import type { Adapter } from "./adapter.ts";
 import { integer, requestBudget } from "./options.ts";
 import { GateStore } from "./store.ts";
@@ -627,18 +627,29 @@ export async function main(args = process.argv.slice(2)): Promise<void> {
     const rounds = integer(values.rounds!, 256);
     const p = policy();
     const remote = values.adapter!.startsWith("openai:");
+    const remoteCli = values.adapter!.startsWith("cli:");
     const budget = values["max-requests"] ? requestBudget(integer(values["max-requests"]!, 30_000)) : undefined;
     const adapter = remote
       ? openai({
           model: values.adapter!.slice(7), maxTokens: integer(values["max-tokens"] ?? "4096", 32_768),
           timeoutMs: integer(values["timeout-ms"] ?? "120000", 600_000), beforeRequest: budget?.beforeRequest,
         })
-      : adapterByName(values.adapter!);
-    if (remote && !values.execute) {
-      console.log(JSON.stringify({ dryRun: true, adapter: values.adapter, rounds, challengesPerSession: p.challenges, maximumRequests: p.challenges * rounds * 3 }, null, 2));
+      : remoteCli
+        ? (() => {
+            const rest = values.adapter!.slice(4);
+            const sep = rest.indexOf(":");
+            if (sep < 1) throw new Error("cli adapters need a program and model (cli:<program>:<model>)");
+            return cli(rest.slice(0, sep), {
+              model: rest.slice(sep + 1),
+              timeoutMs: integer(values["timeout-ms"] ?? "120000", 600_000), beforeRequest: budget?.beforeRequest,
+            });
+          })()
+        : adapterByName(values.adapter!);
+    if ((remote || remoteCli) && !values.execute) {
+      console.log(JSON.stringify({ dryRun: true, adapter: values.adapter, rounds, challengesPerSession: p.challenges, maximumRequests: p.challenges * rounds * (remoteCli ? 1 : 3) }, null, 2));
       return;
     }
-    if (remote && (!budget || budget.used() + p.challenges * rounds > integer(values["max-requests"]!, 30_000))) throw new Error("--execute requires --max-requests at least challenges × rounds");
+    if ((remote || remoteCli) && (!budget || budget.used() + p.challenges * rounds > integer(values["max-requests"]!, 30_000))) throw new Error("--execute requires --max-requests at least challenges × rounds");
     const result = await probe({ policy: p, verifierJwk: loadJson(values.key!) as VerifierJwk, adapter, rounds, outDir: values.out, pool: loadPool() });
     console.error(`${adapter.name}: ${result.admitted}/${result.rounds} sessions admitted, ${result.passed}/${result.sessions} challenges passed`);
     console.log(JSON.stringify({ adapter: adapter.name, rounds: result.rounds, challenges: result.sessions, passed: result.passed, admitted: result.admitted }, null, 2));

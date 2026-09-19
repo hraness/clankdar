@@ -19,7 +19,7 @@ import { appendFileSync, existsSync, readFileSync, writeFileSync } from "node:fs
 import { probe, type Admission, type AdmissionBody, type GatePolicy } from "./gate.ts";
 import { parsePolicy } from "./gate.ts";
 import type { Adapter } from "./adapter.ts";
-import { adapterByName, openai } from "./adapters.ts";
+import { adapterByName, cli, openai } from "./adapters.ts";
 import { integer, requestBudget } from "./options.ts";
 import type { VerifierJwk } from "./attest.ts";
 
@@ -208,18 +208,29 @@ export async function main(args = process.argv.slice(2)): Promise<void> {
     const policy = parsePolicy(loadJson(values.policy));
     const rounds = integer(values.rounds, 1000);
     const remote = values.adapter.startsWith("openai:");
+    const remoteCli = values.adapter.startsWith("cli:");
     const budget = values["max-requests"] ? requestBudget(integer(values["max-requests"]!, 30_000)) : undefined;
     const adapter = remote
       ? openai({
           model: values.adapter.slice(7), maxTokens: integer(values["max-tokens"] ?? "4096", 32_768),
           timeoutMs: integer(values["timeout-ms"] ?? "120000", 600_000), beforeRequest: budget?.beforeRequest,
         })
-      : adapterByName(values.adapter);
-    if (remote && !values.execute) {
-      console.log(JSON.stringify({ dryRun: true, adapter: values.adapter, rounds, challengesPerSession: policy.challenges, maximumRequests: policy.challenges * rounds * 3 }, null, 2));
+      : remoteCli
+        ? (() => {
+            const rest = values.adapter.slice(4);
+            const sep = rest.indexOf(":");
+            if (sep < 1) throw new Error("cli adapters need a program and model (cli:<program>:<model>)");
+            return cli(rest.slice(0, sep), {
+              model: rest.slice(sep + 1),
+              timeoutMs: integer(values["timeout-ms"] ?? "120000", 600_000), beforeRequest: budget?.beforeRequest,
+            });
+          })()
+        : adapterByName(values.adapter);
+    if ((remote || remoteCli) && !values.execute) {
+      console.log(JSON.stringify({ dryRun: true, adapter: values.adapter, rounds, challengesPerSession: policy.challenges, maximumRequests: policy.challenges * rounds * (remoteCli ? 1 : 3) }, null, 2));
       return;
     }
-    if (remote && (!budget || integer(values["max-requests"]!, 30_000) < policy.challenges * rounds)) throw new Error("--execute requires --max-requests at least challenges × rounds");
+    if ((remote || remoteCli) && (!budget || integer(values["max-requests"]!, 30_000) < policy.challenges * rounds)) throw new Error("--execute requires --max-requests at least challenges × rounds");
     const records = await runDrift({
       policy, adapter, rounds, verifierJwk: loadJson(values.key) as VerifierJwk, seriesPath: values.series,
     });
