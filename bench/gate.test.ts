@@ -337,7 +337,7 @@ describe("gate HTTP service", () => {
 
 describe("drift probe", () => {
   test("self-issued sessions produce signed, replayable admissions", async () => {
-    const stub = { name: "stub", solve: async () => "0" };
+    const stub = { name: "stub", solve: async () => "not-an-integer" };
     const result = await probe({ policy, verifierJwk: verifier.privateJwk, adapter: stub, rounds: 3 });
     expect(result.rounds).toBe(3);
     expect(result.sessions).toBe(6);
