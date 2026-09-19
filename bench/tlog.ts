@@ -8,6 +8,8 @@
  *   bun bench/tlog.ts admit tlog.json admission.json
  *   bun bench/tlog.ts witness --heads heads.jsonl tlog.json
  *   bun bench/tlog.ts equivocate --heads heads.jsonl
+ *   bun bench/tlog.ts compare log-a.json log-b.json
+ *   bun bench/tlog.ts witness-serve --heads heads.jsonl [--port 8790]
  *
  * A derived view over the gate ledger (bench/store.ts appends one JSONL
  * record per session issuance and per decision). Every record becomes a
@@ -25,10 +27,11 @@
  * key. Two heads at the same count with different tips — or one tip signed
  * at two counts — are certain forks; a count that regresses in issue order
  * is only a warning, since issue timestamps are issuer-controlled. Heads
- * still have to reach a common witness to be compared: gossip, witnessed
- * co-signing, and external anchoring remain future work, and forks between
- * different-length logs need the underlying entries, which the registry
- * does not store.
+ * still have to reach a common witness to be compared: `witness-serve`
+ * implements explicit provider-neutral intake, but automatic polling,
+ * gossip, witnessed co-signing, and external anchoring remain future work.
+ * `compare` decides different-length forks when both full logs are present;
+ * the head registry alone cannot.
  */
 import { parseArgs } from "node:util";
 import { createHash } from "node:crypto";
@@ -110,6 +113,32 @@ const headBody = (head: TlogHead) => ({
 });
 
 const message = (error: unknown): string => (error instanceof Error ? error.message : String(error));
+
+async function boundedText(req: Request, maxBytes: number): Promise<string | null> {
+  const declared = req.headers.get("content-length");
+  if (declared !== null && /^\d+$/.test(declared) && Number(declared) > maxBytes) return null;
+  if (!req.body) return "";
+  const reader = req.body.getReader();
+  const chunks: Uint8Array[] = [];
+  let size = 0;
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    size += value.byteLength;
+    if (size > maxBytes) {
+      await reader.cancel();
+      return null;
+    }
+    chunks.push(value);
+  }
+  const bytes = new Uint8Array(size);
+  let offset = 0;
+  for (const chunk of chunks) {
+    bytes.set(chunk, offset);
+    offset += chunk.byteLength;
+  }
+  return new TextDecoder().decode(bytes);
+}
 
 /**
  * Read and validate a gate ledger. Same replay rules as `GateStore.open`:
@@ -312,9 +341,19 @@ export function isSignedHead(value: unknown): value is TlogHead {
   return typeof head.signature === "string" && verifyBodySignature(headBody(head), head.signature, publicKey);
 }
 
+const normalizedHead = (head: TlogHead): TlogHead => ({
+  protocol: head.protocol,
+  kind: head.kind,
+  count: head.count,
+  head: head.head,
+  issuedAt: head.issuedAt,
+  verifier: { keyId: head.verifier.keyId, publicKey: head.verifier.publicKey },
+  signature: head.signature,
+});
+
 /**
- * Read and validate a heads registry: one verbatim signed `TlogHead` per
- * JSONL line, indexed by `verifier.keyId`. Same replay rules as
+ * Read and validate a heads registry: one signed `TlogHead` per JSONL line,
+ * indexed by `verifier.keyId`. Same replay rules as
  * `readLedger` — a torn final line is dropped, while mid-file corruption
  * or a line that parses but fails `isSignedHead` is fatal (a recorded
  * head is evidence; an unverifiable one is corruption). A missing file is
@@ -367,20 +406,27 @@ export function witnessHead(headsPath: string, log: unknown): WitnessResult {
   const check = checkLog(log);
   if (!check.ok) return { ok: false, recorded: false, reason: `transparency log failed check: ${check.reason}` };
   const head = (log as TransparencyLog).head;
+  const { recorded, witnessed } = appendHead(headsPath, head);
+  return { ok: true, recorded, keyId: head.verifier.keyId, count: head.count, head: head.head, witnessed };
+}
+
+/** Append one signed head to the registry; an identical signed claim is a no-op. */
+function appendHead(headsPath: string, head: TlogHead): { recorded: boolean; witnessed: number } {
   mkdirSync(dirname(headsPath), { recursive: true });
   const heads = readHeads(headsPath);
-  const body = canonical(head);
-  if (heads.some((recorded) => canonical(recorded) === body)) {
-    return { ok: true, recorded: false, keyId: head.verifier.keyId, count: head.count, head: head.head, witnessed: heads.length };
+  const normalized = normalizedHead(head);
+  const body = canonical(normalized);
+  if (heads.some((recorded) => canonical(normalizedHead(recorded)) === body)) {
+    return { recorded: false, witnessed: heads.length };
   }
   const fd = openSync(headsPath, "a", 0o644);
   try {
-    writeSync(fd, JSON.stringify(head) + "\n");
+    writeSync(fd, JSON.stringify(normalized) + "\n");
     fsyncSync(fd);
   } finally {
     closeSync(fd);
   }
-  return { ok: true, recorded: true, keyId: head.verifier.keyId, count: head.count, head: head.head, witnessed: heads.length + 1 };
+  return { recorded: true, witnessed: heads.length + 1 };
 }
 
 /** A pair of recorded heads that conflict (a fork) or merely warn (a regression). */
@@ -522,6 +568,111 @@ export function compareLogs(a: unknown, b: unknown): ForkReport {
   return { ok: true, equivocation: false, keyId, relation, counts };
 }
 
+/**
+ * A head-witness service — the "common witness" the accountability story
+ * needs. Any vantage (a checker polling an issuer's `/tlog/head`, another
+ * witness, a log consumer) submits a signed head; the service validates
+ * the signature standalone — the head carries its own publicKey — appends
+ * it to the local registry, and answers whether that issuer key now has a
+ * proven equivocation on record.
+ *
+ *   POST /heads                    body: one self-describing TlogHead
+ *   GET  /heads?keyId=K&after=N    bounded pages across one or every provider
+ *   GET  /equivocation/:keyId      findings for one provider key
+ *   GET  /healthz
+ *
+ * Honest scope: unauthenticated — a submission self-validates by
+ * signature and is indexed by its embedded keyId, so no central provider
+ * registry is required. Unsigned unknown members are stripped before
+ * storage. There is no rate limit and no gossip: heads arrive only when
+ * someone POSTs them, so a private fork stays invisible until both views
+ * reach a witness like this one. The registry is the same append-only JSONL
+ * `tlog witness` writes and `tlog equivocate` reads.
+ */
+export function serveWitness(opts: { heads: string; host?: string; port?: number }): { url: string; close: () => void } {
+  const json = (data: unknown, status = 200) =>
+    new Response(JSON.stringify(data), { status, headers: { "content-type": "application/json" } });
+  const err = (status: number, error: string) => json({ error }, status);
+  const registry = (): TlogHead[] | { error: string } => {
+    try {
+      return readHeads(opts.heads);
+    } catch (error) {
+      return { error: message(error) };
+    }
+  };
+  const server = Bun.serve({
+    hostname: opts.host ?? "127.0.0.1",
+    port: opts.port ?? 8790,
+    fetch: async (req) => {
+      const url = new URL(req.url);
+      if (req.method === "GET" && url.pathname === "/healthz") return json({ ok: true });
+      const equivocationMatch = /^\/equivocation\/([0-9a-f]{16})$/.exec(url.pathname);
+      if (req.method === "GET" && equivocationMatch) {
+        const heads = registry();
+        return Array.isArray(heads)
+          ? json(findEquivocation(heads.filter((head) => head.verifier.keyId === equivocationMatch[1])))
+          : err(500, "witness registry unavailable");
+      }
+      if (url.pathname === "/heads") {
+        if (req.method === "GET") {
+          const keyId = url.searchParams.get("keyId");
+          if (keyId !== null && !/^[0-9a-f]{16}$/.test(keyId)) return err(400, "keyId must be 16 lowercase hex characters");
+          const afterRaw = url.searchParams.get("after") ?? "0";
+          const limitRaw = url.searchParams.get("limit") ?? "100";
+          if (!/^\d+$/.test(afterRaw) || !Number.isSafeInteger(Number(afterRaw))) return err(400, "after must be a nonnegative safe integer");
+          if (!/^\d+$/.test(limitRaw) || !Number.isSafeInteger(Number(limitRaw))) return err(400, "limit must be in 1..1000");
+          const after = Number(afterRaw);
+          const limit = Number(limitRaw);
+          if (limit < 1 || limit > 1000) return err(400, "limit must be in 1..1000");
+          const heads = registry();
+          if (!Array.isArray(heads)) return err(500, "witness registry unavailable");
+          const filtered = keyId === null ? heads : heads.filter((head) => head.verifier.keyId === keyId);
+          const page = filtered.slice(after, after + limit).map(normalizedHead);
+          const next = after + page.length < filtered.length ? after + page.length : null;
+          return json({ heads: page, next });
+        }
+        if (req.method === "POST") {
+          const text = await boundedText(req, 16 * 1024);
+          if (text === null) return err(413, "request body exceeds 16 KiB");
+          let body: unknown;
+          try {
+            body = JSON.parse(text);
+          } catch {
+            return err(400, "request body must be a JSON head object");
+          }
+          if (!isSignedHead(body)) return err(400, "not a signed tlog head");
+          let appended: { recorded: boolean; witnessed: number };
+          try {
+            appended = appendHead(opts.heads, body);
+          } catch {
+            return err(500, "witness registry unavailable");
+          }
+          const heads = registry();
+          if (!Array.isArray(heads)) return err(500, "witness registry unavailable");
+          const { recorded, witnessed } = appended;
+          const providerHeads = heads.filter((head) => head.verifier.keyId === body.verifier.keyId);
+          const report = findEquivocation(providerHeads);
+          const out: Record<string, unknown> = {
+            ok: true,
+            recorded,
+            keyId: body.verifier.keyId,
+            witnessed,
+            providerHeads: providerHeads.length,
+            equivocation: !report.ok,
+          };
+          if (report.conflict) out.conflict = report.conflict;
+          if (report.reason) out.reason = report.reason;
+          if (report.warnings?.length) out.warnings = report.warnings;
+          return json(out);
+        }
+      }
+      return err(404, "not found");
+    },
+  });
+  const host = opts.host ?? "127.0.0.1";
+  return { url: `http://${host}:${server.port}`, close: () => server.stop(true) };
+}
+
 function loadJson(path: string): unknown {
   try {
     return JSON.parse(readFileSync(path, "utf8"));
@@ -537,7 +688,8 @@ const USAGE = `usage: tlog <command>
   admit TLOG.json ADMISSION.json
   witness --heads HEADS.jsonl TLOG.json
   equivocate --heads HEADS.jsonl
-  compare TLOG_A.json TLOG_B.json`;
+  compare TLOG_A.json TLOG_B.json
+  witness-serve --heads HEADS.jsonl [--host H] [--port N]`;
 
 export function main(args = process.argv.slice(2)): void {
   const [command, ...rest] = args;
@@ -546,6 +698,7 @@ export function main(args = process.argv.slice(2)): void {
     options: {
       dir: { type: "string" }, key: { type: "string" }, out: { type: "string" },
       session: { type: "string" }, heads: { type: "string" }, help: { type: "boolean", short: "h" },
+      host: { type: "string" }, port: { type: "string" },
     },
     allowPositionals: true, strict: true,
   });
@@ -610,6 +763,16 @@ export function main(args = process.argv.slice(2)): void {
     const report = compareLogs(loadJson(positionals[0]!), loadJson(positionals[1]!));
     console.log(JSON.stringify(report));
     if (!report.ok) process.exitCode = 2;
+    return;
+  }
+  if (command === "witness-serve") {
+    need(values.heads);
+    const port = values.port === undefined ? undefined : Number(values.port);
+    if (port !== undefined && (!Number.isInteger(port) || port < 1 || port > 65535)) {
+      throw new Error("--port must be 1..65535");
+    }
+    const { url } = serveWitness({ heads: values.heads!, host: values.host, port });
+    console.error(`tlog witness serving on ${url} (heads: ${values.heads})`);
     return;
   }
   throw new Error(`unknown command: ${command}.\n${USAGE}`);

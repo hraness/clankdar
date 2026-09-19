@@ -7,7 +7,7 @@ import { issueSession, submitSession, type Admission, type GatePolicy, type Gate
 import { GateStore } from "./store.ts";
 import {
   buildLog, checkLoggedAdmission, checkLog, compareLogs, findEquivocation, isSignedHead, proveSession,
-  readHeads, readLedger, signHead, TLOG_PROTOCOL, witnessHead,
+  readHeads, readLedger, serveWitness, signHead, TLOG_PROTOCOL, witnessHead,
   type TlogHead, type TransparencyLog,
 } from "./tlog.ts";
 
@@ -513,4 +513,100 @@ describe("tlog compare CLI", () => {
     expect(fork.code).toBe(2);
     expect(JSON.parse(fork.stdout)).toMatchObject({ ok: false, equivocation: true, forkIndex: 0 });
   });
+});
+
+describe("tlog witness service", () => {
+  test("accepts self-describing heads from many providers and reports conflicts per key", async () => {
+    const dir = mkdtempSync(join(tmpdir(), "clankdar-witness-"));
+    const headsPath = join(dir, "heads.jsonl");
+    const witness = serveWitness({ heads: headsPath, port: 0 });
+    const post = (head: unknown) => fetch(`${witness.url}/heads`, {
+      method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(head),
+    });
+    const first = signHead(2, "a".repeat(64), verifier.privateJwk, now);
+    const foreign = signHead(3, "b".repeat(64), other.privateJwk, now);
+    const fork = signHead(2, "c".repeat(64), verifier.privateJwk, later);
+    try {
+      expect(await (await fetch(`${witness.url}/healthz`)).json()).toEqual({ ok: true });
+      expect(await (await post(first)).json()).toMatchObject({
+        ok: true, recorded: true, keyId: verifier.keyId, witnessed: 1, providerHeads: 1, equivocation: false,
+      });
+      expect(await (await post({ ...first, unsignedProviderMetadata: { name: "ignored" } })).json()).toMatchObject({
+        ok: true, recorded: false, keyId: verifier.keyId, witnessed: 1, providerHeads: 1, equivocation: false,
+      });
+      expect(await (await post(foreign)).json()).toMatchObject({
+        ok: true, recorded: true, keyId: other.keyId, witnessed: 2, providerHeads: 1, equivocation: false,
+      });
+      expect(await (await post(fork)).json()).toMatchObject({
+        ok: true, recorded: true, keyId: verifier.keyId, witnessed: 3, providerHeads: 2, equivocation: true,
+      });
+      expect(readHeads(headsPath)).toHaveLength(3);
+      expect((readHeads(headsPath)[0] as TlogHead & { unsignedProviderMetadata?: unknown }).unsignedProviderMetadata).toBeUndefined();
+
+      const verifierReport = await (await fetch(`${witness.url}/equivocation/${verifier.keyId}`)).json();
+      expect(verifierReport).toMatchObject({ ok: false, checked: 2, keyId: verifier.keyId });
+      const otherReport = await (await fetch(`${witness.url}/equivocation/${other.keyId}`)).json();
+      expect(otherReport).toEqual({ ok: true, checked: 1 });
+
+      const page1 = await (await fetch(`${witness.url}/heads?limit=2`)).json();
+      expect(page1.heads).toHaveLength(2);
+      expect(page1.next).toBe(2);
+      const page2 = await (await fetch(`${witness.url}/heads?after=${page1.next}&limit=2`)).json();
+      expect(page2.heads).toHaveLength(1);
+      expect(page2.next).toBeNull();
+      const filtered = await (await fetch(`${witness.url}/heads?keyId=${verifier.keyId}`)).json();
+      expect(filtered.heads).toHaveLength(2);
+      expect(filtered.heads.every((head: TlogHead) => head.verifier.keyId === verifier.keyId)).toBe(true);
+    } finally {
+      witness.close();
+    }
+  });
+
+  test("bounds requests and pages and rejects unsigned or malformed heads", async () => {
+    const headsPath = join(mkdtempSync(join(tmpdir(), "clankdar-witness-")), "heads.jsonl");
+    const witness = serveWitness({ heads: headsPath, port: 0 });
+    try {
+      const invalid = await fetch(`${witness.url}/heads`, { method: "POST", body: JSON.stringify({ protocol: TLOG_PROTOCOL }) });
+      expect(invalid.status).toBe(400);
+      expect(await invalid.json()).toEqual({ error: "not a signed tlog head" });
+      const oversized = await fetch(`${witness.url}/heads`, { method: "POST", body: "x".repeat(16 * 1024 + 1) });
+      expect(oversized.status).toBe(413);
+      expect((await fetch(`${witness.url}/heads?limit=0`)).status).toBe(400);
+      expect((await fetch(`${witness.url}/heads?after=-1`)).status).toBe(400);
+      expect((await fetch(`${witness.url}/heads?after=1e2`)).status).toBe(400);
+      expect((await fetch(`${witness.url}/heads?keyId=not-a-key`)).status).toBe(400);
+      expect((await fetch(`${witness.url}/equivocation/not-a-key`)).status).toBe(404);
+      expect((await fetch(`${witness.url}/absent`)).status).toBe(404);
+      expect(await (await fetch(`${witness.url}/healthz`)).json()).toEqual({ ok: true });
+    } finally {
+      witness.close();
+    }
+  });
+
+  test("witness-serve CLI boots the provider-neutral intake", async () => {
+    const dir = mkdtempSync(join(tmpdir(), "clankdar-witness-"));
+    const probe = Bun.serve({ port: 0, fetch: () => new Response() });
+    const port = probe.port;
+    probe.stop(true);
+    const proc = Bun.spawn([
+      Bun.which("bun")!, resolve(import.meta.dir, "tlog.ts"), "witness-serve",
+      "--heads", join(dir, "heads.jsonl"), "--port", String(port),
+    ], { cwd: resolve(import.meta.dir, ".."), stdout: "pipe", stderr: "pipe" });
+    try {
+      const reader = proc.stderr.getReader();
+      let banner = "";
+      while (!banner.includes("\n")) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        banner += new TextDecoder().decode(value, { stream: true });
+      }
+      reader.releaseLock();
+      const url = /serving on (http:\/\/\S+)/.exec(banner)?.[1];
+      expect(url).toBeTruthy();
+      expect(await (await fetch(`${url}/healthz`)).json()).toEqual({ ok: true });
+    } finally {
+      proc.kill();
+      await proc.exited;
+    }
+  }, 15_000);
 });
