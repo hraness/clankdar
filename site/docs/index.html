@@ -17,6 +17,7 @@
     <link rel="apple-touch-icon" href="/apple-icon.png" sizes="180x180">
     <link rel="stylesheet" href="/design/fonts.css">
     <link rel="stylesheet" href="/design/paper-theme.css">
+    <link rel="stylesheet" href="/design/product-marketing.css">
     <link rel="stylesheet" href="/design/product-marketing-preset.css">
     <link rel="stylesheet" href="/design/lantern-material.css">
     <link rel="stylesheet" href="/design/appearance-menu.css">
@@ -26,11 +27,11 @@
   </head>
   <body>
     <a class="skip-link" href="#main">Skip to content</a>
-    <div class="page">
-      <header class="masthead hraness-material-chrome">
-        <a class="wordmark" href="/" aria-label="Clankdar home"><img class="mark" alt="" aria-hidden="true" src="/marks/clankdar.svg" width="24" height="24">clankdar</a>
-        <div class="header-actions"><nav class="site-nav" aria-label="Site"><a href="/docs/" aria-current="page">Docs</a><a href="/benchmark/">Benchmark</a></nav><a class="source-link" href="https://github.com/hraness/clankdar">GitHub <svg aria-hidden="true" viewBox="0 0 16 16"><path d="M4 12 12 4M4 4h8v8"/></svg></a>
-        <div class="hraness-design-theme-toggle" data-hraness-appearance-menu data-presentation="menu" data-ready="false">
+    <header class="masthead hraness-marketing-header hraness-material-chrome" data-hraness-marketing="header">
+      <div class="hraness-marketing-header__inner">
+        <a class="wordmark hraness-marketing-header__brand" href="/" aria-label="Clankdar home"><img class="mark" alt="" aria-hidden="true" src="/marks/clankdar.svg" width="24" height="24">clankdar</a>
+        <nav class="site-nav hraness-marketing-header__nav" aria-label="Site"><a href="/docs/" aria-current="page">Docs</a><a href="/benchmark/">Benchmark</a><a class="source-link" href="https://github.com/hraness/clankdar">GitHub <svg aria-hidden="true" viewBox="0 0 16 16"><path d="M4 12 12 4M4 4h8v8"/></svg></a></nav>
+        <div class="header-actions hraness-marketing-header__actions"><div class="hraness-design-theme-toggle" data-hraness-appearance-menu data-presentation="menu" data-ready="false">
           <button type="button" class="hraness-design-theme-toggle__trigger" aria-label="Appearance: System" aria-haspopup="menu" aria-expanded="false" aria-controls="appearance-menu"><span data-current-appearance-icon="system" aria-hidden="true">◐</span></button>
           <div class="hraness-design-theme-toggle__popover" hidden>
             <div class="hraness-design-theme-toggle__menu" id="appearance-menu" role="menu" aria-label="Appearance">
@@ -40,14 +41,16 @@
             </div>
           </div>
         </div></div>
-      </header>
+      </div>
+    </header>
+    <div class="page">
       <main class="doc" id="main">
         <header class="doc-head">
           <h1 id="title">Make a check.</h1>
           <p class="doc-lede">Issue fresh puzzles, submit one set of answers, and keep the signed result. Use ordinary HTTP from your own application. You supply the solver and decide how to use the evidence.</p>
         </header>
         <nav class="contents" aria-label="Contents">
-          <a href="#quickstart">Quickstart</a><a href="#api">API</a><a href="#verification">Verify</a><a href="#recipes">Recipes</a><a href="#limits">Limits</a>
+          <a href="#quickstart">Quickstart</a><a href="#api">API</a><a href="#algal">Algal</a><a href="#verification">Verify</a><a href="#recipes">Recipes</a><a href="#limits">Limits</a>
         </nav>
 
         <section class="doc-section" id="quickstart" aria-labelledby="quickstart-title">
@@ -61,9 +64,9 @@ umask 077
 curl -fsS &quot;$CLANKDAR_URL/v1/checks&quot; \
   -H &quot;Authorization: Bearer $CLANKDAR_TOKEN&quot; \
   -H &quot;Content-Type: application/json&quot; \
-  --data &#x27;{&quot;policyId&quot;:&quot;v2-floor-v1&quot;}&#x27; &gt; check.json
+  --data &#x27;{&quot;policyId&quot;:&quot;algal-floor-v1&quot;}&#x27; &gt; check.json
 jq -r &#x27;.challenges[] | &quot;\(.challengeId)\n\(.prompt)\n&quot;&#x27; check.json</code></pre>
-          <p><code>check.json</code> contains the actual challenge IDs and prompts, <code>expiresAt</code>, and a private <code>ticket</code> for this check. The default <code>v2-floor-v1</code> policy gives you four prompts, requires three passing answers, and allows 120 seconds. Creating the check does not call a model.</p>
+          <p><code>check.json</code> contains the actual challenge IDs and prompts, <code>expiresAt</code>, and a private <code>ticket</code> for this check. The default <code>algal-floor-v1</code> policy gives you four Algal program puzzles, requires three passing answers, and allows 180 seconds. Creating the check does not call a model.</p>
           <h3>Build the answer map and submit once.</h3>
 <pre class="code"><code>jq &#x27;.challenges | map({key: .challengeId, value: &quot;&quot;}) | from_entries&#x27; \
   check.json &gt; answers.json</code></pre>
@@ -89,9 +92,19 @@ jq &#x27;{id, pass, passed, required, receiptUrl, sha256}&#x27; result.json</cod
             <div><dt><code>GET /v1/checks/:id</code></dt><dd>Returns the immutable, canonical JSON receipt after a result exists. This read needs no token. The <code>sha256</code> returned on submission identifies the exact receipt bytes.</dd></div>
           </dl>
           <h3>Choose a policy.</h3>
-          <p><a href="https://clankdar-hosted-staging.972abc65.workers.dev/v1/policies/v2-floor-v1"><code>v2-floor-v1</code></a> uses the v2 pool and a 120-second deadline. <a href="https://clankdar-hosted-staging.972abc65.workers.dev/v1/policies/frontier-floor-v1"><code>frontier-floor-v1</code></a> uses harder cells and a 180-second deadline. Both ask four prompts and require three passes. These are defined task settings, not certified model classes.</p>
+          <p>The default <a href="https://clankdar-hosted-staging.972abc65.workers.dev/v1/policies/algal-floor-v1"><code>algal-floor-v1</code></a> uses Algal programs and 180 seconds. <a href="https://clankdar-hosted-staging.972abc65.workers.dev/v1/policies/v2-floor-v1"><code>v2-floor-v1</code></a> retains the v2 pool and 120 seconds; <a href="https://clankdar-hosted-staging.972abc65.workers.dev/v1/policies/frontier-floor-v1"><code>frontier-floor-v1</code></a> retains frontier puzzles and 180 seconds. All ask four prompts and require three passes. These settings are not certified model classes.</p>
           <details class="report-details" id="subject"><summary>Optionally bind a check to a subject key</summary><p>Include <code>subjectPublicKey</code> when issuing a check if your application needs key binding. Submission then includes the matching <code>subjectProof</code> under the existing receipt protocol. A subject signature binds a key to the check; it does not prove who solved the puzzles. Most integrations can start without subject keys. See the <a href="https://github.com/hraness/clankdar/blob/main/docs/clankdar-checks-v1.md">API contract</a> for the exact proof format.</p></details>
           <p>For request bounds, retry semantics, and error responses, use the <a href="https://github.com/hraness/clankdar/blob/main/docs/clankdar-checks-v1.md">complete check API contract</a>. A <a href="https://github.com/hraness/clankdar/blob/main/cloudflare/examples/check.mjs">server-side JavaScript integration example</a> connects the calls to your <code>solve(challenges, signal)</code> function. Forward the abort signal to provider requests. Its optional <code>checkpoint(record)</code> callback lets your app save the ticket and answers privately for recovery.</p>
+        </section>
+
+        <section class="doc-section" id="algal" aria-labelledby="algal-title">
+          <h2 id="algal-title">Algal supplies the language. Clankdar supplies the check.</h2>
+          <p>The new <code>clankdar-algal-v1</code> suite presents real <code>algal.expr.v1</code> programs and fresh inputs. Algal’s official Rust evaluator, compiled to WebAssembly, calculates the reference answer. The CLI and Worker use the same pinned evaluator; Clankdar adds deadlines, exact response scoring, and signed receipts.</p>
+          <p>Programs compose filtering and arithmetic, coupled recurrences, and matrix transitions. They have a 10,000-unit work budget and no network, filesystem, or model access. Your solver returns only the final integer. Clankdar does not execute code supplied in a response.</p>
+          <pre class="code"><code>bun run algal:example
+bun bench --suite algal --adapter oracle --seeds 1-10 --out results/algal-control.jsonl</code></pre>
+          <p>These local commands need a repository checkout, Bun 1.3.14, and installed dependencies. They make no model calls; the oracle is a runner control. <a href="https://github.com/hraness/clankdar/blob/main/docs/clankdar-algal-v1.md">Inspect the program contract, evaluator pin, and worked example</a>.</p>
+          <p class="note">The Algal suite has no model calibration yet. Published v2/frontier results remain attached to their original suites, and older receipts still replay. A tier describes program structure, not a certified capability level.</p>
         </section>
 
         <section class="doc-section" id="verification" aria-labelledby="verification-title">
@@ -131,7 +144,7 @@ jq &#x27;{id, pass, passed, required, receiptUrl, sha256}&#x27; result.json</cod
 
         <section class="doc-section" id="scoring" aria-labelledby="scoring-title">
           <h2 id="scoring-title">The benchmark behind the checks.</h2>
-          <p>Tasks and scoring are versioned as <code>{{SUITE_VERSION}}</code> and <code>{{SCORER_VERSION}}</code>. Exact comparison preserves meaningful signs, case, token boundaries, grid dimensions, and binary leading zeroes. There is no judge model. The independent final-answer diagnostic is separate from strict pass/fail.</p>
+          <p>The recorded v2 tasks use <code>{{SUITE_VERSION}}</code>; new Algal checks use <code>clankdar-algal-v1</code>. Both use <code>{{SCORER_VERSION}}</code> for typed response scoring. The new Algal suite has no model calibration yet. Exact comparison preserves meaningful signs, case, token boundaries, grid dimensions, and binary leading zeroes. There is no judge model. The independent final-answer diagnostic is separate from strict pass/fail.</p>
           <h3 id="profiles">Compare the capability you need.</h3>
           <p>Public results are grouped by family/tier cells and profiles. The v2 calibration has 2,500 attempts from five requested model aliases, with one timeout; pooled strict scores span 9.4%–87.6%. Tiers mix different families, so they are not one intelligence number. Inspect the <a href="/benchmark/#profiles">capability profiles</a>, counts, exclusions, and uncertainty before choosing your own evaluation conditions.</p>
           <h3 id="agent">Keep evaluation tracks separate.</h3>
@@ -140,7 +153,7 @@ jq &#x27;{id, pass, passed, required, receiptUrl, sha256}&#x27; result.json</cod
             <p>With Bun 1.3.14 and the repository dependencies installed:</p>
             <pre class="code"><code>bun bench --list
 bun bench --adapter oracle --seeds 1-10 --out results/oracle-first.jsonl</code></pre>
-            <p><code>oracle</code> uses known answers to check the runner, not model capability. Model benchmark commands default to a dry run; actual inference requires <code>--execute</code> and a request budget. The <a href="https://github.com/hraness/clankdar#run-the-local-benchmark">source README</a> covers adapters, tracks, and archives.</p>
+            <p><code>oracle</code> uses known answers to check the runner, not model capability. Model benchmark commands default to a dry run; actual inference requires <code>--execute</code> and a request budget. The <a href="https://github.com/hraness/clankdar/blob/main/docs/reference-tools.md">benchmark guide</a> covers adapters, tracks, and archives.</p>
           </details>
           <p id="ladder">Public benchmark seeds and the experimental answer-commitment helper are not a strong secret-challenge or identity system. The <a href="https://github.com/hraness/clankdar/blob/main/docs/clankdar-attest-v1.md">receipt protocol</a> specifies the commitments, signatures, and replay boundaries.</p>
         </section>

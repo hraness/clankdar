@@ -60,7 +60,7 @@ export function parsePool(value: unknown): HoldoutPool {
   if (!value || typeof value !== "object" || Array.isArray(value)) fail("expected an object");
   const p = value as Record<string, unknown>;
   if (p.protocol !== HOLDOUT_PROTOCOL) fail(`protocol must be ${HOLDOUT_PROTOCOL}`);
-  if (p.suite !== "v2" && p.suite !== "frontier" && p.suite !== "agent") fail("suite must be v2, frontier, or agent");
+  if (p.suite !== "v2" && p.suite !== "frontier" && p.suite !== "agent" && p.suite !== "algal") fail("suite must be v2, frontier, agent, or algal");
   const suite = p.suite as SuiteName;
   if (!Array.isArray(p.cells) || !p.cells.length || p.cells.length > MAX_CELLS) fail(`cells must be 1..${MAX_CELLS} objects`);
   const base = poolForVersion(suiteVersion(suite));
@@ -115,7 +115,7 @@ export function main(args = process.argv.slice(2)): void {
     options: { suite: { type: "string" }, cells: { type: "string" }, out: { type: "string" }, help: { type: "boolean", short: "h" } },
     allowPositionals: true, strict: true,
   });
-  const usage = "usage: holdout gen --suite v2|frontier|agent --cells f:t1,g:t2 --out POOL.json | holdout info POOL.json";
+  const usage = "usage: holdout gen --suite v2|frontier|agent|algal --cells f:t1,g:t2 --out POOL.json | holdout info POOL.json";
   if (values.help || !command) {
     console.log(usage);
     return;

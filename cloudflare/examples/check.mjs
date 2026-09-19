@@ -14,7 +14,7 @@
  *   solve: async (challenges, signal) => yourSolver(challenges, { signal }),
  * });
  */
-export async function check({ baseUrl, token, context, policyId = "v2-floor-v1", solve, checkpoint, fetch: fetchImpl = globalThis.fetch }) {
+export async function check({ baseUrl, token, context, policyId = "algal-floor-v1", solve, checkpoint, fetch: fetchImpl = globalThis.fetch }) {
   const base = new URL(baseUrl);
   if (base.username || base.password || base.search || base.hash || base.pathname !== "/" || (base.protocol !== "https:" && !(base.protocol === "http:" && ["127.0.0.1", "localhost", "[::1]"].includes(base.hostname)))) throw new Error("baseUrl must be an HTTPS origin or loopback HTTP origin");
   if (typeof token !== "string" || !token || token.length > 4096 || /\s/.test(token)) throw new Error("an invitation token is required");

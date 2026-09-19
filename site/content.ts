@@ -1,4 +1,5 @@
-import { FAMILIES, familyByName, SUITE_VERSION } from "../ladder/mod.ts";
+import { algalWorkedExample } from "../ladder/families/algal.ts";
+import { FAMILIES, familyByName, poolForVersion, SUITE_VERSION } from "../ladder/mod.ts";
 import type { AgentDiagnostics, CalibrationReport } from "../bench/report.ts";
 import { CAPABILITY_PROFILES, profileReport } from "../bench/profiles.ts";
 import type { AdmissionArchiveManifest, AdmissionArchiveReport } from "../bench/admission-archive.ts";
@@ -6,12 +7,44 @@ import type { AdmissionArchiveManifest, AdmissionArchiveReport } from "../bench/
 export const escapeHtml = (value: string | number): string => String(value).replace(/[&<>"']/g, (char) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[char]!);
 const pct = (value: number | null) => value === null ? "—" : `${(value * 100).toFixed(1)}%`;
 
+export const ALGAL_EXAMPLE_CODE = `["fold",
+  ["map",
+    ["filter", ["get", "values"], "x",
+      ["gt", ["get", "x"], 2]],
+    "x", ["mul", ["get", "x"], ["get", "x"]]],
+  0, "sum", "item",
+  ["add", ["get", "sum"], ["get", "item"]]]`;
+
 export function renderChallenge(): string {
-  const puzzle = familyByName("echo")!.generate(0, 5);
-  return `<div class="room-heading hraness-material-terminal__bar"><span>clankdar / t0</span><span class="example-label">Public practice</span></div>
-<div class="sample-body"><p class="eyebrow">${escapeHtml(puzzle.family)} · seed ${puzzle.seed}</p><p class="sample-prompt">${escapeHtml(puzzle.prompt)}</p>
-<details class="answer-reveal"><summary>Reveal the reference answer</summary><code>${escapeHtml(puzzle.answer)}</code></details>
-<p class="sample-note">Tiny on purpose. Six more rungs above it.<br>This is a practice puzzle, not an admission token.</p></div>`;
+  const example = algalWorkedExample();
+  if (JSON.stringify(JSON.parse(ALGAL_EXAMPLE_CODE)) !== JSON.stringify(example.expr.program)) throw new Error("displayed Algal program drifted from executable example");
+  return `<div class="room-heading hraness-material-terminal__bar"><span>What does this return?</span><span class="example-label">Algal · public practice</span></div>
+<div class="sample-body"><p class="sample-input"><code>values = ${escapeHtml(JSON.stringify(example.inputs.values))}</code></p>
+<pre class="code algal-code"><code>${escapeHtml(ALGAL_EXAMPLE_CODE)}</code></pre>
+<details class="answer-reveal"><summary>See the solution</summary><code>${escapeHtml(example.answer)}</code><p>Keep 3 and 5, square each, then add: 9 + 25 = 34.</p></details>
+<p class="sample-note">Executed by the same Algal evaluator used for checks. This public example does not issue a receipt.</p></div>`;
+}
+
+/** A frozen published instance; changes to the current frontier pool cannot change this example. */
+export function renderHarderChallenge(): string {
+  const puzzle = poolForVersion("clankdar-frontier-v0").find((family) => family.name === "bitmatrix")!.generate(4, 302);
+  return `<p class="eyebrow">Public practice · frontier-v0 · ${escapeHtml(puzzle.family)}:t${puzzle.tier} · seed ${puzzle.seed}</p>
+<pre class="code"><code>${escapeHtml(puzzle.prompt)}</code></pre>
+<details class="answer-reveal"><summary>Reveal the reference answer</summary><code>${escapeHtml(puzzle.answer)}</code><p>Subtracting XOR equations gives x5 = 0 and x4 = 0. Then x1 = 1, x3 = 0, x2 = 1, and x0 = 1.</p></details>
+<p class="sample-note">A public example from the recorded frontier suite. This practice puzzle does not issue a receipt.</p>`;
+}
+
+/** A compact view of the two archived unaided suites; never an Algal calibration. */
+export function renderBenchmarkSnapshot(v2: CalibrationReport, frontier: CalibrationReport): string {
+  const frontierModels = new Map(frontier.models.map((model) => [model.model, model]));
+  const rows = v2.models.map((model) => {
+    const counterpart = frontierModels.get(model.model);
+    if (!counterpart) throw new Error(`missing frontier snapshot model: ${model.model}`);
+    const scores = [model.eligible, counterpart.eligible].map((score) => `<td>${pct(score.strict)}<small>${score.passed}/${score.n}</small></td>`).join("");
+    return `<tr><th scope="row">${escapeHtml(model.model)}</th>${scores}</tr>`;
+  }).join("\n");
+  return `<div class="table-scroll" role="region" aria-label="Recorded model benchmark snapshot" tabindex="0"><table class="ladder-table benchmark-snapshot"><caption>Strict pass rate · passes / valid responses</caption><thead><tr><th scope="col">Requested model</th><th scope="col">v2</th><th scope="col">Frontier v0</th></tr></thead><tbody>${rows}</tbody></table></div>
+<p class="note">Recorded September 17, 2026. One response per puzzle, no tools; provider errors excluded. These recorded suites predate the new Algal suite, which has no model calibration yet. Different suites have different tasks. <a href="/benchmark/">Counts, provenance, and replayable records</a>.</p>`;
 }
 
 export function renderTiers(): string {

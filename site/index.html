@@ -4,10 +4,10 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="theme-color" content="#f8f7f4">
-    <title>Clankdar — less yap, more proof</title>
-    <meta name="description" content="Fresh capability checks and signed JSON receipts. Issue puzzles, score answers exactly, and embed verifiable results in your own product.">
+    <title>Clankdar — capability checks for agents</title>
+    <meta name="description" content="Fresh Algal puzzles, exact scores, and signed receipts you can replay. A small API for agent preflight, release checks, and portable evidence.">
     <meta property="og:title" content="Clankdar">
-    <meta property="og:description" content="A small HTTP API for fresh puzzles, exact scoring, and portable receipts. You choose the workflow.">
+    <meta property="og:description" content="Give an agent a fresh program puzzle. Check its answer exactly. Keep signed evidence your application can verify.">
     <meta property="og:image" content="https://clankdar.com/icon.png">
     <meta property="og:type" content="website">
     <meta property="og:url" content="https://clankdar.com/">
@@ -17,6 +17,7 @@
     <link rel="apple-touch-icon" href="/apple-icon.png" sizes="180x180">
     <link rel="stylesheet" href="/design/fonts.css">
     <link rel="stylesheet" href="/design/paper-theme.css">
+    <link rel="stylesheet" href="/design/product-marketing.css">
     <link rel="stylesheet" href="/design/product-marketing-preset.css">
     <link rel="stylesheet" href="/design/lantern-material.css">
     <link rel="stylesheet" href="/design/appearance-menu.css">
@@ -26,11 +27,11 @@
   </head>
   <body>
     <a class="skip-link" href="#main">Skip to content</a>
-    <div class="page">
-      <header class="masthead hraness-material-chrome">
-        <a class="wordmark" href="/" aria-label="Clankdar home"><img class="mark" alt="" aria-hidden="true" src="/marks/clankdar.svg" width="24" height="24">clankdar</a>
-        <div class="header-actions"><nav class="site-nav" aria-label="Site"><a href="/docs/">Docs</a><a href="/benchmark/">Benchmark</a></nav><a class="source-link" href="https://github.com/hraness/clankdar">GitHub <svg aria-hidden="true" viewBox="0 0 16 16"><path d="M4 12 12 4M4 4h8v8"/></svg></a>
-        <div class="hraness-design-theme-toggle" data-hraness-appearance-menu data-presentation="menu" data-ready="false">
+    <header class="masthead hraness-marketing-header hraness-material-chrome" data-hraness-marketing="header">
+      <div class="hraness-marketing-header__inner">
+        <a class="wordmark hraness-marketing-header__brand" href="/" aria-label="Clankdar home"><img class="mark" alt="" aria-hidden="true" src="/marks/clankdar.svg" width="24" height="24">clankdar</a>
+        <nav class="site-nav hraness-marketing-header__nav" aria-label="Site"><a href="/docs/">Docs</a><a href="/benchmark/">Benchmark</a><a class="source-link" href="https://github.com/hraness/clankdar">GitHub <svg aria-hidden="true" viewBox="0 0 16 16"><path d="M4 12 12 4M4 4h8v8"/></svg></a></nav>
+        <div class="header-actions hraness-marketing-header__actions"><div class="hraness-design-theme-toggle" data-hraness-appearance-menu data-presentation="menu" data-ready="false">
           <button type="button" class="hraness-design-theme-toggle__trigger" aria-label="Appearance: System" aria-haspopup="menu" aria-expanded="false" aria-controls="appearance-menu"><span data-current-appearance-icon="system" aria-hidden="true">◐</span></button>
           <div class="hraness-design-theme-toggle__popover" hidden>
             <div class="hraness-design-theme-toggle__menu" id="appearance-menu" role="menu" aria-label="Appearance">
@@ -40,53 +41,70 @@
             </div>
           </div>
         </div></div>
-      </header>
+      </div>
+    </header>
+    <div class="page">
       <main id="main">
         <section class="introduction hraness-material-wall" aria-labelledby="title">
           <div class="opening">
-            <img class="brand-icon" src="/icons/clankdar.svg" alt="" aria-hidden="true" width="88" height="88" decoding="async">
-            <h1 id="title">Check the work.<br>Keep the receipt.</h1>
-            <p class="description">Fresh capability checks.<br>Evidence your product can use.</p>
-            <p class="context">Give an agent a puzzle, score its answer exactly, and keep a signed JSON receipt. Clankdar is a small HTTP API you can embed in your own app, agent, or pipeline. You choose when to check and what the result means.</p>
+            <h1 id="title">Capability checks<br>for agents.</h1>
+            <p class="description">Fresh Algal puzzles. Exact scores.<br>Receipts you can verify.</p>
+            <p class="context">Give an agent a small program to solve. Clankdar checks its answer and signs a JSON receipt you can keep, replay, or attach to your own workflow.</p>
             <div class="actions">
               <a class="primary-link" href="/docs/#quickstart">Make your first check <span aria-hidden="true">→</span></a>
-              <a href="/benchmark/#admission-evidence">Inspect a receipt</a>
+              <a href="#approach">How it works</a>
             </div>
-            <p class="release-note">Experimental hosted API · Invitation token required to issue checks</p>
+            <p class="release-note">Experimental hosted API · Invitation token required</p>
           </div>
-          <aside class="room hraness-material-terminal" aria-label="Try a public Clankdar puzzle">{{CHALLENGE}}</aside>
+          <aside class="room hraness-material-terminal" aria-label="A worked Algal puzzle">{{ALGAL_CHALLENGE}}</aside>
         </section>
-        <section class="section" aria-labelledby="how-title">
-          <h2 id="how-title" class="section-title">Three calls. One result to keep.</h2>
-          <ol class="journey">
-            <li><h3>Create a check</h3><p><code>POST /v1/checks</code> returns fresh prompts, a deadline, and a ticket scoped to that check. Pick the puzzle policy that fits your integration.</p></li>
-            <li><h3>Submit the answers</h3><p><code>POST /v1/checks/:id/responses</code> scores one response set against exact answers and returns a signed result. Your system supplies the responses.</p></li>
-            <li><h3>Use the receipt</h3><p><code>GET /v1/checks/:id</code> returns the same JSON receipt. Download it, link it from your app, or verify its signature and replay its scores.</p></li>
-          </ol>
-        </section>
-        <section class="section evidence-section" aria-labelledby="record-title">
-          <div>
-            <h2 id="record-title" class="section-title">Small enough to fit your product.</h2>
-            <p class="context">A receipt carries the puzzle version, recorded responses, exact scores, and issuer signature. Another system can inspect the conditions and replay the result.</p>
-            <p class="context">Start with one request. Add your own schedule, account model, interface, or admission policy when you need one.</p>
-          </div>
-          <dl class="evidence-list">
-            <div><dt>Agent preflight</dt><dd>Ask for a capability check before accepting a job, then apply your service’s own policy.</dd></div>
-            <div><dt>Release checks</dt><dd>Compare a model endpoint against your baseline in CI and attach receipts to the release.</dd></div>
-            <div><dt>Evidence on a listing</dt><dd>Show recent results beside an agent in your marketplace, with the full receipt one click away.</dd></div>
-          </dl>
-          <p class="section-link"><a href="/docs/#recipes">See integration recipes <span aria-hidden="true">→</span></a></p>
-        </section>
-        <section class="section" aria-labelledby="evidence-title">
-          <h2 id="evidence-title" class="section-title">The scoring is open to inspection.</h2>
+
+        <section class="section" id="approach" aria-labelledby="approach-title">
+          <h2 class="section-title" id="approach-title">A program, an answer, a receipt.</h2>
           <div class="duet">
-            <div class="cell"><h3>Exact answers, reproducible tasks.</h3><p>Versioned puzzle generators supply the tasks and reference answers. Scores use deterministic rules, with no judge model. Public calibrations expose strengths and failures by family and difficulty; unaided and tool-agent tracks stay separate.</p><p><a href="/benchmark/">Explore the benchmark <span aria-hidden="true">→</span></a></p></div>
-            <div class="cell"><h3>Portable evidence, simple storage.</h3><p>Each completed check is one signed JSON result in object storage. The receipt includes what a checker needs to regenerate answered puzzles and replay their scores. Keep your own copy; experimental hosting is not a permanent archive guarantee.</p><p><a href="/docs/#verification">Verify a receipt <span aria-hidden="true">→</span></a></p></div>
+            <div class="approach-copy">
+              <p>Algal’s bounded expression language gives each puzzle an executable answer. Clankdar runs the shared evaluator, checks the response exactly, and records the conditions. No judge model.</p>
+              <p>The signed receipt includes what a verifier needs to reproduce the result. Each completed check is one JSON object in R2; your app owns identity, schedules, and acceptance.</p>
+              <p><a href="/docs/#algal">How Clankdar uses Algal <span aria-hidden="true">→</span></a></p>
+            </div>
+            <ol class="journey compact-journey">
+              <li><h3>Create a check</h3><p><code>POST /v1/checks</code><br>Get fresh prompts and a deadline.</p></li>
+              <li><h3>Submit answers</h3><p><code>POST /v1/checks/:id/responses</code><br>Your system supplies the solver.</p></li>
+              <li><h3>Keep the result</h3><p><code>GET /v1/checks/:id</code><br>Retrieve the signed JSON receipt.</p></li>
+            </ol>
           </div>
+          <details class="report-details harder-example"><summary>Try a harder puzzle from the published frontier suite</summary>{{HARDER_CHALLENGE}}</details>
         </section>
-        <section class="status" aria-labelledby="status-title">
-          <h2 id="status-title">A measured result.<br>Your decision.</h2>
-          <div><p>A check measures the submitted answers under a named policy and deadline. It does not identify the model, prove autonomy or uniqueness, measure ongoing availability, or grant permission to act. Public puzzles can be solved with code, delegated, or answered with human help.</p><p>The hosted API is in private staging. Your app keeps the issue token server-side and supplies its own solver. Results are public; use non-sensitive context and responses.</p><p><a href="/docs/#limits">Read the limits and boundaries <span aria-hidden="true">→</span></a></p></div>
+
+        <section class="section" id="results" aria-labelledby="results-title">
+          <h2 class="section-title" id="results-title">See what models actually solved.</h2>
+          {{BENCHMARK_SNAPSHOT}}
+        </section>
+
+        <section class="section" id="comparison" aria-labelledby="comparison-title">
+          <h2 class="section-title" id="comparison-title">What each check tells you.</h2>
+          <div class="table-scroll" role="region" aria-label="Clankdar and bot verification approaches" tabindex="0">
+            <table class="ladder-table comparison-table">
+              <thead><tr><th scope="col">Approach</th><th scope="col">Evidence it gives you</th></tr></thead>
+              <tbody>
+                <tr><th scope="row"><a href="https://developers.cloudflare.com/turnstile/">Turnstile</a> / <a href="https://docs.cloud.google.com/recaptcha/docs/interpret-assessment-website">reCAPTCHA</a></th><td>Browser and interaction risk signals for legitimate traffic versus automation.</td></tr>
+                <tr><th scope="row"><a href="https://github.com/TecharoHQ/anubis/blob/main/docs/docs/design/why-proof-of-work.mdx">Proof-of-work</a></th><td>The requester spent computation, such as finding a hash nonce.</td></tr>
+                <tr><th scope="row"><a href="https://developers.cloudflare.com/bots/reference/bot-verification/web-bot-auth/">Web Bot Auth</a></th><td>A registered agent key signed the request.</td></tr>
+                <tr class="clankdar-row"><th scope="row">Clankdar</th><td>Specific fresh tasks passed, with signed evidence you can independently replay.</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <p class="note">Other systems use puzzles too. Clankdar’s distinction is inspectable task evidence. Public tasks can be solved with code or delegated; results do not establish model identity or human presence.</p>
+        </section>
+
+        <section class="section integrations" aria-labelledby="integrations-title">
+          <h2 class="section-title" id="integrations-title">Put the evidence where it helps.</h2>
+          <dl class="evidence-list">
+            <div><dt>Agent preflight</dt><dd>Request a fresh result before offering a job.</dd></div>
+            <div><dt>Model release checks</dt><dd>Compare a changed endpoint with your recorded baseline.</dd></div>
+            <div><dt>Evidence on a listing</dt><dd>Link to what an agent solved, under which conditions.</dd></div>
+          </dl>
+          <p class="section-link"><a href="/docs/#recipes">Integration recipes <span aria-hidden="true">→</span></a></p>
         </section>
       </main>
       <div class="project-footer">

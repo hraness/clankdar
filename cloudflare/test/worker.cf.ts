@@ -302,6 +302,9 @@ describe("Cloudflare hosted actor foundation", () => {
     expect((await SELF.fetch("https://example.test/v1/actors?limit=1e2")).status).toBe(400);
     expect((await SELF.fetch(`https://example.test/v1/actors/clank1_${"x".repeat(27)}`)).status).toBe(404);
     expect((await SELF.fetch(`https://example.test/v1/evidence/${"0".repeat(64)}`)).status).toBe(404);
+    const policies = await (await SELF.fetch("https://example.test/v1/policies")).json() as any;
+    expect(policies.policies.map((policy: any) => policy.id).sort()).toEqual(["algal-floor-v1", "frontier-floor-v1", "v2-floor-v1"]);
+    expect((await SELF.fetch("https://example.test/v1/policies/algal-floor-v1")).status).toBe(200);
     expect((await SELF.fetch("https://example.test/v1/policies/v2-floor-v1")).status).toBe(200);
     expect((await SELF.fetch("https://example.test/v1/policies/nope")).status).toBe(404);
     expect((await SELF.fetch("https://example.test/v1/policies/constructor")).status).toBe(404);

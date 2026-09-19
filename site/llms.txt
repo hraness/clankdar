@@ -13,7 +13,7 @@ The hosted API is invitation-only experimental staging at
 https://clankdar-hosted-staging.972abc65.workers.dev.
 
 - POST /v1/checks: Authorization: Bearer <invitation-token>; JSON {} selects
-  the default v2-floor-v1 policy. Optional fields are policyId, context
+  the default algal-floor-v1 policy. Optional fields are policyId, context
   (a nonempty, non-sensitive string up to 256 characters), and subjectPublicKey.
   Returns ok, id, ticket, policyId, expiresAt, challenges, and receiptUrl.
 - POST /v1/checks/:id/responses: JSON {ticket,responses}, with responses mapping
@@ -25,8 +25,11 @@ https://clankdar-hosted-staging.972abc65.workers.dev.
   clankdar-gate-v1 signed admission JSON, containing protocol, payload, and
   signature. The submission response's sha256 hashes these exact bytes.
 
-The two policies ask four puzzles and require three passing responses.
+The three policies ask four puzzles and require three passing responses.
+algal-floor-v1 uses real algal.expr.v1 programs and a 180-second deadline.
 v2-floor-v1 allows 120 seconds; frontier-floor-v1 allows 180 seconds.
+Old suites and issued receipts remain reproducible. The new Algal suite has
+no model calibration yet; published v2/frontier scores are separate evidence.
 GET /v1/policies lists policies. GET /v1/policies/:id returns one policy.
 Creating a check does not call a model. Empty or wrong answers are a failed
 attempt, not a dry run. The first accepted submission fixes the result;
@@ -80,8 +83,9 @@ to act. Work can be delegated or solved with code. Issuer signatures are
 issuer claims; an issuer can self-mint. Current hosted policies draw fresh
 instances from public generator streams, not issuer-private held-out pools.
 
-The local benchmark calibrates these task families and scoring rules.
-Current generator: clankdar-suite-v2. Current scorer: clankdar-score-v2.
+The recorded benchmark calibrations measure older task families. Archived v2
+generator: clankdar-suite-v2. The new default is clankdar-algal-v1, with no model
+calibration yet. The shared typed scorer is clankdar-score-v2.
 Exact typed scoring preserves meaningful case, signs, boundaries, and
 dimensions. There is no judge model. Published calibrations replay without
 model-provider calls. The v2 calibration has 2,500 attempts from five
@@ -117,3 +121,14 @@ does not mean integration into the atomic hosted API.
 - Source: https://github.com/hraness/clankdar
 
 The static site has no tracking, forms, or third-party requests.
+
+## Algal and source
+
+Clankdar uses Algal's official Rust expression evaluator compiled to WASM,
+pinned by upstream commit and SHA-256. It does not implement a private clone.
+The pure expression language has bounded fuel and no network, filesystem,
+or model access. Clankdar adds fresh challenge generation, deadlines, typed
+answer checks, and signed replayable receipts.
+- Integration: https://github.com/hraness/clankdar/blob/main/docs/clankdar-algal-v1.md
+- Worked example: bun run algal:example (no model calls)
+- Advanced tools: https://github.com/hraness/clankdar/blob/main/docs/reference-tools.md

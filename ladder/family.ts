@@ -29,7 +29,7 @@ export interface Family {
 }
 
 export function answerFormat(family: string): AnswerFormat {
-  if (["arithmetic", "sequence", "gridpath", "registervm", "cryptarithm", "relayvm"].includes(family)) return "integer";
+  if (["arithmetic", "sequence", "gridpath", "registervm", "cryptarithm", "relayvm", "algal"].includes(family)) return "integer";
   if (["sudoku", "gridxf"].includes(family)) return "grid";
   if (["automata", "sat", "satcheck", "bitmatrix", "bitcircuit", "autostep"].includes(family)) return "bits";
   if (family === "ordering") return "tokens";

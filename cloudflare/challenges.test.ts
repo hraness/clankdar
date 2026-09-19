@@ -39,7 +39,7 @@ describe("Cloudflare challenge interoperability", () => {
 
 
 describe("Standalone check protocol interoperability", () => {
-  test.each(["v2-floor-v1", "frontier-floor-v1"])("%s works unbound and with an explicit subject and context", async (policyId) => {
+  test.each(["v2-floor-v1", "frontier-floor-v1", "algal-floor-v1"])("%s works unbound and with an explicit subject and context", async (policyId) => {
     const issuer = await issuerIdentity("test", "test");
     const now = new Date("2026-09-19T07:00:00Z");
     const policy = HOSTED_POLICIES[policyId];

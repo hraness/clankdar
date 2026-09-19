@@ -17,18 +17,21 @@
     "check": "bun run typecheck && bun run typecheck:cloudflare && bun test && bun run build:site && bun run test:cloudflare",
     "typecheck": "tsc --noEmit",
     "typecheck:cloudflare": "tsc -p cloudflare/tsconfig.json",
-    "test:cloudflare": "vitest run --config cloudflare/vitest.config.ts",
+    "test:cloudflare": "bun run prepare:algal && vitest run --config cloudflare/vitest.config.ts",
     "actor": "bun cloudflare/client.ts",
     "cloudflare:dev": "wrangler dev --config cloudflare/wrangler.jsonc",
     "cloudflare:types": "wrangler types --config cloudflare/wrangler.jsonc --path cloudflare/src/worker-configuration.d.ts",
     "cloudflare:dry-run": "wrangler deploy --dry-run --config cloudflare/wrangler.jsonc",
     "check:site": "bun test site && bun run build:site",
     "check:browser": "bun site/verify.ts",
-    "build:site": "bun run site/build.ts && bun run cloudflare/build-assets.ts"
+    "build:site": "bun run site/build.ts && bun run cloudflare/build-assets.ts && bun run prepare:algal",
+    "prepare:algal": "bun cloudflare/prepare-algal.ts",
+    "algal:example": "bun bench/algal-example.ts"
   },
   "dependencies": {
     "@hraness/design-kit": "github:hraness/design-kit#v0.8.0",
-    "@hraness/site-footer": "github:hraness/site-footer#v0.12.1"
+    "@hraness/site-footer": "github:hraness/site-footer#v0.12.1",
+    "@hraness/algal": "github:hraness/algal#723c35d3c60d1ef7b88437a9ddeaf6588a1814cf"
   },
   "devDependencies": {
     "@cloudflare/vitest-pool-workers": "0.22.0",
@@ -37,5 +40,11 @@
     "typescript": "5.9.3",
     "vitest": "4.1.0",
     "wrangler": "4.131.1"
+  },
+  "imports": {
+    "#clankdar-algal-runtime": {
+      "workerd": "./ladder/algal/worker.ts",
+      "default": "./ladder/algal/bun.ts"
+    }
   }
 }

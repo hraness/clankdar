@@ -51,6 +51,8 @@ describe("Atomic standalone checks", () => {
     const issuedResponse = await SELF.fetch(post("/v1/checks", { context: "job:42" }, true));
     expect(issuedResponse.status).toBe(201);
     const issued = await issuedResponse.json() as Issued;
+    expect((issued as any).policyId).toBe("algal-floor-v1");
+    expect(issued.challenges.every((challenge: any) => challenge.suiteVersion === "clankdar-algal-v1" && challenge.family === "algal")).toBe(true);
     expect(issued.id).toMatch(/^gs_[A-Za-z0-9_-]{12}$/);
     expect(issued.receiptUrl).toBe(`/v1/checks/${issued.id}`);
     expect((await SELF.fetch(`${origin}${issued.receiptUrl}`)).status).toBe(404);
@@ -72,6 +74,15 @@ describe("Atomic standalone checks", () => {
     expect(await env.REGISTRY.prepare("SELECT count(*) AS n FROM actors").first()).toEqual(beforeActors);
     expect((await listDurableObjectIds(env.ACTORS)).map(String).sort()).toEqual(beforeObjects);
     expect(await env.REGISTRY.prepare("SELECT issued_total FROM check_issuance_budget").first()).toEqual({ issued_total: 1 });
+  });
+
+  test.each(["v2-floor-v1", "frontier-floor-v1"])("explicit legacy policy %s remains independently available", async (policyId) => {
+    const issued = await create({ policyId });
+    expect((issued as any).policyId).toBe(policyId);
+    expect(issued.challenges.every((challenge: any) => challenge.family !== "algal")).toBe(true);
+    const response = await call(submit(issued, await answers(issued)));
+    expect(response.status).toBe(201);
+    expect(await response.json()).toMatchObject({ pass: true, passed: 4, required: 3 });
   });
 
   test("different concurrent submissions return the single conditional-write winner", async () => {

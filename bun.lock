@@ -5,6 +5,7 @@
     "": {
       "name": "clankdar",
       "dependencies": {
+        "@hraness/algal": "github:hraness/algal#723c35d3c60d1ef7b88437a9ddeaf6588a1814cf",
         "@hraness/design-kit": "github:hraness/design-kit#v0.8.0",
         "@hraness/site-footer": "github:hraness/site-footer#v0.12.1",
       },
@@ -92,6 +93,8 @@
     "@esbuild/win32-ia32": ["@esbuild/win32-ia32@0.28.1", "", { "os": "win32", "cpu": "ia32" }, "sha512-zvb/mB2bSCoJOpoCBgYKKpX6YM6mJBlBUVUtVj41DlZJVEB6/0CKlRYxP5wWl1C1ILiCoAU5wZZ4q1P3qeS6Eg=="],
 
     "@esbuild/win32-x64": ["@esbuild/win32-x64@0.28.1", "", { "os": "win32", "cpu": "x64" }, "sha512-bm4Mowrv+GXMlpWX++EcXw/iLyd1o3+bJkC2DkWXYVvgZCqD/bSj9ctZeAMC3cIxgjRVR2Dufaiu4YPxr5gW1A=="],
+
+    "@hraness/algal": ["@hraness/algal@github:hraness/algal#723c35d", { "bin": { "algal": "./cli.ts" } }, "hraness-algal-723c35d", "sha512-0ZytON+OlJNdR7QfIo87IK5KHGp9SL6oZh29GexmZWprNrATJIujZobVQl9ODhwzFxgob7o3jTWK6jJORw1isQ=="],
 
     "@hraness/design-kit": ["@hraness/design-kit@github:hraness/design-kit#7813c9c", { "dependencies": { "@hugeicons/core-free-icons": "^4.2.2", "@stylexjs/stylex": "0.19.0", "motion": "12.42.0", "next-themes": "0.4.6", "react-aria-components": "1.19.0", "recharts": "3.8.0", "sugar-high": "^1.2.1", "web-haptics": "0.0.6" }, "peerDependencies": { "@hraness/ui": ">=0.5.12 <0.6.0", "react": ">=18 <20", "react-dom": ">=18 <20" }, "optionalPeers": ["@hraness/ui"] }, "hraness-design-kit-7813c9c", "sha512-erlyNqevsQJUqKbI1vSfJRkU6TDiIEHypuYopjkJotXjaatWd5ouDSBeB5vt4RVa5v8tpeIMb4tb4K3hX6D4CA=="],
 

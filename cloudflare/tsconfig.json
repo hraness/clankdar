@@ -13,6 +13,9 @@
     "types": [
       "bun",
       "@cloudflare/vitest-pool-workers/types"
+    ],
+    "customConditions": [
+      "workerd"
     ]
   },
   "include": [
@@ -20,6 +23,7 @@
     "test/**/*.ts",
     "client.ts",
     "*.test.ts",
-    "vitest.config.ts"
+    "vitest.config.ts",
+    "../ladder/algal/wasm.d.ts"
   ]
 }

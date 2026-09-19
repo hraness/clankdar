@@ -118,7 +118,7 @@ export function parsePolicy(value: unknown, opts?: { pool?: HoldoutPool }): Gate
   };
   if (!value || typeof value !== "object" || Array.isArray(value)) fail("expected an object");
   const p = value as Record<string, unknown>;
-  if (p.suite !== "v2" && p.suite !== "frontier" && p.suite !== "agent") fail("suite must be v2, frontier, or agent");
+  if (p.suite !== "v2" && p.suite !== "frontier" && p.suite !== "agent" && p.suite !== "algal") fail("suite must be v2, frontier, agent, or algal");
   if (!Array.isArray(p.cells) || !p.cells.length || p.cells.length > MAX_CELLS || p.cells.some((c) => typeof c !== "string")) fail("cells must be 1..64 distinct cell ids");
   const suite = p.suite as SuiteName;
   const cells = p.cells as string[];
@@ -519,7 +519,7 @@ export async function probe(opts: {
   pool?: HoldoutPool;
 }): Promise<{ rounds: number; sessions: number; passed: number; admitted: number; admissions: Admission[] }> {
   const policy = parsePolicy(opts.policy, { pool: opts.pool });
-  if (policy.suite === "agent") throw new Error("probe supports unaided suites (v2, frontier); the agent track needs recorded tool episodes");
+  if (policy.suite === "agent") throw new Error("probe supports unaided suites (v2, frontier, algal); the agent track needs recorded tool episodes");
   if (opts.outDir) mkdirSync(opts.outDir, { recursive: true, mode: 0o700 });
   const admissions: Admission[] = [];
   let passed = 0;
@@ -550,7 +550,7 @@ function loadJson(path: string): unknown {
 }
 
 const USAGE = `usage: gate <command>
-  policy --suite v2|frontier|agent --cells f:t1,g:t2[,h:f:t3] --challenges N --min-pass M --ttl SEC [--pool POOL.json] [--out policy.json]
+  policy --suite v2|frontier|agent|algal --cells f:t1,g:t2[,h:f:t3] --challenges N --min-pass M --ttl SEC [--pool POOL.json] [--out policy.json]
   issue --key K --policy P [--subject S] [--context C] [--seed N] [--pool POOL.json] [--out session.json]
   submit --key K --session S --responses R.json [--subject-key KEY.json] [--pool POOL.json] [--out admission.json]
   check ADMISSION.json [--pool POOL.json]
