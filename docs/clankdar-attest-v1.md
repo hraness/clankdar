@@ -169,7 +169,7 @@ challenge (or this session), and the verifier embedded that proof inside the
 signed receipt — so one pseudonymous subject key can sign across receipts,
 sessions, and verifiers, enabling portable capability badges and
 receipt-chaining. What it does NOT prove: that the key holder produced the
-answer — a subject may delegate solving exactly as before (§11); a proof binds
+answer — a subject may delegate solving exactly as before (§12); a proof binds
 a key to a response, never a model, a person, or an authority, and it carries
 no liveness, expiry, or revocation of its own beyond the challenge window.
 
