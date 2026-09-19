@@ -130,4 +130,33 @@ export class GateStore {
   receipt(challengeId: string): Receipt | null {
     return this.receiptByChallenge.get(challengeId) ?? null;
   }
+
+  /**
+   * Sessions still live at `nowMs`: issued, undecided, and unexpired.
+   * Optionally filtered to one subject ("" matches sessions with no subject).
+   */
+  openSessions(nowMs: number, subject?: string): GateSession[] {
+    const open: GateSession[] = [];
+    for (const session of this.sessions.values()) {
+      if (this.decided.has(session.sessionId)) continue;
+      if (Date.parse(session.expiresAt) <= nowMs) continue;
+      if (subject !== undefined && (session.subject ?? "") !== subject) continue;
+      open.push(session);
+    }
+    return open;
+  }
+
+  /**
+   * Sessions issued at or after `sinceMs`, decided or not — the history a
+   * pacing window counts. Optionally filtered to one subject.
+   */
+  issuedSince(sinceMs: number, subject?: string): GateSession[] {
+    const issued: GateSession[] = [];
+    for (const session of this.sessions.values()) {
+      if (Date.parse(session.issuedAt) < sinceMs) continue;
+      if (subject !== undefined && (session.subject ?? "") !== subject) continue;
+      issued.push(session);
+    }
+    return issued;
+  }
 }

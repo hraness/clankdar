@@ -307,21 +307,53 @@ async function boundedJson(req: Request): Promise<Record<string, unknown> | null
 }
 
 /**
+ * Serving-side pacing. `openTotal` and `issueWindow` are hard bounds — they
+ * cap the ledger's live set and mint rate regardless of who asks.
+ * `openPerSubject` is fairness: one subject claim (or the shared anonymous
+ * bucket) cannot hold every open slot, but subjects are unauthenticated —
+ * a sybil can rotate claims, so per-subject limits pace, never exclude.
+ */
+export interface GateRateLimits {
+  /** Max live (issued, undecided, unexpired) sessions across the gate. */
+  openTotal?: number;
+  /** Max live sessions per subject claim; anonymous sessions share a bucket. */
+  openPerSubject?: number;
+  /** Max sessions minted per rolling `seconds` window across the gate. */
+  issueWindow?: { max: number; seconds: number };
+}
+
+const parseRateLimits = (limits: GateRateLimits | undefined): GateRateLimits | undefined => {
+  if (limits === undefined) return undefined;
+  const positive = (value: number | undefined, name: string) => {
+    if (value !== undefined && (!Number.isInteger(value) || value < 1)) throw new Error(`${name} must be a positive integer`);
+  };
+  positive(limits.openTotal, "openTotal");
+  positive(limits.openPerSubject, "openPerSubject");
+  if (limits.issueWindow !== undefined) {
+    positive(limits.issueWindow.max, "issueWindow.max");
+    positive(limits.issueWindow.seconds, "issueWindow.seconds");
+  }
+  return limits;
+};
+
+/**
  * The gate as an HTTP service. POST /sessions mints a session (tickets stay
  * server-side in the store); POST /sessions/:id/responses consumes it into a
  * signed admission; GET /receipts/:challengeId serves minted receipts;
  * GET /policy publishes the floor and verifier key. The check→decide
  * critical section is synchronous, so concurrent submits cannot double-spend
- * a session.
+ * a session. Optional rateLimits bound session issuance (429).
  */
 export function serveGate(opts: {
   policy: GatePolicy;
   verifierJwk: VerifierJwk;
   store: GateStore;
+  rateLimits?: GateRateLimits;
   host?: string;
   port?: number;
 }): { url: string; close: () => void } {
   const policy = parsePolicy(opts.policy);
+  const rateLimits = parseRateLimits(opts.rateLimits);
   const publicKey = publicKeyOf(opts.verifierJwk);
   const json = (data: unknown, status = 200) =>
     new Response(JSON.stringify(data), { status, headers: { "content-type": "application/json" } });
@@ -341,6 +373,20 @@ export function serveGate(opts: {
       if (req.method === "POST" && pathname === "/sessions") {
         const body = await boundedJson(req);
         if (body === null) return err(400, "request body must be a JSON object up to 128 KiB");
+        if (rateLimits !== undefined) {
+          const nowMs = Date.now();
+          const subject = body.subject === undefined ? "" : String(body.subject);
+          if (rateLimits.openTotal !== undefined && opts.store.openSessions(nowMs).length >= rateLimits.openTotal) {
+            return err(429, "gate at capacity; retry when open sessions drain");
+          }
+          if (rateLimits.openPerSubject !== undefined && opts.store.openSessions(nowMs, subject).length >= rateLimits.openPerSubject) {
+            return err(429, "too many open sessions for this subject");
+          }
+          const window = rateLimits.issueWindow;
+          if (window !== undefined && opts.store.issuedSince(nowMs - window.seconds * 1000).length >= window.max) {
+            return err(429, "session issuance rate exceeded; retry later");
+          }
+        }
         try {
           const { session, challenges } = issueSession({
             policy, verifierJwk: opts.verifierJwk,
@@ -433,7 +479,7 @@ const USAGE = `usage: gate <command>
   issue --key K --policy P [--subject S] [--context C] [--seed N] [--out session.json]
   submit --key K --session S --responses R.json [--subject-key KEY.json] [--out admission.json]
   check ADMISSION.json
-  serve --key K --policy P --dir STATE [--host H] [--port N]
+  serve --key K --policy P --dir STATE [--host H] [--port N] [--open-total N] [--open-per-subject N] [--issue-window MAX:SEC]
   probe --key K --policy P --adapter A --rounds N [--out DIR] [--execute --max-requests N --max-tokens N --timeout-ms N]`;
 
 export async function main(args = process.argv.slice(2)): Promise<void> {
@@ -446,6 +492,7 @@ export async function main(args = process.argv.slice(2)): Promise<void> {
       ttl: { type: "string" }, subject: { type: "string" }, context: { type: "string" }, seed: { type: "string" },
       responses: { type: "string" }, "subject-key": { type: "string" }, dir: { type: "string" }, host: { type: "string" }, port: { type: "string" },
       adapter: { type: "string" }, rounds: { type: "string" },
+      "open-total": { type: "string" }, "open-per-subject": { type: "string" }, "issue-window": { type: "string" },
       execute: { type: "boolean" }, "max-requests": { type: "string" }, "max-tokens": { type: "string" }, "timeout-ms": { type: "string" },
       help: { type: "boolean", short: "h" },
     },
@@ -506,9 +553,18 @@ export async function main(args = process.argv.slice(2)): Promise<void> {
   }
   if (command === "serve") {
     need(values.key, values.policy, values.dir);
+    const rateLimits: GateRateLimits = {};
+    if (values["open-total"] !== undefined) rateLimits.openTotal = integer(values["open-total"], 1_000_000);
+    if (values["open-per-subject"] !== undefined) rateLimits.openPerSubject = integer(values["open-per-subject"], 1_000_000);
+    if (values["issue-window"] !== undefined) {
+      const [max, seconds] = values["issue-window"].split(":");
+      if (max === undefined || seconds === undefined) throw new Error("--issue-window expects MAX:SECONDS");
+      rateLimits.issueWindow = { max: integer(max, 1_000_000), seconds: integer(seconds, 31_536_000) };
+    }
     const store = GateStore.open(values.dir!);
     const gate = serveGate({
       policy: policy(), verifierJwk: loadJson(values.key!) as VerifierJwk, store,
+      rateLimits: Object.keys(rateLimits).length ? rateLimits : undefined,
       host: values.host, port: values.port !== undefined ? integer(values.port, 65535) : undefined,
     });
     console.error(`clankdar-gate listening at ${gate.url} (policy: ${policy().challenges} challenges, ${policy().minPass} required, ${policy().ttlSeconds}s)`);
