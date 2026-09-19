@@ -123,7 +123,9 @@ artifacts against TypeScript fixtures; its rooms mode dogfoods admission
 decisions pinned to one room floor and verifier key.
 
 `bun tlog` derives a signed, hash-chained transparency log over that ledger
-(`build`/`check`/`prove`/`admit`). `tlog witness --heads heads.jsonl` records
+(`build`/`check`/`prove`/`admit`). `tlog admit LOG ADMISSION [--pool POOL]`
+preserves held-out `unreplayed` counts until the matching pool is disclosed.
+`tlog witness --heads heads.jsonl` records
 each checked log's signed head in a local append-only registry, and
 `tlog equivocate --heads heads.jsonl` proves a fork from two heads under one
 issuer key — same count with different tips, or one tip at two counts — and
@@ -146,9 +148,12 @@ substitutions and regressions at a probed endpoint.
 binds each gate session to its own Ed25519 key, then packs subject-bound
 admissions — from any issuer — into a badge it signs itself. `bun badge pack`
 and `bun badge check` emit and replay the dossier; optional `tlog` inclusion
-proofs upgrade issuer-claimed sessions to logged ones. A badge proves the
-subject key accumulated these admissions — never that the key holder solved
-them, and it is not an identity.
+proofs upgrade issuer-claimed sessions to logged ones. Disclosed
+`--pools p1.json,p2.json` may come from many issuers and are selected by
+`poolKey`; undisclosed held-out scores remain visible in `unreplayed` rather
+than silently appearing fully replayed. A badge proves the subject key
+accumulated these admissions — never that the key holder solved them, and it
+is not an identity.
 
 `bun hosted` is the deployable issuer surface: one service that composes the
 gate and the transparency log, so a deployment third parties can hold

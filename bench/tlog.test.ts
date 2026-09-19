@@ -4,6 +4,7 @@ import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { canonical, generateVerifier, signBody } from "./attest.ts";
 import { issueSession, submitSession, type Admission, type GatePolicy, type GateSession } from "./gate.ts";
+import { generatePool, type HoldoutPool } from "./holdout.ts";
 import { GateStore } from "./store.ts";
 import {
   buildLog, checkLoggedAdmission, checkLog, compareLogs, findEquivocation, isSignedHead, proveSession,
@@ -44,6 +45,21 @@ const makeLedger = (count = 1) => {
 const makeLog = (count = 1): { log: TransparencyLog; sessions: GateSession[]; admissions: Admission[] } => {
   const ledger = makeLedger(count);
   return { log: buildLog({ dir: ledger.dir, verifierJwk: verifier.privateJwk, now: built }), ...ledger };
+};
+
+const makeHeldoutLog = (): { dir: string; log: TransparencyLog; admission: Admission; pool: HoldoutPool } => {
+  const dir = mkdtempSync(join(tmpdir(), "clankdar-tlog-holdout-"));
+  const pool = generatePool({ suite: "v2", cells: ["arithmetic:t0"] });
+  const heldoutPolicy: GatePolicy = { suite: "v2", cells: ["h:arithmetic:t0"], challenges: 2, minPass: 1, ttlSeconds: 300 };
+  const store = GateStore.open(dir);
+  const issued = issueSession({ policy: heldoutPolicy, verifierJwk: verifier.privateJwk, pool, now, pick: () => 0, seedBase: 810_000 });
+  store.issueSession(issued.session);
+  const { receipts, admission } = submitSession({
+    session: issued.session, responses: answersOf(issued.session), verifierJwk: verifier.privateJwk, pool, now: later,
+  });
+  store.decide(issued.session.sessionId, admission, receipts);
+  store.close();
+  return { dir, admission, pool, log: buildLog({ dir, verifierJwk: verifier.privateJwk, now: built }) };
 };
 
 async function tlog(...args: string[]) {
@@ -168,6 +184,15 @@ describe("tlog admit", () => {
     expect(checkLoggedAdmission(log, admissions[0])).toEqual({ ok: true, verdict: true, passed: 2 });
   });
 
+  test("preserves held-out replayability and upgrades it with the disclosed pool", () => {
+    const { log, admission, pool } = makeHeldoutLog();
+    expect(checkLoggedAdmission(log, admission)).toEqual({ ok: true, verdict: true, passed: 2, unreplayed: 2 });
+    expect(checkLoggedAdmission(log, admission, { pool })).toEqual({ ok: true, verdict: true, passed: 2 });
+    const unlogged = checkLoggedAdmission(makeLog(1).log, admission);
+    expect(unlogged).toMatchObject({ ok: false, verdict: true, passed: 2, unreplayed: 2 });
+    expect(unlogged.reason).toContain("not in the transparency log");
+  });
+
   test("rejects a valid admission whose session never reached the log", () => {
     const { log } = makeLog(1);
     const foreign = makeLedger(1); // same verifier, different ledger
@@ -243,6 +268,23 @@ describe("tlog CLI", () => {
     const denied = await tlog("admit", out, foreignFile);
     expect(denied.code).toBe(2);
     expect(JSON.parse(denied.stdout).ok).toBe(false);
+  });
+
+  test("admit reports issuer-claimed held-out scores until --pool is disclosed", async () => {
+    const { dir, log, admission, pool } = makeHeldoutLog();
+    const logFile = join(dir, "holdout-log.json");
+    const admissionFile = join(dir, "holdout-admission.json");
+    const poolFile = join(dir, "holdout-pool.json");
+    writeFileSync(logFile, JSON.stringify(log));
+    writeFileSync(admissionFile, JSON.stringify(admission));
+    writeFileSync(poolFile, JSON.stringify(pool));
+
+    const claimed = await tlog("admit", logFile, admissionFile);
+    expect(claimed.code).toBe(0);
+    expect(JSON.parse(claimed.stdout)).toEqual({ ok: true, verdict: true, passed: 2, unreplayed: 2 });
+    const replayed = await tlog("admit", logFile, admissionFile, "--pool", poolFile);
+    expect(replayed.code).toBe(0);
+    expect(JSON.parse(replayed.stdout)).toEqual({ ok: true, verdict: true, passed: 2 });
   });
 });
 

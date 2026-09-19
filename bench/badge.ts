@@ -2,8 +2,8 @@
 /**
  * clankdar-badge-v1 — portable subject badges over signed admissions.
  *
- *   bun bench/badge.ts pack --subject-key KEY.json --admissions a.json,b.json [--proofs proofs.json] [--out badge.json]
- *   bun bench/badge.ts check badge.json
+ *   bun bench/badge.ts pack --subject-key KEY.json --admissions a.json,b.json [--proofs proofs.json] [--pools p1.json,p2.json] [--out badge.json]
+ *   bun bench/badge.ts check badge.json [--pools p1.json,p2.json]
  *
  * A respondent accumulates subject-bound admissions (§7 proofs, from any
  * issuer) under one Ed25519 key and packs them into a self-signed dossier a
@@ -27,6 +27,8 @@ import {
   type ReceiptBody, type VerifierJwk,
 } from "./attest.ts";
 import { checkAdmission, type Admission, type AdmissionBody } from "./gate.ts";
+import { parsePool, type HoldoutPool } from "./holdout.ts";
+import { list } from "./options.ts";
 import { proveSession, type SessionProof, type TransparencyLog } from "./tlog.ts";
 
 export const BADGE_PROTOCOL = "clankdar-badge-v1";
@@ -67,6 +69,8 @@ const message = (error: unknown): string => (error instanceof Error ? error.mess
 export function packBadge(opts: {
   admissions: Admission[];
   proofs?: BadgeProof[];
+  /** Disclosed holdout pools, potentially from several issuers, indexed by poolKey during replay. */
+  pools?: HoldoutPool[];
   subjectJwk: VerifierJwk;
   now?: Date;
 }): Badge {
@@ -77,7 +81,7 @@ export function packBadge(opts: {
     issuedAt: (opts.now ?? new Date()).toISOString(),
   };
   const badge: Badge = { protocol: BADGE_PROTOCOL, payload: canonical(body), signature: signBody(body, opts.subjectJwk) };
-  const replay = checkBadge(badge);
+  const replay = checkBadge(badge, { pools: opts.pools });
   if (!replay.ok) throw new Error(`packed badge does not verify: ${replay.reason}`);
   return badge;
 }
@@ -91,6 +95,8 @@ export interface BadgeCheck {
   passed?: number;
   /** Count of admissions covered by at least one verified tlog proof. */
   logged?: number;
+  /** Held-out receipts whose scores remain issuer-claimed across the carried admissions. */
+  unreplayed?: number;
   reason?: string;
 }
 
@@ -100,10 +106,24 @@ export interface BadgeCheck {
  * proof-carrying receipt uses `subjectKey`, and an admission with no proof
  * is not bound at all), optional tlog proofs must replay for their own
  * admission's sessionId, and the badge signature must verify over the
- * payload bytes under `subjectKey`.
+ * payload bytes under `subjectKey`. Disclosed holdout pools are selected by
+ * each admission's poolKey; undisclosed scores remain valid but surface in
+ * `unreplayed` rather than silently appearing fully replayed.
  */
-export function checkBadge(badge: Badge): BadgeCheck {
+export function checkBadge(badge: Badge, opts?: { pools?: HoldoutPool[] }): BadgeCheck {
   const fail = (reason: string): BadgeCheck => ({ ok: false, reason });
+  const pools = new Map<string, HoldoutPool>();
+  if ((opts?.pools?.length ?? 0) > MAX_ADMISSIONS) return fail("pools exceed the admission bound");
+  for (const value of opts?.pools ?? []) {
+    let pool: HoldoutPool;
+    try {
+      pool = parsePool(value);
+    } catch (error) {
+      return fail(`holdout pool does not verify: ${message(error)}`);
+    }
+    if (pools.has(pool.poolKey)) return fail("two holdout pools share a poolKey");
+    pools.set(pool.poolKey, pool);
+  }
   if (badge?.protocol !== BADGE_PROTOCOL || typeof badge.payload !== "string" || typeof badge.signature !== "string") return fail("not a badge");
   let body: BadgeBody;
   try {
@@ -122,10 +142,23 @@ export function checkBadge(badge: Badge): BadgeCheck {
   if (!Array.isArray(admissions) || admissions.length < 1 || admissions.length > MAX_ADMISSIONS) return fail("admissions must be 1..64 signed admissions");
   const sessions = new Set<string>();
   let passed = 0;
+  let unreplayed = 0;
   for (const admission of admissions) {
-    const check = checkAdmission(admission);
+    if (!admission || typeof admission !== "object" || typeof admission.payload !== "string") {
+      return fail("admission does not verify: not a gate admission");
+    }
+    let admissionBody: AdmissionBody;
+    try {
+      admissionBody = JSON.parse(admission.payload) as AdmissionBody;
+    } catch {
+      return fail("admission does not verify: payload is not JSON");
+    }
+    const heldout = Array.isArray(admissionBody.challenges)
+      ? admissionBody.challenges.find((challenge) => challenge?.heldout !== undefined)?.heldout
+      : undefined;
+    const pool = typeof heldout?.poolKey === "string" ? pools.get(heldout.poolKey) : undefined;
+    const check = checkAdmission(admission, { pool });
     if (!check.ok) return fail(`admission does not verify: ${check.reason}`);
-    const admissionBody = JSON.parse(admission.payload) as AdmissionBody;
     if (sessions.has(admissionBody.sessionId)) return fail("two admissions share a session");
     sessions.add(admissionBody.sessionId);
     let bound = false;
@@ -137,6 +170,7 @@ export function checkBadge(badge: Badge): BadgeCheck {
     }
     if (!bound) return fail("admission is not subject-bound");
     if (check.verdict) passed++;
+    unreplayed += check.unreplayed ?? 0;
   }
   if (body.proofs !== undefined && !Array.isArray(body.proofs)) return fail("proofs is not an array");
   const proofs = body.proofs ?? [];
@@ -165,7 +199,10 @@ export function checkBadge(badge: Badge): BadgeCheck {
     verified = false;
   }
   if (!verified) return fail("badge signature does not verify");
-  return { ok: true, subject: body.subjectKey, admissions: admissions.length, passed, logged: logged.size };
+  return {
+    ok: true, subject: body.subjectKey, admissions: admissions.length, passed, logged: logged.size,
+    ...(unreplayed ? { unreplayed } : {}),
+  };
 }
 
 function loadJson(path: string): unknown {
@@ -177,8 +214,8 @@ function loadJson(path: string): unknown {
 }
 
 const USAGE = `usage: badge <command>
-  pack --subject-key KEY.json --admissions A.json,B.json [--proofs PROOFS.json] [--out badge.json]
-  check BADGE.json`;
+  pack --subject-key KEY.json --admissions A.json,B.json [--proofs PROOFS.json] [--pools P1.json,P2.json] [--out badge.json]
+  check BADGE.json [--pools P1.json,P2.json]`;
 
 export function main(args = process.argv.slice(2)): void {
   const [command, ...rest] = args;
@@ -186,7 +223,7 @@ export function main(args = process.argv.slice(2)): void {
     args: rest,
     options: {
       "subject-key": { type: "string" }, admissions: { type: "string" }, proofs: { type: "string" },
-      out: { type: "string" }, help: { type: "boolean", short: "h" },
+      pools: { type: "string" }, out: { type: "string" }, help: { type: "boolean", short: "h" },
     },
     allowPositionals: true, strict: true,
   });
@@ -197,13 +234,16 @@ export function main(args = process.argv.slice(2)): void {
   const need = (...names: (string | undefined)[]) => {
     if (names.some((n) => n === undefined)) throw new Error(`${command} requires more options.\n${USAGE}`);
   };
+  const disclosedPools = () => values.pools === undefined
+    ? undefined
+    : list(values.pools, MAX_ADMISSIONS).map((path) => parsePool(loadJson(path)));
 
   if (command === "pack") {
     need(values["subject-key"], values.admissions);
     const subjectJwk = loadJson(values["subject-key"]!) as VerifierJwk;
-    const admissions = values.admissions!.split(",").map((path) => loadJson(path.trim()) as Admission);
+    const admissions = list(values.admissions!, MAX_ADMISSIONS).map((path) => loadJson(path) as Admission);
     const proofs = values.proofs !== undefined ? (loadJson(values.proofs) as BadgeProof[]) : undefined;
-    const badge = packBadge({ admissions, proofs, subjectJwk });
+    const badge = packBadge({ admissions, proofs, pools: disclosedPools(), subjectJwk });
     if (values.out) {
       writeFileSync(values.out, JSON.stringify(badge, null, 2) + "\n", { flag: "wx" });
       console.error(`badge: ${admissions.length} admissions for subject ${keyIdOf(publicKeyOf(subjectJwk))} → ${values.out}`);
@@ -214,9 +254,13 @@ export function main(args = process.argv.slice(2)): void {
   }
   if (command === "check") {
     need(positionals[0]);
-    const result = checkBadge(loadJson(positionals[0]!) as Badge);
+    const result = checkBadge(loadJson(positionals[0]!) as Badge, { pools: disclosedPools() });
     console.log(JSON.stringify(result.ok
-      ? { ok: true, subject: result.subject, admissions: result.admissions, verdicts: { pass: result.passed }, logged: result.logged }
+      ? {
+        ok: true, subject: result.subject, admissions: result.admissions,
+        verdicts: { pass: result.passed }, logged: result.logged,
+        ...(result.unreplayed !== undefined ? { unreplayed: result.unreplayed } : {}),
+      }
       : { ok: false, reason: result.reason }));
     if (!result.ok) process.exitCode = 2;
     return;
