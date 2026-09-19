@@ -23,10 +23,14 @@
  * challenges.
  */
 import { parseArgs } from "node:util";
-import { createHash, generateKeyPairSync, createPrivateKey, createPublicKey, randomBytes, sign, verify as cryptoVerify, type KeyObject } from "node:crypto";
+import { generateKeyPairSync, createPrivateKey, createPublicKey, randomBytes, sign, verify as cryptoVerify, type KeyObject } from "node:crypto";
 import { readFileSync, writeFileSync } from "node:fs";
 import { poolForVersion, suiteVersion, type SuiteName } from "../ladder/mod.ts";
 import { answerFormat, scoreAnswer, canonicalAnswer, MAX_ANSWER_LENGTH, type AnswerFormat, type Instance } from "../ladder/family.ts";
+import { canonical, sha256 } from "./canon.ts";
+import { holdoutCell, holdoutInstance, parsePool, type HoldoutCell, type HoldoutPool } from "./holdout.ts";
+
+export { canonical };
 
 export const ATTEST_PROTOCOL = "clankdar-attest-v1";
 const COMMIT_DOMAIN = "clankdar/attest-seed/v1";
@@ -49,6 +53,8 @@ export interface Challenge {
   subject?: string;
   /** Gate session this challenge was issued under (clankdar-gate-v1). */
   sessionId?: string;
+  /** Held-out cell marker (clankdar-holdout-v1): the instance replays only for checkers holding the committed pool. */
+  heldout?: { poolKey: string };
   verifier: { keyId: string; publicKey: string };
 }
 
@@ -90,12 +96,7 @@ export interface Receipt {
   signature: string;
 }
 
-const sha256 = (value: string | Uint8Array) => createHash("sha256").update(value).digest("hex");
 const b64url = (bytes: Uint8Array) => Buffer.from(bytes).toString("base64url");
-
-/** Deterministic JSON for signing: keys sorted by code-unit order recursively. */
-export const canonical = (value: unknown): string =>
-  JSON.stringify(value, (_key, v) => (v && typeof v === "object" && !Array.isArray(v) ? Object.fromEntries(Object.entries(v).sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0))) : v));
 
 /** Language-trivial seed commitment: fixed-field \0-joined digest. */
 export const seedCommit = (challenge: Pick<Challenge, "suiteVersion" | "family" | "tier" | "nonce">, seed: number): string =>
@@ -188,6 +189,8 @@ export interface IssueOptions {
   context?: string;
   subject?: string;
   sessionId?: string;
+  /** Mint the cell from this holdout pool instead of the published stream (clankdar-holdout-v1). */
+  holdoutPool?: HoldoutPool;
   verifierJwk: VerifierJwk;
   now?: Date;
 }
@@ -197,6 +200,12 @@ export function issueChallenge(opts: IssueOptions): { challenge: Challenge; tick
   const version = suiteVersion(opts.suite);
   const family = poolForVersion(version).find((f) => f.name === opts.family);
   if (!family || !family.tiers.includes(opts.tier)) throw new Error(`unknown cell for suite ${opts.suite}: ${opts.family}:t${opts.tier}`);
+  let holdCell: HoldoutCell | undefined;
+  if (opts.holdoutPool !== undefined) {
+    if (opts.holdoutPool.suite !== opts.suite) throw new Error("holdout pool is for a different suite");
+    holdCell = holdoutCell(opts.holdoutPool, opts.family, opts.tier);
+    if (!holdCell) throw new Error(`cell is not in the holdout pool: ${opts.family}:t${opts.tier}`);
+  }
   const seed = opts.seed ?? randomBytes(4).readUInt32BE(0);
   if (!Number.isInteger(seed) || seed < 0 || seed > 0xffffffff) throw new Error("seed must be a uint32");
   const ttl = opts.ttlSeconds ?? 300;
@@ -205,7 +214,7 @@ export function issueChallenge(opts: IssueOptions): { challenge: Challenge; tick
   if (opts.subject !== undefined && (typeof opts.subject !== "string" || !opts.subject.length || opts.subject.length > 256)) throw new Error("subject must be a nonempty string up to 256 chars");
   if (opts.sessionId !== undefined && (typeof opts.sessionId !== "string" || !/^gs_[A-Za-z0-9_-]{12}$/.test(opts.sessionId))) throw new Error("sessionId must be a gate session id");
   const publicKey = publicKeyOf(opts.verifierJwk);
-  const instance = family.generate(opts.tier, seed);
+  const instance = holdCell !== undefined ? holdoutInstance(opts.holdoutPool!, holdCell, seed) : family.generate(opts.tier, seed);
   const now = opts.now ?? new Date();
   const challenge: Challenge = {
     protocol: ATTEST_PROTOCOL, kind: "challenge", challengeId: `att_${b64url(randomBytes(9))}`,
@@ -214,6 +223,7 @@ export function issueChallenge(opts: IssueOptions): { challenge: Challenge; tick
     ...(opts.context !== undefined ? { context: opts.context } : {}),
     ...(opts.subject !== undefined ? { subject: opts.subject } : {}),
     ...(opts.sessionId !== undefined ? { sessionId: opts.sessionId } : {}),
+    ...(holdCell !== undefined ? { heldout: { poolKey: opts.holdoutPool!.poolKey } } : {}),
     verifier: { keyId: "", publicKey },
   };
   challenge.verifier.keyId = keyIdOf(challenge.verifier.publicKey);
@@ -228,9 +238,22 @@ export interface VerifyOptions {
   response: string;
   /** Optional respondent key proof, verified against the challenge transcript before minting. */
   subjectProof?: SubjectProof;
+  /** Pool that minted a held-out ticket; required when the challenge carries `heldout`. */
+  pool?: HoldoutPool;
   verifierJwk: VerifierJwk;
   now?: Date;
 }
+
+/** Regenerate a ticket's instance from the published stream or the committed holdout pool. */
+const instanceFor = (challenge: Challenge, seed: number, pool: HoldoutPool | undefined): Instance => {
+  if (challenge.heldout !== undefined) {
+    if (pool === undefined || pool.poolKey !== challenge.heldout.poolKey) throw new Error("ticket needs the matching holdout pool");
+    const cell = holdoutCell(pool, challenge.family, challenge.tier);
+    if (!cell) throw new Error("ticket cell is not in the holdout pool");
+    return holdoutInstance(pool, cell, seed);
+  }
+  return poolForVersion(challenge.suiteVersion).find((f) => f.name === challenge.family)!.generate(challenge.tier, seed);
+};
 
 /** Rescore the response and sign a seed-revealing receipt. Expired tickets refuse. */
 export function verifyResponse(opts: VerifyOptions): Receipt {
@@ -240,7 +263,7 @@ export function verifyResponse(opts: VerifyOptions): Receipt {
   if (!Number.isInteger(seed) || challenge.seedCommit !== seedCommit(challenge, seed)) throw new Error("ticket seed does not match the committed challenge");
   if (now.getTime() > Date.parse(challenge.expiresAt)) throw new Error("challenge expired");
   if (typeof opts.response !== "string" || opts.response.length > MAX_ANSWER_LENGTH) throw new Error("response missing or oversized");
-  const instance = poolForVersion(challenge.suiteVersion).find((f) => f.name === challenge.family)!.generate(challenge.tier, seed);
+  const instance = instanceFor(challenge, seed, opts.pool);
   if (instance.prompt !== challenge.prompt) throw new Error("challenge prompt does not regenerate from the committed seed");
   const format = answerFormat(challenge.family);
   if (canonicalAnswer(expected, format) !== expected || canonicalAnswer(instance.answer, format) !== expected) throw new Error("ticket answer does not match the regenerated instance");
@@ -262,15 +285,19 @@ export function verifyResponse(opts: VerifyOptions): Receipt {
 export interface CheckResult {
   ok: boolean;
   verdict?: boolean;
+  /** False when a held-out cell could not be replayed without its pool — signature and commitment still verified. */
+  replayable?: boolean;
   reason?: string;
 }
 
 /**
  * Independently replay a receipt: signature over the payload bytes, seed
  * binding, instance regeneration, rescore, timing. Needs no trust beyond the
- * recorded episode.
+ * recorded episode. Held-out cells (`challenge.heldout`) replay only with
+ * the committed pool; without it the result is `ok` with `replayable:false`
+ * — the envelope verified, the score is issuer-claimed.
  */
-export function checkReceipt(receipt: Receipt): CheckResult {
+export function checkReceipt(receipt: Receipt, opts?: { pool?: HoldoutPool }): CheckResult {
   const fail = (reason: string): CheckResult => ({ ok: false, reason });
   if (receipt?.protocol !== ATTEST_PROTOCOL || typeof receipt.payload !== "string" || typeof receipt.signature !== "string") return fail("not an attestation receipt");
   let body: ReceiptBody;
@@ -291,25 +318,42 @@ export function checkReceipt(receipt: Receipt): CheckResult {
   if (!cryptoVerify(null, Buffer.from(receipt.payload), key, Buffer.from(receipt.signature, "base64url"))) return fail("signature does not verify");
   if (!Number.isInteger(seed) || seed < 0 || seed > 0xffffffff) return fail("revealed seed is not a uint32");
   if (challenge.seedCommit !== seedCommit(challenge, seed)) return fail("revealed seed does not match the committed challenge");
-  let instance: Instance;
-  try {
-    const family = poolForVersion(challenge.suiteVersion).find((f) => f.name === challenge.family);
-    if (!family || !family.tiers.includes(challenge.tier)) return fail("unknown cell for the recorded suite version");
-    instance = family.generate(challenge.tier, seed);
-  } catch (error) {
-    return fail(`instance does not regenerate: ${error instanceof Error ? error.message : String(error)}`);
+  let instance: Instance | undefined;
+  if (challenge.heldout !== undefined) {
+    if (typeof challenge.heldout !== "object" || typeof challenge.heldout.poolKey !== "string" || !/^[0-9a-f]{64}$/.test(challenge.heldout.poolKey)) return fail("malformed heldout marker");
+    const pool = opts?.pool !== undefined && opts.pool.poolKey === challenge.heldout.poolKey ? opts.pool : undefined;
+    if (pool !== undefined) {
+      const cell = holdoutCell(pool, challenge.family, challenge.tier);
+      if (cell === undefined) return fail("held-out cell is not in the committed pool");
+      try {
+        instance = holdoutInstance(pool, cell, seed);
+      } catch (error) {
+        return fail(`held-out instance does not regenerate: ${error instanceof Error ? error.message : String(error)}`);
+      }
+    }
+  } else {
+    try {
+      const family = poolForVersion(challenge.suiteVersion).find((f) => f.name === challenge.family);
+      if (!family || !family.tiers.includes(challenge.tier)) return fail("unknown cell for the recorded suite version");
+      instance = family.generate(challenge.tier, seed);
+    } catch (error) {
+      return fail(`instance does not regenerate: ${error instanceof Error ? error.message : String(error)}`);
+    }
   }
-  if (instance.prompt !== challenge.prompt) return fail("recorded prompt disagrees with regeneration");
   const format = answerFormat(challenge.family);
   if (verdict.format !== format || canonicalAnswer(response, format) === null) return fail("response is not in the declared answer format");
-  if (canonicalAnswer(expected, format) !== expected || canonicalAnswer(instance.answer, format) !== expected) return fail("recorded answer disagrees with regeneration");
-  if (scoreAnswer(instance.answer, response, format).pass !== verdict.pass) return fail("verdict does not rescore");
+  if (canonicalAnswer(expected, format) !== expected) return fail("recorded answer disagrees with regeneration");
+  if (instance !== undefined) {
+    if (instance.prompt !== challenge.prompt) return fail("recorded prompt disagrees with regeneration");
+    if (canonicalAnswer(instance.answer, format) !== expected) return fail("recorded answer disagrees with regeneration");
+    if (scoreAnswer(instance.answer, response, format).pass !== verdict.pass) return fail("verdict does not rescore");
+  }
   if (Date.parse(verdict.answeredAt) > Date.parse(challenge.expiresAt)) return fail("answer is later than the challenge expiry");
   if (body.subjectProof !== undefined) {
     if (!isSubjectProof(body.subjectProof)) return fail("malformed subject proof");
     if (!checkSubjectProof(challenge, body.subjectProof)) return fail("subject proof does not verify");
   }
-  return { ok: true, verdict: verdict.pass };
+  return { ok: true, verdict: verdict.pass, ...(instance === undefined ? { replayable: false } : {}) };
 }
 
 function loadJson(path: string): unknown {
@@ -327,11 +371,13 @@ export function main(args = process.argv.slice(2)): void {
     options: {
       key: { type: "string" }, out: { type: "string" }, suite: { type: "string" }, family: { type: "string" },
       tier: { type: "string" }, seed: { type: "string" }, ttl: { type: "string" }, context: { type: "string" },
-      ticket: { type: "string" }, "response-file": { type: "string" }, "subject-key": { type: "string" }, help: { type: "boolean", short: "h" },
+      ticket: { type: "string" }, "response-file": { type: "string" }, "subject-key": { type: "string" },
+      pool: { type: "string" }, holdout: { type: "string" }, help: { type: "boolean", short: "h" },
     },
     allowPositionals: true, strict: true,
   });
-  const usage = "usage: attest keygen --out KEY.json | issue --key KEY.json --suite v2|frontier|agent --family NAME --tier N [--seed N] [--ttl SEC] [--context TEXT] [--out TICKET.json] | verify --key KEY.json --ticket TICKET.json --response-file FILE [--subject-key KEY.json] [--out RECEIPT.json] | check RECEIPT.json";
+  const usage = "usage: attest keygen --out KEY.json | issue --key KEY.json --suite v2|frontier|agent --family NAME --tier N [--seed N] [--ttl SEC] [--context TEXT] [--holdout POOL.json] [--out TICKET.json] | verify --key KEY.json --ticket TICKET.json --response-file FILE [--subject-key KEY.json] [--pool POOL.json] [--out RECEIPT.json] | check RECEIPT.json [--pool POOL.json]";
+  const loadPool = () => (values.pool !== undefined ? parsePool(loadJson(values.pool)) : undefined);
   if (values.help || !command) { console.log(usage); return; }
   if (command === "keygen") {
     if (!values.out) throw new Error("keygen requires --out");
@@ -348,6 +394,7 @@ export function main(args = process.argv.slice(2)): void {
       seed: values.seed !== undefined ? Number(values.seed) : undefined,
       ttlSeconds: values.ttl !== undefined ? Number(values.ttl) : undefined,
       context: values.context, verifierJwk: loadJson(values.key) as VerifierJwk,
+      holdoutPool: values.holdout !== undefined ? parsePool(loadJson(values.holdout)) : undefined,
     });
     if (values.out) {
       writeFileSync(values.out, JSON.stringify(issued.ticket, null, 2) + "\n", { flag: "wx", mode: 0o600 });
@@ -361,13 +408,13 @@ export function main(args = process.argv.slice(2)): void {
     if (!values.key || !values.ticket || !values["response-file"]) throw new Error("verify requires --key --ticket --response-file");
     const ticket = loadJson(values.ticket) as Ticket;
     const subjectProof = values["subject-key"] !== undefined ? subjectProofFor(ticket.challenge, loadJson(values["subject-key"]) as VerifierJwk) : undefined;
-    const receipt = verifyResponse({ ticket, response: readFileSync(values["response-file"], "utf8").trim(), subjectProof, verifierJwk: loadJson(values.key) as VerifierJwk });
+    const receipt = verifyResponse({ ticket, response: readFileSync(values["response-file"], "utf8").trim(), subjectProof, pool: loadPool(), verifierJwk: loadJson(values.key) as VerifierJwk });
     if (values.out) writeFileSync(values.out, JSON.stringify(receipt, null, 2) + "\n", { flag: "wx" });
     else console.log(JSON.stringify(receipt, null, 2));
     return;
   }
   if (command === "check") {
-    const result = checkReceipt(loadJson(positionals[0] ?? "") as Receipt);
+    const result = checkReceipt(loadJson(positionals[0] ?? "") as Receipt, { pool: loadPool() });
     console.log(JSON.stringify(result));
     if (!result.ok) process.exitCode = 2;
     return;

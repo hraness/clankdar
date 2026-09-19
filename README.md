@@ -140,6 +140,16 @@ proofs upgrade issuer-claimed sessions to logged ones. A badge proves the
 subject key accumulated these admissions — never that the key holder solved
 them, and it is not an identity.
 
+`clankdar-holdout-v1` covers issuer-private cells: `bun holdout gen` mints a
+pool of published generator cells re-parameterized by secret labels, and gate
+policies can name them as `h:family:tN`. The instance stream stays
+unpublished, so solvers cannot pre-compute or look it up; checkers holding
+the pool replay fully, everyone else gets `ok` with `replayable:false` —
+signature and commitment verified, score issuer-claimed. Publishing the pool
+later upgrades every historical held-out receipt to verifiable. A held-out
+cell is the same puzzle family under a secret parameterization — a general
+family solver still solves it.
+
 An admission attests that one session produced K passing responses under one
 policy in one window. It is not identity, liveness, or authority: challenges
 can be delegated, and a verifier can always answer its own oracle, so relying

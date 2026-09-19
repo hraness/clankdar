@@ -8,6 +8,7 @@
     "gate": "bun bench/gate.ts",
     "tlog": "bun bench/tlog.ts",
     "badge": "bun bench/badge.ts",
+    "holdout": "bun bench/holdout.ts",
     "drift": "bun bench/drift.ts",
     "calibrate": "bun bench/calibrate.ts",
     "report": "bun bench/report.ts",
