@@ -21,6 +21,8 @@ jobs:
           bun-version: 1.3.14
       - run: bun install --frozen-lockfile --ignore-scripts
       - run: bun run check
+      - name: Run the documented first check
+        run: bun run try
       - run: bun x --no-install playwright install --with-deps chromium
       - run: bun run check:browser
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02

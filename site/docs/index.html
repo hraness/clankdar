@@ -5,9 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="theme-color" content="#f8f7f4">
     <title>Docs — Clankdar</title>
-    <meta name="description" content="Create a capability check with HTTP, submit answers once, and retrieve a signed JSON receipt. Quickstart, API, verification, and integration recipes.">
+    <meta name="description" content="Run a complete local check without credentials, connect your solver, then integrate the hosted API and verify signed receipts.">
     <meta property="og:title" content="Clankdar docs">
-    <meta property="og:description" content="Three HTTP calls for fresh capability checks and portable, replayable receipts.">
+    <meta property="og:description" content="From a local signed receipt to your own agent integration, with a small HTTP API and verifiable results.">
     <meta property="og:image" content="https://clankdar.com/icon.png">
     <meta property="og:type" content="website">
     <meta property="og:url" content="https://clankdar.com/docs/">
@@ -46,18 +46,96 @@
     <div class="page">
       <main class="doc" id="main">
         <header class="doc-head">
-          <h1 id="title">Make a check.</h1>
-          <p class="doc-lede">Issue fresh puzzles, submit one set of answers, and keep the signed result. Use ordinary HTTP from your own application. You supply the solver and decide how to use the evidence.</p>
+          <h1 id="title">Try it. Then connect your agent.</h1>
+          <p class="doc-lede">Start with a complete local check. Bring your own solver when you are ready, then use the same callback with the hosted API.</p>
         </header>
         <nav class="contents" aria-label="Contents">
-          <a href="#quickstart">Quickstart</a><a href="#api">API</a><a href="#algal">Algal</a><a href="#verification">Verify</a><a href="#recipes">Recipes</a><a href="#limits">Limits</a>
+          <a href="#quickstart">Try locally</a><a href="#integrate">Integrate</a><a href="#verification">Verify</a><a href="#api">API</a><a href="#evidence">Evidence</a><a href="#limits">Limits</a>
         </nav>
 
         <section class="doc-section" id="quickstart" aria-labelledby="quickstart-title">
+          <h2 id="quickstart-title">Run a complete check.</h2>
+          <p>Want to see a puzzle first? <a href="/#try">Try browser practice</a> without an install or signup. For a real signed receipt, install <a href="https://bun.sh/docs/installation">Bun 1.3.14</a> and run:</p>
+          <pre class="code"><code>git clone https://github.com/hraness/clankdar.git
+cd clankdar
+bun install --frozen-lockfile --ignore-scripts
+bun run try</code></pre>
+          <p>The demo creates four fresh Algal puzzles, solves them with an included script, and signs and independently verifies the result. It saves <code>receipt.json</code> and <code>verification.json</code> in a new <code>results/try-…/</code> directory and prints the paths and verification command.</p>
+          <p>No credentials or model calls are involved. The local signing key is temporary, and the scripted score is a flow check, not a model score or hosted attestation.</p>
+          <details class="report-details" id="own-solver"><summary>Use your own solver</summary>
+            <p>Export <code>solve(challenges, signal)</code> from a JavaScript or TypeScript module, then run:</p>
+            <pre class="code"><code>bun run try --solver ./my-solver.mjs</code></pre>
+            <p>Your function receives public challenge objects and an <code>AbortSignal</code>. Return an object mapping each actual <code>challengeId</code> to its answer string. For example, connect your existing agent in <code>my-solver.mjs</code>:</p>
+            <pre class="code"><code>import { askAgent } from "./your-agent.mjs";
+
+export async function solve(challenges, signal) {
+  const answers = {};
+  for (const challenge of challenges) {
+    answers[challenge.challengeId] = await askAgent(challenge.prompt, { signal });
+  }
+  return answers;
+}</code></pre>
+            <p><code>askAgent</code> is your application function, not a Clankdar API. Return only each requested answer, forward the signal to provider requests, and set your own model and spending bounds. Loading your module runs its code and can incur your provider costs. The default policy requires three of four correct answers within 180 seconds.</p>
+          </details>
+        </section>
+
+        <section class="doc-section" id="integrate" aria-labelledby="integrate-title">
           <span id="hosted" class="anchor-alias" aria-hidden="true"></span>
-          <h2 id="quickstart-title">Your first receipt, with curl and jq.</h2>
-          <p>The hosted API is private staging. Get an invitation token from the operator and keep it in your server environment as <code>CLANKDAR_TOKEN</code>. The commands below need curl and jq, and work from a fresh local directory. No agent registration or repository checkout is required.</p>
-          <h3>Create a check and inspect its prompts.</h3>
+          <h2 id="integrate-title">Use the API from your server.</h2>
+          <p>The hosted API is invitation-only experimental staging. <a href="https://github.com/hraness/clankdar/issues/new?title=Hosted%20API%20access">Request hosted access</a>, then store your token privately as <code>CLANKDAR_TOKEN</code>. No agent registration or campaign setup is required.</p>
+          <p>Use ordinary HTTP, or download the small JavaScript helper. It runs on Node 22+ or Bun and needs no repository checkout:</p>
+          <pre class="code"><code>curl -fsS https://clankdar.com/clankdar-client.mjs -o clankdar-client.mjs</code></pre>
+          <p>Connect the same <code>solve</code> function from the local example in your server code:</p>
+          <pre class="code"><code>import { writeFile } from "node:fs/promises";
+import { check } from "./clankdar-client.mjs";
+import { solve } from "./my-solver.mjs";
+
+const result = await check({
+  baseUrl: "https://clankdar-hosted-staging.972abc65.workers.dev",
+  token: process.env.CLANKDAR_TOKEN,
+  solve,
+});
+await writeFile("receipt.json", result.receiptText);
+console.log(result.receiptUrl);</code></pre>
+          <p>The helper issues a check, passes its prompts to your solver, submits the answers, and downloads the exact receipt bytes. Your solver chooses any provider and pays its own compute costs. Keep the token and live ticket off the browser; submitted answers and optional <code>context</code> become public evidence.</p>
+          <p><a href="#verification">Verify the receipt before relying on it</a>. The helper’s download and hash check do not establish a trusted issuer or a passing result.</p>
+          <details class="report-details"><summary>Recover a submission after a connection failure</summary><p>The first accepted submission fixes the result, even when it fails. Retry that submission to recover the result; creating another check consumes another quota slot. Use the helper’s optional <code>onIssued(record)</code> and <code>checkpoint(record)</code> callbacks to save the ticket privately before solving and the answers before submitting. The <a href="https://github.com/hraness/clankdar/blob/main/cloudflare/examples/check.mjs">helper source</a> and <a href="https://github.com/hraness/clankdar/blob/main/docs/clankdar-checks-v1.md">API contract</a> describe the records and retry behavior.</p></details>
+        </section>
+
+        <section class="doc-section" id="verification" aria-labelledby="verification-title">
+          <span id="artifacts" class="anchor-alias" aria-hidden="true"></span>
+          <h2 id="verification-title">Verify before you rely on a result.</h2>
+          <p>From the repository checkout, use the offline verifier with an issuer key from your trusted application configuration:</p>
+          <pre class="code"><code>bun cloudflare/examples/verify-receipt.mjs receipt.json \
+  --issuer "$EXPECTED_ISSUER_PUBLIC_KEY"</code></pre>
+          <p>The checker verifies the signature and replays the recorded answers. Your app must require its expected policy, suitable freshness, and a passing result. A valid receipt can record a failed check. For the local demo, use the exact verification command printed by <code>bun run try</code>.</p>
+          <details class="report-details"><summary>Signer pins, expected context, and replay details</summary><p>Never take the expected issuer key from the receipt you are checking. Optional <code>--context</code>, <code>--session</code>, and <code>--sha256</code> assert your integration’s expected context, check ID, and exact file hash. See the <a href="https://github.com/hraness/clankdar/blob/main/cloudflare/examples/verify-receipt.mjs">verifier source</a> for its output.</p><p>Present, well-formed answers produce challenge receipts with seeds that let a checker regenerate and rescore those puzzles. Missing or malformed answers count as nonpassing without a challenge receipt or seed reveal. An empty-answer control still independently verifies as zero of four passing.</p></details>
+        </section>
+
+        <section class="doc-section" id="recipes" aria-labelledby="recipes-title">
+          <h2 id="recipes-title">Three places to start.</h2>
+          <dl class="evidence-list">
+            <div><dt>Agent preflight</dt><dd>Request a fresh result before offering a job. Use it alongside your existing authentication and admission policy.</dd></div>
+            <div><dt>Release checks</dt><dd>Compare a changed model endpoint under the same declared conditions. Keep receipts with your release record.</dd></div>
+            <div><dt>Listing evidence</dt><dd>Show a recent result with its policy, date, and sample size. Let readers inspect the receipt.</dd></div>
+          </dl>
+          <details class="report-details" id="drift"><summary>Schedule checks in your own app</summary><p>Your cron job or agent loop can call the same API. You choose cadence, budgets, missed-run treatment, and alerting. One check makes no ongoing availability claim.</p><p id="landscape">Campaigns are optional integration policy. Existing actor and campaign records remain available through the <a href="https://github.com/hraness/clankdar/blob/main/docs/clankdar-hosted-v1.md">legacy reference application</a>.</p></details>
+        </section>
+
+        <section class="doc-section" id="api" aria-labelledby="api-title">
+          <span id="exchange" class="anchor-alias" aria-hidden="true"></span>
+          <h2 id="api-title">Three HTTP calls.</h2>
+          <dl class="api-list">
+            <div><dt><code>POST /v1/checks</code></dt><dd>Send <code>{}</code> with your bearer token. Receive fresh challenges, their deadline, a scoped ticket, and the future receipt URL.</dd></div>
+            <div><dt><code>POST /v1/checks/:id/responses</code></dt><dd>Send <code>{"ticket":"…","responses":{"actualChallengeId":"answer"}}</code>. Receive the score, signed receipt, URL, and exact-byte hash. No issue token is needed.</dd></div>
+            <div><dt><code>GET /v1/checks/:id</code></dt><dd>Download the immutable canonical JSON receipt. This read needs no token.</dd></div>
+          </dl>
+          <p>The default <code>algal-floor-v1</code> policy asks four puzzles, requires three passes, and allows 180 seconds. Every answer is checked exactly; there is no judge model.</p>
+          <details class="report-details"><summary>Policy selection and optional fields</summary><p>Set <code>policyId</code> when issuing to choose <code>v2-floor-v1</code> (120 seconds) or <code>frontier-floor-v1</code> (180 seconds). Each asks four puzzles and requires three passes. These settings are not certified model classes. <a href="https://clankdar-hosted-staging.972abc65.workers.dev/v1/policies">List hosted policies</a>.</p><p>Optional <code>context</code> is a nonempty, non-sensitive string up to 256 characters. It becomes part of the public result.</p></details>
+          <details class="report-details" id="subject"><summary>Bind a check to a subject key</summary><p>Include <code>subjectPublicKey</code> when issuing and the matching <code>subjectProof</code> when submitting. This binds a key to the check, not the identity of its solver. Most integrations can start without it. The <a href="https://github.com/hraness/clankdar/blob/main/docs/clankdar-checks-v1.md">API contract</a> defines the proof format.</p></details>
+          <details class="report-details" id="curl"><summary>Exercise the HTTP flow with curl and jq</summary>
+            <p>This optional control uses a hosted invitation token and a quota slot. It submits blank answers for a deliberately failed result; it does not call a model.</p>
+<h3>Create a check and inspect its prompts.</h3>
 <pre class="code"><code>export CLANKDAR_URL=&quot;https://clankdar-hosted-staging.972abc65.workers.dev&quot;
 # Set CLANKDAR_TOKEN privately to your invitation token.
 umask 077
@@ -81,69 +159,25 @@ jq &#x27;{id, pass, passed, required, receiptUrl, sha256}&#x27; result.json</cod
           <h3>Download the exact JSON receipt.</h3>
 <pre class="code"><code>curl -fsS &quot;$CLANKDAR_URL$(jq -r &#x27;.receiptUrl&#x27; result.json)&quot; &gt; receipt.json</code></pre>
           <p>The receipt is a raw <code>clankdar-gate-v1</code> signed admission with <code>protocol</code>, <code>payload</code>, and <code>signature</code>. It remains readable after the ticket expires. Keep a copy: this experimental service has no automatic deletion policy, but does not promise permanent hosting.</p>
+          </details>
+          <p><a href="https://github.com/hraness/clankdar/blob/main/docs/clankdar-checks-v1.md">Full API contract: fields, errors, limits, and retries</a></p>
         </section>
 
-        <section class="doc-section" id="api" aria-labelledby="api-title">
-          <span id="exchange" class="anchor-alias" aria-hidden="true"></span>
-          <h2 id="api-title">Three endpoints.</h2>
-          <dl class="api-list">
-            <div><dt><code>POST /v1/checks</code></dt><dd>Requires <code>Authorization: Bearer …</code>. Send <code>{}</code> for the default policy, or <code>{"policyId":"frontier-floor-v1"}</code>. Optional <code>context</code> is a nonempty, non-sensitive string up to 256 characters. The response contains <code>id</code>, <code>ticket</code>, <code>policyId</code>, <code>expiresAt</code>, <code>challenges</code>, and <code>receiptUrl</code>.</dd></div>
-            <div><dt><code>POST /v1/checks/:id/responses</code></dt><dd>Send <code>{"ticket":"…","responses":{"actualChallengeId":"answer"}}</code>. No issue token is needed. An empty response object is a valid failed attempt. The first accepted submission fixes the result; retries return it. You receive <code>pass</code>, <code>passed</code>, <code>required</code>, <code>receiptUrl</code>, <code>sha256</code>, and the signed <code>receipt</code>.</dd></div>
-            <div><dt><code>GET /v1/checks/:id</code></dt><dd>Returns the immutable, canonical JSON receipt after a result exists. This read needs no token. The <code>sha256</code> returned on submission identifies the exact receipt bytes.</dd></div>
-          </dl>
-          <h3>Choose a policy.</h3>
-          <p>The default <a href="https://clankdar-hosted-staging.972abc65.workers.dev/v1/policies/algal-floor-v1"><code>algal-floor-v1</code></a> uses Algal programs and 180 seconds. <a href="https://clankdar-hosted-staging.972abc65.workers.dev/v1/policies/v2-floor-v1"><code>v2-floor-v1</code></a> retains the v2 pool and 120 seconds; <a href="https://clankdar-hosted-staging.972abc65.workers.dev/v1/policies/frontier-floor-v1"><code>frontier-floor-v1</code></a> retains frontier puzzles and 180 seconds. All ask four prompts and require three passes. These settings are not certified model classes.</p>
-          <details class="report-details" id="subject"><summary>Optionally bind a check to a subject key</summary><p>Include <code>subjectPublicKey</code> when issuing a check if your application needs key binding. Submission then includes the matching <code>subjectProof</code> under the existing receipt protocol. A subject signature binds a key to the check; it does not prove who solved the puzzles. Most integrations can start without subject keys. See the <a href="https://github.com/hraness/clankdar/blob/main/docs/clankdar-checks-v1.md">API contract</a> for the exact proof format.</p></details>
-          <p>For request bounds, retry semantics, and error responses, use the <a href="https://github.com/hraness/clankdar/blob/main/docs/clankdar-checks-v1.md">complete check API contract</a>. A <a href="https://github.com/hraness/clankdar/blob/main/cloudflare/examples/check.mjs">server-side JavaScript integration example</a> connects the calls to your <code>solve(challenges, signal)</code> function. Forward the abort signal to provider requests. Its optional <code>checkpoint(record)</code> callback lets your app save the ticket and answers privately for recovery.</p>
-        </section>
-
-        <section class="doc-section" id="algal" aria-labelledby="algal-title">
-          <h2 id="algal-title">Algal supplies the language. Clankdar supplies the check.</h2>
+        <section class="doc-section" id="evidence" aria-labelledby="evidence-title">
+          <h2 id="evidence-title">Inspect the evidence and approach.</h2>
+          <p>The current Algal suite has no model calibration yet. Older published v2 and frontier results retain their original tasks, conditions, and scores.</p>
+          <details class="report-details" id="algal"><summary>How Clankdar uses Algal</summary>
+<h3 id="algal-title">Algal supplies the language. Clankdar supplies the check.</h3>
           <p>The new <code>clankdar-algal-v1</code> suite presents real <code>algal.expr.v1</code> programs and fresh inputs. Algal’s official Rust evaluator, compiled to WebAssembly, calculates the reference answer. The CLI and Worker use the same pinned evaluator; Clankdar adds deadlines, exact response scoring, and signed receipts.</p>
           <p>Programs compose filtering and arithmetic, coupled recurrences, and matrix transitions. They have a 10,000-unit work budget and no network, filesystem, or model access. Your solver returns only the final integer. Clankdar does not execute code supplied in a response.</p>
           <pre class="code"><code>bun run algal:example
 bun bench --suite algal --adapter oracle --seeds 1-10 --out results/algal-control.jsonl</code></pre>
           <p>These local commands need a repository checkout, Bun 1.3.14, and installed dependencies. They make no model calls; the oracle is a runner control. <a href="https://github.com/hraness/clankdar/blob/main/docs/clankdar-algal-v1.md">Inspect the program contract, evaluator pin, and worked example</a>.</p>
           <p class="note">The Algal suite has no model calibration yet. Published v2/frontier results remain attached to their original suites, and older receipts still replay. A tier describes program structure, not a certified capability level.</p>
-        </section>
-
-        <section class="doc-section" id="verification" aria-labelledby="verification-title">
-          <span id="artifacts" class="anchor-alias" aria-hidden="true"></span>
-          <h2 id="verification-title">Verify the receipt where you use it.</h2>
-          <p>Challenge receipts reveal the seeds and recorded answers for responses that were present and well-formed. A checker verifies the issuer signature, regenerates those puzzles, rescores the recorded answers, and recomputes the result. Missing or malformed answers count as nonpassing without a challenge receipt or seed reveal; the blank-answer demo still verifies as 0 of 4 passing. Copying a receipt between services does not require copying a Clankdar account or adopting a workflow.</p>
-          <p>The optional source verifier uses Bun 1.3.14 and the repository’s existing checker. Set <code>EXPECTED_ISSUER_PUBLIC_KEY</code> from your application’s trusted configuration, then run it from the repository:</p>
-<pre class="code"><code>bun cloudflare/examples/verify-receipt.mjs receipt.json \
-  --issuer &quot;$EXPECTED_ISSUER_PUBLIC_KEY&quot; \
-  --session &quot;$(jq -r &#x27;.id&#x27; check.json)&quot; \
-  --sha256 &quot;$(jq -r &#x27;.sha256&#x27; result.json)&quot;</code></pre>
-          <p><code>--issuer</code> is a required signer pin. Add <code>--context</code> when your app requires a particular context. The verifier also checks the expected session and exact bytes when those options are supplied. See <a href="https://github.com/hraness/clankdar/blob/main/cloudflare/examples/verify-receipt.mjs">the verifier example</a> for its output and failure behavior.</p>
-          <p>A valid signature and replay establish what the issuer recorded. Your application must also require its intended policy, appropriate freshness, and a passing result when needed. A failed check can have a completely valid receipt.</p>
-        </section>
-
-        <section class="doc-section" id="recipes" aria-labelledby="recipes-title">
-          <h2 id="recipes-title">Put checks inside your workflow.</h2>
-          <ol class="journey">
-            <li><h3>Agent preflight</h3><p>When an agent offers to take a job, your service creates a check and forwards its prompts and scoped ticket. Inspect the signed result alongside your existing authentication and admission policy. Clankdar supplies evidence; your service decides whether to proceed.</p></li>
-            <li><h3>Release checks in CI</h3><p>Before changing a model endpoint, issue checks under the same declared policy and conditions as your baseline. Compare relevant cells and store receipt IDs with the release. Your pipeline owns sampling, thresholds, provider errors, and the release decision.</p></li>
-            <li><h3>Evidence on an agent listing</h3><p>Attach a recent result and receipt link to an agent in your own marketplace or directory. Show the policy, date, and sample size so readers can inspect what was tested. Decide yourself when listings need a fresh check.</p></li>
-          </ol>
-          <h3 id="drift">Schedule your own monitoring.</h3>
-          <p>Call the same endpoints from your cron job or agent loop and store the check IDs in your application. You choose cadence, budgets, missed-run treatment, and alerting. An individual check says nothing about ongoing availability. The existing campaign implementation remains an <a href="https://github.com/hraness/clankdar/blob/main/docs/clankdar-hosted-v1.md">optional legacy reference</a>; its records and routes are preserved.</p>
-          <p id="landscape">The same primitive fits a one-off request or repeated evaluation. A scheduled campaign is an integration policy, not a prerequisite for calling the API.</p>
-        </section>
-
-        <section class="doc-section" id="limits" aria-labelledby="limits-title">
-          <h2 id="limits-title">Limits, storage, and boundaries.</h2>
-          <p>Shared staging allows <b>1,024 issued checks over its lifetime</b> and at most <b>60 issues per fixed UTC minute</b>. These are service-wide limits, not a quota for every token. Request bodies are bounded at 128 KiB and receipts at 256 KiB. Your application supplies any inference and pays its own provider costs.</p>
-          <p>Each completed result is one canonical signed JSON object in R2. A small D1 counter enforces issue quotas; the core does not need an agent registry or session database. Receipts have no automatic deletion policy, but experimental hosting is not a permanence guarantee. Download results you need to retain.</p>
-          <h3 id="binding">Keep credentials separate from results.</h3>
-          <p>Keep the issue token server-side. The ticket is a private credential scoped to one check until it is consumed or expires. A recorded failed check fixes the result too; retry only to recover that first result. A receipt stays readable after the ticket expires. Results are public, so do not put private information in <code>context</code> or responses.</p>
-          <h3 id="security">What a check establishes.</h3>
-          <p>A receipt measures the submitted responses under a recorded policy and deadline. It does not prove model identity, autonomy, uniqueness, safety, ongoing availability, or permission to act. A challenge can be delegated or solved with code. The current hosted policies use fresh seeds from public generator streams; they are not issuer-private held-out pools. An issuer can self-mint results, so choose which issuers you accept.</p>
-        </section>
-
-        <section class="doc-section" id="scoring" aria-labelledby="scoring-title">
-          <h2 id="scoring-title">The benchmark behind the checks.</h2>
+          </details>
+          <details class="report-details" id="scoring"><summary>Published model results and benchmark conditions</summary>
+            {{BENCHMARK_SNAPSHOT}}
+            <h3 id="scoring-title">The benchmark behind the checks.</h3>
           <p>The recorded v2 tasks use <code>{{SUITE_VERSION}}</code>; new Algal checks use <code>clankdar-algal-v1</code>. Both use <code>{{SCORER_VERSION}}</code> for typed response scoring. The new Algal suite has no model calibration yet. Exact comparison preserves meaningful signs, case, token boundaries, grid dimensions, and binary leading zeroes. There is no judge model. The independent final-answer diagnostic is separate from strict pass/fail.</p>
           <h3 id="profiles">Compare the capability you need.</h3>
           <p>Public results are grouped by family/tier cells and profiles. The v2 calibration has 2,500 attempts from five requested model aliases, with one timeout; pooled strict scores span 9.4%–87.6%. Tiers mix different families, so they are not one intelligence number. Inspect the <a href="/benchmark/#profiles">capability profiles</a>, counts, exclusions, and uncertainty before choosing your own evaluation conditions.</p>
@@ -156,6 +190,33 @@ bun bench --adapter oracle --seeds 1-10 --out results/oracle-first.jsonl</code><
             <p><code>oracle</code> uses known answers to check the runner, not model capability. Model benchmark commands default to a dry run; actual inference requires <code>--execute</code> and a request budget. The <a href="https://github.com/hraness/clankdar/blob/main/docs/reference-tools.md">benchmark guide</a> covers adapters, tracks, and archives.</p>
           </details>
           <p id="ladder">Public benchmark seeds and the experimental answer-commitment helper are not a strong secret-challenge or identity system. The <a href="https://github.com/hraness/clankdar/blob/main/docs/clankdar-attest-v1.md">receipt protocol</a> specifies the commitments, signatures, and replay boundaries.</p>
+          </details>
+          <details class="report-details harder-example"><summary>A harder puzzle from the published frontier suite</summary>{{HARDER_CHALLENGE}}</details>
+          <details class="report-details" id="comparison"><summary>Compare Clankdar with other checks</summary>
+            <h3 class="section-title" id="comparison-title">What each check tells you.</h3>
+          <div class="table-scroll" role="region" aria-label="Clankdar and bot verification approaches" tabindex="0">
+            <table class="ladder-table comparison-table">
+              <thead><tr><th scope="col">Approach</th><th scope="col">Evidence it gives you</th></tr></thead>
+              <tbody>
+                <tr><th scope="row"><a href="https://developers.cloudflare.com/turnstile/">Turnstile</a> / <a href="https://docs.cloud.google.com/recaptcha/docs/interpret-assessment-website">reCAPTCHA</a></th><td>Browser and interaction risk signals for legitimate traffic versus automation.</td></tr>
+                <tr><th scope="row"><a href="https://github.com/TecharoHQ/anubis/blob/main/docs/docs/design/why-proof-of-work.mdx">Proof-of-work</a></th><td>The requester spent computation, such as finding a hash nonce.</td></tr>
+                <tr><th scope="row"><a href="https://developers.cloudflare.com/bots/reference/bot-verification/web-bot-auth/">Web Bot Auth</a></th><td>A registered agent key signed the request.</td></tr>
+                <tr class="clankdar-row"><th scope="row">Clankdar</th><td>Specific fresh tasks passed, with signed evidence you can independently replay.</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <p class="note">Other systems use puzzles too. Clankdar’s distinction is inspectable task evidence. Public tasks can be solved with code or delegated; results do not establish model identity or human presence.</p>
+          </details>
+        </section>
+
+        <section class="doc-section" id="limits" aria-labelledby="limits-title">
+          <h2 id="limits-title">Limits, storage, and boundaries.</h2>
+          <p>Shared staging allows <b>1,024 issued checks over its lifetime</b> and at most <b>60 issues per fixed UTC minute</b>. These are service-wide limits, not a quota for every token. Request bodies are bounded at 128 KiB and receipts at 256 KiB. Your application supplies any inference and pays its own provider costs.</p>
+          <p>Each completed result is one canonical signed JSON object in R2. A small D1 counter enforces issue quotas; the core does not need an agent registry or session database. Receipts have no automatic deletion policy, but experimental hosting is not a permanence guarantee. Download results you need to retain.</p>
+          <h3 id="binding">Keep credentials separate from results.</h3>
+          <p>Keep the issue token server-side. The ticket is a private credential scoped to one check until it is consumed or expires. A recorded failed check fixes the result too; retry only to recover that first result. A receipt stays readable after the ticket expires. Results are public, so do not put private information in <code>context</code> or responses.</p>
+          <h3 id="security">What a check establishes.</h3>
+          <p>A receipt measures the submitted responses under a recorded policy and deadline. It does not prove model identity, autonomy, uniqueness, safety, ongoing availability, or permission to act. A challenge can be delegated or solved with code. The current hosted policies use fresh seeds from public generator streams; they are not issuer-private held-out pools. An issuer can self-mint results, so choose which issuers you accept.</p>
         </section>
 
         <section class="doc-section" id="source" aria-labelledby="source-title">

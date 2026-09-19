@@ -28,14 +28,14 @@ export const b64url = (bytes: ArrayBuffer | Uint8Array): string => {
   return btoa(binary).replaceAll("+", "-").replaceAll("/", "_").replace(/=+$/, "");
 };
 
-export const unb64url = (value: string): Uint8Array => {
+export const unb64url = (value: string): Uint8Array<ArrayBuffer> => {
   const padded = value.replaceAll("-", "+").replaceAll("_", "/") + "===".slice((value.length + 3) % 4);
   const binary = atob(padded);
   return Uint8Array.from(binary, (char) => char.charCodeAt(0));
 };
 
 export const sha256Bytes = async (value: string | Uint8Array): Promise<Uint8Array> =>
-  new Uint8Array(await crypto.subtle.digest("SHA-256", typeof value === "string" ? encoder.encode(value) : value));
+  new Uint8Array(await crypto.subtle.digest("SHA-256", typeof value === "string" ? encoder.encode(value) : new Uint8Array(value)));
 export const sha256 = async (value: string | Uint8Array): Promise<string> =>
   [...await sha256Bytes(value)].map((byte) => byte.toString(16).padStart(2, "0")).join("");
 

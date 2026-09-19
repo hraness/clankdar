@@ -2,6 +2,7 @@ import { cp, mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 import { dirname, resolve } from "node:path";
 import { createHash } from "node:crypto";
+import { renderPractice } from "./practice-data.ts";
 import { supportFooter } from "./support-footer.ts";
 import { renderAdmissionEvidence, renderAgent, renderBenchmarkSnapshot, renderChallenge, renderHarderChallenge, renderFrontier, renderPilot, renderProfiles, renderTiers, renderV2 } from "./content.ts";
 import { verifyPilot } from "../bench/pilot.ts";
@@ -23,12 +24,13 @@ const admissionDir = resolve(root, "benchmark/admissions-opus5-2026-09-19");
 const admissionReport = verifyAdmissionArchive(admissionDir);
 const admissionManifest = JSON.parse(await readFile(resolve(admissionDir, "manifest.json"), "utf8")) as AdmissionArchiveManifest;
 const substitutions: Record<string, string> = {
-  "{{ALGAL_CHALLENGE}}": renderChallenge(), "{{HARDER_CHALLENGE}}": renderHarderChallenge(), "{{BENCHMARK_SNAPSHOT}}": renderBenchmarkSnapshot(v2, frontier), "{{TIERS}}": renderTiers(), "{{PILOT_RESULTS}}": renderPilot(pilot), "{{V2_RESULTS}}": renderV2(v2), "{{FRONTIER_RESULTS}}": renderFrontier(frontier), "{{AGENT_RESULTS}}": renderAgent(agent, agentDiag), "{{PROFILE_RESULTS}}": renderProfiles(v2), "{{ADMISSION_RESULTS}}": renderAdmissionEvidence(admissionReport, admissionManifest),
+  "{{PRACTICE}}": renderPractice(), "{{ALGAL_CHALLENGE}}": renderChallenge(), "{{HARDER_CHALLENGE}}": renderHarderChallenge(), "{{BENCHMARK_SNAPSHOT}}": renderBenchmarkSnapshot(v2, frontier), "{{TIERS}}": renderTiers(), "{{PILOT_RESULTS}}": renderPilot(pilot), "{{V2_RESULTS}}": renderV2(v2), "{{FRONTIER_RESULTS}}": renderFrontier(frontier), "{{AGENT_RESULTS}}": renderAgent(agent, agentDiag), "{{PROFILE_RESULTS}}": renderProfiles(v2), "{{ADMISSION_RESULTS}}": renderAdmissionEvidence(admissionReport, admissionManifest),
   "{{SUITE_VERSION}}": SUITE_VERSION, "{{SCORER_VERSION}}": SCORER_VERSION,
 };
 await rm(output, { recursive: true, force: true });
 await mkdir(resolve(output, "design"), { recursive: true });
 for (const name of ["styles.css", "icon.png", "apple-icon.png", "robots.txt", "sitemap.xml", "llms.txt"]) await cp(resolve(root, name), resolve(output, name));
+await cp(resolve(root, "../cloudflare/examples/check.mjs"), resolve(output, "clankdar-client.mjs"));
 await cp(resolve(root, "icons"), resolve(output, "icons"), { recursive: true });
 await cp(resolve(root, "marks"), resolve(output, "marks"), { recursive: true });
 const footerMarker = "<!-- hraness-site-footer -->";
@@ -53,6 +55,8 @@ await cp(resolve(kit, "marketing-assets"), resolve(output, "design/marketing-ass
 await cp(resolve(kit, "../LICENSE"), resolve(output, "design/LICENSE"));
 const result = await Bun.build({ entrypoints: [resolve(root, "appearance.ts")], outdir: output, naming: "appearance.js", target: "browser", format: "iife", minify: true });
 if (!result.success) throw new AggregateError(result.logs, "Appearance bundle failed");
+const practice = await Bun.build({ entrypoints: [resolve(root, "practice.ts")], outdir: output, naming: "practice.js", target: "browser", format: "iife", minify: true });
+if (!practice.success) throw new AggregateError(practice.logs, "Practice bundle failed");
 const pkg = JSON.parse(await readFile(resolve(kit, "../package.json"), "utf8"));
 await writeFile(resolve(output, "design/source.json"), JSON.stringify({ package: pkg.name, version: pkg.version, files: Object.fromEntries(await Promise.all(files.map(async name => [name, createHash("sha256").update(await readFile(resolve(output, "design", name))).digest("hex")]))) }, null, 2));
 console.log(`Built Clankdar (${pages.length} pages) with ${pkg.name}@${pkg.version}.`);

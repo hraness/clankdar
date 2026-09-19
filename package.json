@@ -26,7 +26,8 @@
     "check:browser": "bun site/verify.ts",
     "build:site": "bun run site/build.ts && bun run cloudflare/build-assets.ts && bun run prepare:algal",
     "prepare:algal": "bun cloudflare/prepare-algal.ts",
-    "algal:example": "bun bench/algal-example.ts"
+    "algal:example": "bun bench/algal-example.ts",
+    "try": "bun demo/cli.ts"
   },
   "dependencies": {
     "@hraness/design-kit": "github:hraness/design-kit#v0.8.0",

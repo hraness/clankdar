@@ -269,3 +269,20 @@ code { font-family: var(--font-mono, ui-monospace, "SFMono-Regular", Consolas, m
   .comparison-table th:first-child { width: 38%; }
   .integrations .evidence-list > div { grid-template-columns: 1fr; gap: 4px; }
 }
+
+/* Immediate practice uses the same answer contract; code stays one disclosure away. */
+.practice-task { font-size: 18px; line-height: 1.5; color: var(--ink); }
+.practice-input { margin-top: 20px; font-size: 18px; }
+.practice-choices { border: 0; margin: 24px 0 0; padding: 0; display: flex; flex-wrap: wrap; gap: 10px; }
+.practice-choices legend { padding: 0 0 10px; font-size: 14px; }
+.practice-choices button { flex: 1; min-height: 48px; min-width: 64px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); color: var(--ink); font: 500 17px var(--font-mono); cursor: pointer; }
+.practice-choices button:hover:not(:disabled) { border-color: var(--focus); color: var(--focus); }
+.practice-choices button:focus-visible, .practice-next button:focus-visible { outline: 2px solid var(--focus); outline-offset: 4px; }
+.practice-choices button:disabled { cursor: default; opacity: .55; }
+.practice-choices button[data-selected] { opacity: 1; border-color: var(--focus); color: var(--focus); }
+.practice-feedback { margin-top: 16px; font-size: 15px; line-height: 1.6; }
+.practice-feedback:empty { display: none; }
+.practice-next { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 20px; margin-top: 14px; font-size: 14px; }
+.practice-next a, .practice-next button { min-height: 44px; display: inline-flex; align-items: center; }
+.practice-next button { padding: 0; border: 0; background: transparent; color: var(--muted); font: inherit; cursor: pointer; text-decoration: underline; text-underline-offset: 5px; }
+.practice-choices[hidden], .practice-next[hidden] { display: none; }
