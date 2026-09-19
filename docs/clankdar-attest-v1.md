@@ -341,16 +341,56 @@ Commands (reference: `bench/tlog.ts`):
 - `admit tlog.json ADMISSION.json` runs the full §8 admission check AND
   requires the admission's `sessionId` to have both a session and a
   decision entry in a log that itself verifies — `{ok, verdict, passed}`.
+- `witness --heads heads.jsonl tlog.json` runs the full `check`, then
+  appends the log's head to a local head registry (below). Re-witnessing
+  an identical head is a no-op, not an error.
+- `equivocate --heads heads.jsonl` compares the registry's heads under
+  each issuer key and exits 2 on a proven fork.
+
+### Head witnessing
+
+A **head registry** (`heads.jsonl`) is the checker side of fork
+detection: an append-only local record of the signed heads an operator
+has witnessed, one verbatim `TlogHead` per line, indexed by
+`verifier.keyId`. Replay mirrors the ledger rules — a torn tail is
+dropped, mid-file corruption or a line that fails head shape or
+signature verification is fatal (a recorded head is evidence; an
+unverifiable one is corruption), and a file over 1,000,000 lines is
+refused. `witness` only records the head of a log that itself passes
+`check`.
+
+`equivocate` compares every pair of recorded heads under one `keyId` and
+proves equivocation in two airtight cases:
+
+- **same count, different tip** — two equal-length chains cannot end at
+  different `entryHash` values, so both heads cannot describe real logs;
+- **same tip, different count** — an `entryHash` commits to its index,
+  so one tip cannot close both a count-4 and a count-6 chain.
+
+Either finding exits 2 and reports `{ok:false, keyId, conflict:[headA,
+headB], reason}` — the conflicting pair is the evidence.
+
+A `count` that decreases in `issuedAt` order is reported only as a
+`warnings` entry (`reason: "head counts regress"`): issue timestamps are
+issuer-controlled, so a regression is soft evidence — reported, never an
+exit-2 finding on its own. And a different-length fork in general (a
+shorter head that is not an ancestor of a longer one) cannot be decided
+here: the registry stores heads, not entries, so no ancestry proof is
+possible without the underlying logs.
 
 The honest limit: the log binds *this* issuer's history under *its own*
 key. It does not stop self-minting — a verifier can always answer its own
-oracle — and it cannot detect a fork alone: an issuer could show different
-parties different logs. Equivocation is detectable only by comparing heads
-the issuer published elsewhere (gossip, witnessed co-signing, or external
-anchoring are future work). What the log buys is enumerability: every
-session and decision the issuer stands behind is committed, ordered, and
-replayable, so an admission that does not trace to a logged session is
-issuer-claimed only.
+oracle — and a single log cannot detect a fork alone: an issuer could
+show different parties different logs. Fork detection is now implemented
+as local head comparison: `witness` accumulates every head an operator
+sees and `equivocate` proves the same-count and same-tip cases from the
+signed heads themselves. What is still missing is transport — heads must
+reach a common witness before they can be compared — so gossip, witnessed
+co-signing, and external anchoring remain future work, as do ancestry
+proofs for different-length forks. What the log buys is enumerability:
+every session and decision the issuer stands behind is committed,
+ordered, and replayable, so an admission that does not trace to a logged
+session is issuer-claimed only.
 
 ## 12. Threat model — say it plainly
 
@@ -364,7 +404,10 @@ issuer-claimed only.
   (a service trusting its own gate). Portable third-party badges are checked
   against the issuance transparency log (§11): an admission that does not
   trace to a logged session is issuer-claimed only. The log is issuer-keyed,
-  so fork detection still needs published-head comparison — not implemented.
+  so fork detection needs published-head comparison; the reference
+  implements a local witness registry (§11) that proves same-count and
+  same-tip forks, but head transport — gossip, witnessed co-signing,
+  external anchoring — is not implemented.
 - **Per-family solver scripts.** Public generators admit canned solvers:
   a receipt proves "access to a solver for this cell," still real friction
   for anti-spam, weaker as a competence claim. Held-out pools restore the

@@ -1,12 +1,13 @@
 import { describe, expect, test } from "bun:test";
-import { appendFileSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
+import { appendFileSync, mkdtempSync, readFileSync, statSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { canonical, generateVerifier, signBody } from "./attest.ts";
 import { issueSession, submitSession, type Admission, type GatePolicy, type GateSession } from "./gate.ts";
 import { GateStore } from "./store.ts";
 import {
-  buildLog, checkLoggedAdmission, checkLog, proveSession, readLedger, TLOG_PROTOCOL,
+  buildLog, checkLoggedAdmission, checkLog, findEquivocation, isSignedHead, proveSession,
+  readHeads, readLedger, signHead, TLOG_PROTOCOL, witnessHead,
   type TlogHead, type TransparencyLog,
 } from "./tlog.ts";
 
@@ -242,5 +243,180 @@ describe("tlog CLI", () => {
     const denied = await tlog("admit", out, foreignFile);
     expect(denied.code).toBe(2);
     expect(JSON.parse(denied.stdout).ok).toBe(false);
+  });
+});
+
+/** A scratch heads-registry path inside a fresh temp dir. */
+const makeHeadsPath = () => join(mkdtempSync(join(tmpdir(), "clankdar-heads-")), "heads.jsonl");
+
+describe("tlog witness", () => {
+  test("records a log's head once; re-witnessing is a no-op", () => {
+    const { log } = makeLog(1);
+    const heads = makeHeadsPath();
+    const first = witnessHead(heads, log);
+    expect(first).toMatchObject({ ok: true, recorded: true, keyId: verifier.keyId, count: 2, head: log.head.head, witnessed: 1 });
+    const second = witnessHead(heads, log);
+    expect(second).toMatchObject({ ok: true, recorded: false, witnessed: 1 });
+    expect(readHeads(heads)).toEqual([log.head]);
+    expect(statSync(heads).mode & 0o777).toBe(0o644); // public-adjacent evidence, not a secret
+  });
+
+  test("a reissued head is a new artifact, not a duplicate", () => {
+    const { log } = makeLog(1);
+    const heads = makeHeadsPath();
+    witnessHead(heads, log);
+    // Same issuer, same count and tip, new issuedAt + signature: a distinct
+    // signed artifact, so it is recorded — and consistent, not a fork.
+    const reissued = signHead(log.head.count, log.head.head, verifier.privateJwk, new Date("2026-09-18T00:03:00Z"));
+    expect(witnessHead(heads, { ...log, head: reissued })).toMatchObject({ ok: true, recorded: true, witnessed: 2 });
+    expect(readHeads(heads)).toHaveLength(2);
+  });
+
+  test("refuses a log that fails check and writes nothing", () => {
+    const { log } = makeLog(1);
+    const heads = makeHeadsPath();
+    const result = witnessHead(heads, { ...log, head: { ...log.head, count: 9 } });
+    expect(result.ok).toBe(false);
+    expect(result.reason).toContain("failed check");
+    expect(readHeads(heads)).toHaveLength(0);
+  });
+
+  test("registry replay: torn tail dropped, mid corruption and invalid heads fatal", () => {
+    const { log } = makeLog(1);
+    const heads = makeHeadsPath();
+    witnessHead(heads, log);
+    appendFileSync(heads, '{"kind":"he'); // torn tail from a crashed append
+    expect(readHeads(heads)).toHaveLength(1);
+    appendFileSync(heads, "\n" + JSON.stringify(log.head) + "\n"); // the torn piece is mid-file now
+    expect(() => readHeads(heads)).toThrow("corrupt at line 2");
+    writeFileSync(heads, JSON.stringify(log.head) + "\n" + JSON.stringify({ hello: "world" }) + "\n");
+    expect(() => readHeads(heads)).toThrow("invalid head at line 2");
+    writeFileSync(heads, JSON.stringify({ ...log.head, signature: "AAAA" }) + "\n");
+    expect(() => readHeads(heads)).toThrow("invalid head at line 1");
+  });
+
+  test("registry refuses files over the line bound", () => {
+    const { log } = makeLog(1);
+    const heads = makeHeadsPath();
+    writeFileSync(heads, Array(4).fill(JSON.stringify(log.head)).join("\n") + "\n");
+    expect(readHeads(heads, 4)).toHaveLength(4);
+    expect(() => readHeads(heads, 3)).toThrow("exceeds 3 lines");
+  });
+
+  test("isSignedHead validates shape, keyId, and signature", () => {
+    const { log } = makeLog(1);
+    expect(isSignedHead(log.head)).toBe(true);
+    expect(isSignedHead({ ...log.head, signature: "AAAA" })).toBe(false);
+    expect(isSignedHead({ ...log.head, count: -1 })).toBe(false);
+    expect(isSignedHead({ ...log.head, verifier: { keyId: log.head.verifier.keyId, publicKey: other.publicKey } })).toBe(false);
+    expect(isSignedHead("head")).toBe(false);
+  });
+});
+
+describe("tlog equivocate", () => {
+  test("same keyId, same count, different tips is a proven fork", () => {
+    const a = signHead(4, "a".repeat(64), verifier.privateJwk, now);
+    const b = signHead(4, "b".repeat(64), verifier.privateJwk, later);
+    const report = findEquivocation([a, b]);
+    expect(report.ok).toBe(false);
+    expect(report.keyId).toBe(verifier.keyId);
+    expect(report.conflict).toEqual([a, b]);
+    expect(report.reason).toContain("different tips");
+  });
+
+  test("one tip signed at two counts is a proven fork", () => {
+    const a = signHead(4, "a".repeat(64), verifier.privateJwk, now);
+    const b = signHead(6, "a".repeat(64), verifier.privateJwk, later);
+    const report = findEquivocation([a, b]);
+    expect(report.ok).toBe(false);
+    expect(report.conflict).toEqual([a, b]);
+    expect(report.reason).toContain("counts 4 and 6");
+  });
+
+  test("consistent heads — extensions and reissues — are clean", () => {
+    const a = signHead(2, "a".repeat(64), verifier.privateJwk, now);
+    const reissued = signHead(2, "a".repeat(64), verifier.privateJwk, later); // same claim again
+    const extended = signHead(4, "b".repeat(64), verifier.privateJwk, built); // longer log, new tip
+    expect(findEquivocation([a, reissued, extended])).toEqual({ ok: true, checked: 3 });
+  });
+
+  test("a count that regresses in issue order warns without failing", () => {
+    const a = signHead(6, "a".repeat(64), verifier.privateJwk, now);
+    const b = signHead(4, "b".repeat(64), verifier.privateJwk, later);
+    const report = findEquivocation([a, b]);
+    expect(report.ok).toBe(true);
+    expect(report.warnings).toEqual([{ keyId: verifier.keyId, conflict: [a, b], reason: "head counts regress" }]);
+  });
+
+  test("issue order decides the warning, not registry order", () => {
+    const a = signHead(6, "a".repeat(64), verifier.privateJwk, later); // recorded first, issued last
+    const b = signHead(4, "b".repeat(64), verifier.privateJwk, now);
+    // Registry order regresses but issuedAt order is monotone: no warning.
+    expect(findEquivocation([a, b])).toEqual({ ok: true, checked: 2 });
+  });
+
+  test("heads under different keyIds never conflict", () => {
+    const a = signHead(4, "a".repeat(64), verifier.privateJwk, now);
+    const b = signHead(4, "b".repeat(64), other.privateJwk, now);
+    const c = signHead(2, "c".repeat(64), other.privateJwk, later);
+    const report = findEquivocation([a, b, c]);
+    expect(report.ok).toBe(true);
+    // `other` does regress in issue order, though — warnings are per keyId too.
+    expect(report.warnings).toEqual([{ keyId: other.keyId, conflict: [b, c], reason: "head counts regress" }]);
+  });
+});
+
+describe("tlog witness/equivocate CLI", () => {
+  test("witness → equivocate round-trip; a forked registry exits 2", async () => {
+    const { dir } = makeLedger(1);
+    const keyFile = join(dir, "verifier.json");
+    const out = join(dir, "tlog.json");
+    const heads = join(dir, "heads.jsonl");
+    writeFileSync(keyFile, JSON.stringify(verifier.privateJwk));
+    expect((await tlog("build", "--dir", dir, "--key", keyFile, "--out", out)).code).toBe(0);
+
+    const first = await tlog("witness", "--heads", heads, out);
+    expect(first.code).toBe(0);
+    expect(JSON.parse(first.stdout)).toMatchObject({ ok: true, recorded: true, keyId: verifier.keyId, count: 2, witnessed: 1 });
+    expect(JSON.parse((await tlog("witness", "--heads", heads, out)).stdout).recorded).toBe(false);
+    expect(statSync(heads).mode & 0o777).toBe(0o644);
+
+    const clean = await tlog("equivocate", "--heads", heads);
+    expect(clean.code).toBe(0);
+    expect(JSON.parse(clean.stdout)).toEqual({ ok: true, checked: 1 });
+
+    // A second log of the same length from a different ledger is a certain fork.
+    const foreign = makeLedger(1);
+    const foreignKey = join(foreign.dir, "verifier.json");
+    const foreignOut = join(foreign.dir, "tlog.json");
+    writeFileSync(foreignKey, JSON.stringify(verifier.privateJwk));
+    expect((await tlog("build", "--dir", foreign.dir, "--key", foreignKey, "--out", foreignOut)).code).toBe(0);
+    expect(JSON.parse((await tlog("witness", "--heads", heads, foreignOut)).stdout).recorded).toBe(true);
+
+    const forked = await tlog("equivocate", "--heads", heads);
+    expect(forked.code).toBe(2);
+    const report = JSON.parse(forked.stdout);
+    expect(report.ok).toBe(false);
+    expect(report.keyId).toBe(verifier.keyId);
+    expect(report.conflict).toHaveLength(2);
+    expect(report.reason).toContain("different tips");
+  });
+
+  test("witness refuses a tampered log and equivocate accepts an empty registry", async () => {
+    const { dir } = makeLedger(1);
+    const keyFile = join(dir, "verifier.json");
+    const out = join(dir, "tlog.json");
+    const heads = join(dir, "heads.jsonl");
+    writeFileSync(keyFile, JSON.stringify(verifier.privateJwk));
+    expect((await tlog("build", "--dir", dir, "--key", keyFile, "--out", out)).code).toBe(0);
+    const log = JSON.parse(readFileSync(out, "utf8")) as TransparencyLog;
+
+    const tampered = join(dir, "tampered.json");
+    writeFileSync(tampered, JSON.stringify({ ...log, head: { ...log.head, count: 9 } }));
+    const bad = await tlog("witness", "--heads", heads, tampered);
+    expect(bad.code).toBe(2);
+    expect(JSON.parse(bad.stdout).ok).toBe(false);
+    expect((await tlog("equivocate", "--heads", heads)).code).toBe(0); // nothing was recorded
+    expect(JSON.parse((await tlog("equivocate", "--heads", join(dir, "absent.jsonl"))).stdout)).toEqual({ ok: true, checked: 0 });
   });
 });
