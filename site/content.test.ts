@@ -88,7 +88,7 @@ describe("public site contract", () => {
       expect(html).toContain("https://clankdar.com");
       expect(html).not.toContain("clankdar.dev");
       expect(html).not.toContain("botcaptcha.dev");
-      expect(html.match(/<script\b/g)).toHaveLength(1);
+      expect(html.match(/<script\b/g)).toHaveLength(path === "index.html" ? 2 : 1);
       expect(html).toContain('<script src="/appearance.js"></script>');
       expect(html).not.toMatch(/<form\b|<iframe\b|\sonclick=/);
     }

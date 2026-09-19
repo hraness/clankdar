@@ -10,6 +10,6 @@
     "skipLibCheck": true,
     "types": ["bun"]
   },
-  "include": ["ladder/**/*.ts", "bench/**/*.ts", "site/**/*.ts"],
+  "include": ["ladder/**/*.ts", "bench/**/*.ts", "site/**/*.ts", "demo/**/*.ts"],
   "exclude": ["site/dist", "node_modules", "results"]
 }

@@ -121,10 +121,22 @@ try {
         }
         await verifyChrome(page, width);
         if (path === "/") {
+          const choices = page.locator("[data-practice-answer]");
+          await expect(page.locator("[data-practice-next]")).toBeHidden();
+          await choices.filter({ hasText: /^34$/ }).click();
+          await expect(page.locator("[data-practice-feedback]")).toContainText("Correct — 34");
+          for (const choice of await choices.all()) await expect(choice).toBeDisabled();
+          await expect(page.locator("[data-practice-next] a")).toHaveAttribute("href", "/docs/#quickstart");
+          await page.locator("[data-practice-another]").click();
+          await expect(page.locator("[data-practice-values]")).toHaveText("values = [2,4,1,3]");
+          await choices.filter({ hasText: /^16$/ }).click();
+          await expect(page.locator("[data-practice-feedback]")).toContainText("doesn’t match");
+          await expect(page.locator("[data-practice-feedback]")).toContainText("25");
           await page.locator(".room .answer-reveal summary").click();
-          await expect(page.locator(".room .answer-reveal code")).toHaveText("34");
-          await page.locator(".room .answer-reveal summary").click();
-          // Disclosure clicks scroll into view; capture sticky chrome from the page top.
+          await expect(page.locator("[data-practice-solution]")).toHaveText("25");
+          await page.locator("[data-practice-another]").click();
+          await expect(choices.first()).toBeFocused();
+          // Practice controls scroll into view; capture sticky chrome from the page top.
           await page.evaluate(() => scrollTo(0, 0));
           await expect.poll(() => page.evaluate(() => scrollY)).toBe(0);
         }
@@ -165,8 +177,11 @@ try {
   const page = await noScript.newPage();
   activePage = page;
   await page.goto(origin);
+  // Follow the actual no-script entry path; the anchor clears both sticky bars.
+  await page.locator('a[href="#try"]').click();
   await page.locator(".room .answer-reveal summary").click();
-  await expect(page.locator(".room .answer-reveal code")).toBeVisible();
+  await expect(page.locator("[data-practice-solution]")).toBeVisible();
+  await expect(page.locator("[data-practice-controls]")).toBeHidden();
   await page.goto(origin + "/benchmark/");
   await expect(page.locator("#pilot-results .results-table").first()).toBeVisible();
   await noScript.close();

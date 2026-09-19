@@ -21,7 +21,7 @@ describe("atomic HTTP example and offline verification", () => {
     const fixture = receiptFixture();
     const id = fixture.issued.session.sessionId;
     let calls = 0, solverCalls = 0;
-    let saved;
+    let saved, issuedRecord;
     const fetchMock = async (url, options) => {
       calls++;
       expect(options.redirect).toBe("error");
@@ -43,8 +43,11 @@ describe("atomic HTTP example and offline verification", () => {
       expect(url).toBe(`https://clankdar.example/v1/checks/${id}`);
       return new Response(fixture.receiptText);
     };
-    const result = await check({ baseUrl: "https://clankdar.example", token: "test-invitation", context, fetch: fetchMock, checkpoint: async record => { await Promise.resolve(); saved = record; }, solve: async (challenges, signal) => {
+    const result = await check({ baseUrl: "https://clankdar.example", token: "test-invitation", context, fetch: fetchMock, onIssued: async record => { await Promise.resolve(); issuedRecord = structuredClone(record); record.challenges[0].prompt = "callback mutation"; }, checkpoint: async record => { await Promise.resolve(); saved = record; }, solve: async (challenges, signal) => {
       solverCalls++;
+      expect(issuedRecord).toEqual({ id, ticket: "opaque-ticket", expiresAt: fixture.issued.session.expiresAt, challenges: fixture.issued.challenges, receiptUrl: `https://clankdar.example/v1/checks/${id}` });
+      expect(issuedRecord).not.toHaveProperty("responses");
+      expect(issuedRecord).not.toHaveProperty("token");
       expect(challenges).toEqual(fixture.issued.challenges);
       expect(signal).toBeInstanceOf(AbortSignal);
       return fixture.responses;
@@ -54,6 +57,47 @@ describe("atomic HTTP example and offline verification", () => {
     expect(solverCalls).toBe(1);
     expect(result).not.toHaveProperty("pass");
     expect(verifyReceipt(result.receiptText, { issuerPublicKey, sessionId: result.id, context, sha256: result.sha256 })).toMatchObject({ ok: true, pass: true, passed: 1, required: 1, sha256: sha256(fixture.receiptText) });
+  });
+
+  test("failed persistence stops the flow before solving or submitting", async () => {
+    const fixture = receiptFixture();
+    for (const callback of ["onIssued", "checkpoint"]) {
+      let calls = 0, solves = 0;
+      await expect(check({
+        baseUrl: "https://clankdar.example", token: "test-invitation",
+        fetch: async () => { calls++; return Response.json({ id: fixture.issued.session.sessionId, ticket: "ticket", expiresAt: fixture.issued.session.expiresAt, challenges: fixture.issued.challenges }); },
+        solve: async () => { solves++; return fixture.responses; },
+        [callback]: async () => { await Promise.resolve(); throw new Error("private persistence unavailable"); },
+      })).rejects.toThrow("private persistence unavailable");
+      expect(calls).toBe(1);
+      expect(solves).toBe(callback === "onIssued" ? 0 : 1);
+    }
+  });
+
+  test("a ticket saved after its solver budget expires starts no solver", async () => {
+    let calls = 0, solved = false, saved;
+    await expect(check({
+      baseUrl: "https://clankdar.example", token: "test-invitation",
+      fetch: async () => { calls++; return Response.json({ id: "gs_aaaaaaaaaaaa", ticket: "ticket", expiresAt: new Date(Date.now() + 515).toISOString(), challenges: [{ challengeId: "att_aaaaaaaaaaaa" }] }); },
+      onIssued: async record => { saved = record; await new Promise(resolve => setTimeout(resolve, 30)); },
+      solve: async () => { solved = true; return {}; },
+    })).rejects.toThrow("deadline");
+    expect(saved).toMatchObject({ id: "gs_aaaaaaaaaaaa", ticket: "ticket" });
+    expect(calls).toBe(1);
+    expect(solved).toBe(false);
+  });
+
+  test("solver deadline aborts the supplied signal without submitting or reissuing", async () => {
+    let calls = 0, saved, solverSignal;
+    await expect(check({
+      baseUrl: "https://clankdar.example", token: "test-invitation",
+      fetch: async () => { calls++; return Response.json({ id: "gs_aaaaaaaaaaaa", ticket: "ticket", expiresAt: new Date(Date.now() + 550).toISOString(), challenges: [{ challengeId: "att_aaaaaaaaaaaa" }] }); },
+      onIssued: async record => { saved = record; },
+      solve: async (_challenges, signal) => { solverSignal = signal; return new Promise(() => {}); },
+    })).rejects.toThrow("solver exceeded the check deadline");
+    expect(solverSignal.aborted).toBe(true);
+    expect(saved).toHaveProperty("ticket", "ticket");
+    expect(calls).toBe(1);
   });
 
   test("verification requires a trusted issuer and rejects wrong context, session, hash, and tampering", () => {
@@ -85,6 +129,7 @@ describe("atomic HTTP example and offline verification", () => {
     await expect(check({ ...args, baseUrl: "http://clankdar.example" })).rejects.toThrow("HTTPS");
     await expect(check({ ...args, baseUrl: "https://user:password@clankdar.example" })).rejects.toThrow("HTTPS");
     await expect(check({ ...args, solve: undefined })).rejects.toThrow("provide solve");
+    await expect(check({ ...args, onIssued: true })).rejects.toThrow("onIssued must");
     await expect(check({ ...args, context: "" })).rejects.toThrow("nonempty");
     await expect(check({ ...args, context: "   " })).rejects.toThrow("nonempty");
     expect(calls).toBe(0);
