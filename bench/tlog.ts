@@ -9,7 +9,7 @@
  *   bun bench/tlog.ts witness --heads heads.jsonl tlog.json
  *   bun bench/tlog.ts equivocate --heads heads.jsonl
  *   bun bench/tlog.ts compare log-a.json log-b.json
- *   bun bench/tlog.ts witness-serve --heads heads.jsonl [--port 8790]
+ *   bun bench/tlog.ts witness-serve --heads heads.jsonl [--port 8790] [--providers providers.json] [--poll-ms N]
  *
  * A derived view over the gate ledger (bench/store.ts appends one JSONL
  * record per session issuance and per decision). Every record becomes a
@@ -28,14 +28,16 @@
  * at two counts — are certain forks; a count that regresses in issue order
  * is only a warning, since issue timestamps are issuer-controlled. Heads
  * still have to reach a common witness to be compared: `witness-serve`
- * implements explicit provider-neutral intake, but automatic polling,
- * gossip, witnessed co-signing, and external anchoring remain future work.
+ * implements explicit provider-neutral intake and can poll configured
+ * providers' `/tlog/head` endpoints on an interval, but provider
+ * discovery, gossip, witnessed co-signing, and external anchoring remain
+ * future work.
  * `compare` decides different-length forks when both full logs are present;
  * the head registry alone cannot.
  */
 import { parseArgs } from "node:util";
 import { createHash } from "node:crypto";
-import { closeSync, fsyncSync, mkdirSync, openSync, readFileSync, writeFileSync, writeSync } from "node:fs";
+import { closeSync, fsyncSync, mkdirSync, openSync, readFileSync, statSync, writeFileSync, writeSync } from "node:fs";
 import { dirname, join } from "node:path";
 import {
   canonical, keyIdOf, publicKeyOf, signBody, verifyBodySignature,
@@ -115,11 +117,11 @@ const headBody = (head: TlogHead) => ({
 
 const message = (error: unknown): string => (error instanceof Error ? error.message : String(error));
 
-async function boundedText(req: Request, maxBytes: number): Promise<string | null> {
-  const declared = req.headers.get("content-length");
+async function boundedText(message_: Request | Response, maxBytes: number): Promise<string | null> {
+  const declared = message_.headers.get("content-length");
   if (declared !== null && /^\d+$/.test(declared) && Number(declared) > maxBytes) return null;
-  if (!req.body) return "";
-  const reader = req.body.getReader();
+  if (!message_.body) return "";
+  const reader = message_.body.getReader();
   const chunks: Uint8Array[] = [];
   let size = 0;
   while (true) {
@@ -582,6 +584,62 @@ export function compareLogs(a: unknown, b: unknown): ForkReport {
   return { ok: true, equivocation: false, keyId, relation, counts };
 }
 
+/** Default poll interval for `--providers` watching: one minute. */
+export const POLL_DEFAULT_MS = 60_000;
+/** Poll interval bound — one day. */
+export const POLL_MAX_MS = 86_400_000;
+/** Each provider fetch is bounded to this many bytes — same bound as POST /heads. */
+const POLL_HEAD_MAX_BYTES = 16 * 1024;
+/** Each provider fetch times out after this long. */
+const POLL_FETCH_TIMEOUT_MS = 10_000;
+/** A providers file may name at most this many provider URLs. */
+const PROVIDERS_MAX = 256;
+/** A providers file may be at most this large. */
+const PROVIDERS_MAX_BYTES = 256 * 1024;
+/** One provider URL may be at most this long. */
+const PROVIDER_URL_MAX = 2048;
+
+/** Per-provider outcome of one poll: what `GET /status` reports. */
+export type PollResult = "ok" | "fetch-error" | "invalid-head";
+
+export interface ProviderStatus {
+  /** The configured provider base URL, normalized (operator-supplied, not a secret). */
+  url: string;
+  /** ISO timestamp of the last completed poll attempt. */
+  lastPollAt?: string;
+  lastResult?: PollResult;
+  /** Verifier keyId of the last accepted head from this provider. */
+  keyId?: string;
+}
+
+/**
+ * Parse a providers file — either `[{url}]` or `{providers: [{url}]}` —
+ * into deduplicated http(s) base URLs. Returns null on anything
+ * malformed: a bad file must never crash the service, only skip a cycle.
+ */
+function parseProvidersFile(value: unknown): string[] | null {
+  const list = Array.isArray(value)
+    ? value
+    : value !== null && typeof value === "object" && Array.isArray((value as { providers?: unknown }).providers)
+      ? (value as { providers: unknown[] }).providers
+      : null;
+  if (list === null || list.length > PROVIDERS_MAX) return null;
+  const urls = new Set<string>();
+  for (const entry of list) {
+    const raw = (entry as { url?: unknown } | null)?.url;
+    if (typeof raw !== "string" || !raw.length || raw.length > PROVIDER_URL_MAX) return null;
+    let parsed: URL;
+    try {
+      parsed = new URL(raw);
+    } catch {
+      return null;
+    }
+    if (parsed.protocol !== "http:" && parsed.protocol !== "https:") return null;
+    urls.add(parsed.toString());
+  }
+  return [...urls];
+}
+
 /**
  * A head-witness service — the "common witness" the accountability story
  * needs. Any vantage (a checker polling an issuer's `/tlog/head`, another
@@ -593,17 +651,140 @@ export function compareLogs(a: unknown, b: unknown): ForkReport {
  *   POST /heads                    body: one self-describing TlogHead
  *   GET  /heads?keyId=K&after=N    bounded pages across one or every provider
  *   GET  /equivocation/:keyId      findings for one provider key
+ *   GET  /status                   per-provider poll state (when --providers is set)
  *   GET  /healthz
+ *
+ * With `opts.providers` naming a JSON file of `{url}` entries, the
+ * service additionally polls each provider's `GET /tlog/head` every
+ * `pollMs` (default one minute) and feeds valid signed heads through the
+ * same normalization and append path as POST /heads. The file is re-read
+ * every cycle so providers can be added or removed without a restart; an
+ * unreadable or malformed file logs a bounded stderr warning and skips
+ * the cycle — the service stays up. A fetched head identical in
+ * count+tip to the latest stored head for its keyId is not re-appended,
+ * so a provider that re-signs the same claim every poll cannot spam the
+ * registry.
  *
  * Honest scope: unauthenticated — a submission self-validates by
  * signature and is indexed by its embedded keyId, so no central provider
- * registry is required. Unsigned unknown members are stripped before
- * storage. There is no rate limit and no gossip: heads arrive only when
- * someone POSTs them, so a private fork stays invisible until both views
- * reach a witness like this one. The registry is the same append-only JSONL
- * `tlog witness` writes and `tlog equivocate` reads.
+ * registry is required. A provider URL is configuration, not trust: only
+ * the head's own embedded verifier signature decides what is recorded,
+ * and equivocation findings stay scoped to one keyId. Unsigned unknown
+ * members are stripped before storage. There is no rate limit, no
+ * provider discovery, and no gossip: heads arrive only via POST or a
+ * configured provider poll, so a private fork stays invisible until both
+ * views reach a witness like this one. The registry is the same
+ * append-only JSONL `tlog witness` writes and `tlog equivocate` reads.
  */
-export function serveWitness(opts: { heads: string; host?: string; port?: number }): { url: string; close: () => void } {
+export function serveWitness(opts: {
+  heads: string;
+  host?: string;
+  port?: number;
+  /** Path to a JSON providers file (`[{url}]` or `{providers: [{url}]}`), re-read each poll cycle. */
+  providers?: string;
+  /** Poll interval in ms — integer in 1..86400000, default 60000. Meaningful only with `providers`. */
+  pollMs?: number;
+}): { url: string; close: () => void } {
+  if (opts.pollMs !== undefined && (!Number.isInteger(opts.pollMs) || opts.pollMs < 1 || opts.pollMs > POLL_MAX_MS)) {
+    throw new Error(`pollMs must be an integer in 1..${POLL_MAX_MS}`);
+  }
+  const pollMs = opts.pollMs ?? POLL_DEFAULT_MS;
+  const states = new Map<string, ProviderStatus>();
+  let providersFileInvalid = false;
+  const loadProviders = (): string[] | null => {
+    try {
+      if (statSync(opts.providers!).size > PROVIDERS_MAX_BYTES) return null;
+      return parseProvidersFile(JSON.parse(readFileSync(opts.providers!, "utf8")));
+    } catch {
+      return null;
+    }
+  };
+  /**
+   * Fetch one provider's `/tlog/head` under a 10s timeout and a 16 KiB
+   * bound, then validate it exactly like a POSTed head. The returned
+   * status records the outcome; a valid head is returned for the
+   * sequential append phase so parallel fetches cannot race the registry.
+   */
+  const pollProvider = async (url: string): Promise<{ status: ProviderStatus; head: TlogHead | null }> => {
+    const status: ProviderStatus = { url, lastPollAt: new Date().toISOString() };
+    let body: unknown;
+    try {
+      const res = await fetch(new URL("/tlog/head", url), { signal: AbortSignal.timeout(POLL_FETCH_TIMEOUT_MS) });
+      if (!res.ok) {
+        status.lastResult = "fetch-error";
+        return { status, head: null };
+      }
+      const text = await boundedText(res, POLL_HEAD_MAX_BYTES);
+      if (text === null) {
+        status.lastResult = "fetch-error";
+        return { status, head: null };
+      }
+      try {
+        body = JSON.parse(text);
+      } catch {
+        status.lastResult = "invalid-head";
+        return { status, head: null };
+      }
+    } catch {
+      status.lastResult = "fetch-error";
+      return { status, head: null };
+    }
+    if (!isSignedHead(body)) {
+      status.lastResult = "invalid-head";
+      return { status, head: null };
+    }
+    status.lastResult = "ok";
+    status.keyId = body.verifier.keyId;
+    return { status, head: body };
+  };
+  let polling = false;
+  const pollCycle = async (): Promise<void> => {
+    if (polling || opts.providers === undefined) return;
+    polling = true;
+    try {
+      const urls = loadProviders();
+      if (urls === null) {
+        providersFileInvalid = true;
+        console.error(`tlog witness: providers file ${opts.providers} is unreadable or invalid; skipping poll cycle`);
+        return;
+      }
+      providersFileInvalid = false;
+      for (const known of [...states.keys()]) if (!urls.includes(known)) states.delete(known);
+      const results = await Promise.all(urls.map(pollProvider));
+      // Latest stored claim per keyId: a re-signed identical claim is skipped.
+      let heads: TlogHead[] | null = null;
+      try {
+        heads = readHeads(opts.heads);
+      } catch {
+        heads = null;
+      }
+      if (heads === null) {
+        console.error("tlog witness: heads registry unavailable; polled heads cannot be recorded");
+      }
+      const latestClaim = new Map<string, { count: number; head: string }>();
+      for (const head of heads ?? []) latestClaim.set(head.verifier.keyId, { count: head.count, head: head.head });
+      for (const { status, head } of results) {
+        states.set(status.url, status);
+        if (status.lastResult !== "ok") {
+          console.error(`tlog witness: poll ${status.url} failed: ${status.lastResult}`);
+          continue;
+        }
+        if (head === null || heads === null) continue;
+        const latest = latestClaim.get(head.verifier.keyId);
+        if (latest && latest.count === head.count && latest.head === head.head) continue;
+        try {
+          appendHead(opts.heads, head);
+          latestClaim.set(head.verifier.keyId, { count: head.count, head: head.head });
+        } catch {
+          console.error("tlog witness: heads registry unavailable; polled head not recorded");
+        }
+      }
+    } finally {
+      polling = false;
+    }
+  };
+  const timer = opts.providers === undefined ? null : setInterval(() => void pollCycle(), pollMs);
+  if (timer) void pollCycle(); // first poll immediately, then on the interval
   const json = (data: unknown, status = 200) =>
     new Response(JSON.stringify(data), { status, headers: { "content-type": "application/json" } });
   const err = (status: number, error: string) => json({ error }, status);
@@ -620,6 +801,14 @@ export function serveWitness(opts: { heads: string; host?: string; port?: number
     fetch: async (req) => {
       const url = new URL(req.url);
       if (req.method === "GET" && url.pathname === "/healthz") return json({ ok: true });
+      if (req.method === "GET" && url.pathname === "/status") {
+        const out: Record<string, unknown> = { ok: true, providers: [...states.values()] };
+        if (opts.providers !== undefined) {
+          out.pollMs = pollMs;
+          if (providersFileInvalid) out.providersFile = "invalid";
+        }
+        return json(out);
+      }
       const equivocationMatch = /^\/equivocation\/([0-9a-f]{16})$/.exec(url.pathname);
       if (req.method === "GET" && equivocationMatch) {
         const heads = registry();
@@ -684,7 +873,13 @@ export function serveWitness(opts: { heads: string; host?: string; port?: number
     },
   });
   const host = opts.host ?? "127.0.0.1";
-  return { url: `http://${host}:${server.port}`, close: () => server.stop(true) };
+  return {
+    url: `http://${host}:${server.port}`,
+    close: () => {
+      if (timer !== null) clearInterval(timer);
+      server.stop(true);
+    },
+  };
 }
 
 function loadJson(path: string): unknown {
@@ -703,7 +898,7 @@ const USAGE = `usage: tlog <command>
   witness --heads HEADS.jsonl TLOG.json
   equivocate --heads HEADS.jsonl
   compare TLOG_A.json TLOG_B.json
-  witness-serve --heads HEADS.jsonl [--host H] [--port N]`;
+  witness-serve --heads HEADS.jsonl [--host H] [--port N] [--providers PROVIDERS.json] [--poll-ms N]`;
 
 export function main(args = process.argv.slice(2)): void {
   const [command, ...rest] = args;
@@ -713,6 +908,7 @@ export function main(args = process.argv.slice(2)): void {
       dir: { type: "string" }, key: { type: "string" }, out: { type: "string" }, pool: { type: "string" },
       session: { type: "string" }, heads: { type: "string" }, help: { type: "boolean", short: "h" },
       host: { type: "string" }, port: { type: "string" },
+      providers: { type: "string" }, "poll-ms": { type: "string" },
     },
     allowPositionals: true, strict: true,
   });
@@ -786,8 +982,13 @@ export function main(args = process.argv.slice(2)): void {
     if (port !== undefined && (!Number.isInteger(port) || port < 1 || port > 65535)) {
       throw new Error("--port must be 1..65535");
     }
-    const { url } = serveWitness({ heads: values.heads!, host: values.host, port });
-    console.error(`tlog witness serving on ${url} (heads: ${values.heads})`);
+    const pollMs = values["poll-ms"] === undefined ? undefined : Number(values["poll-ms"]);
+    if (pollMs !== undefined && (!Number.isInteger(pollMs) || pollMs < 1 || pollMs > POLL_MAX_MS)) {
+      throw new Error(`--poll-ms must be an integer in 1..${POLL_MAX_MS}`);
+    }
+    const { url } = serveWitness({ heads: values.heads!, host: values.host, port, providers: values.providers, pollMs });
+    const watching = values.providers === undefined ? "" : `, providers: ${values.providers} every ${pollMs ?? POLL_DEFAULT_MS}ms`;
+    console.error(`tlog witness serving on ${url} (heads: ${values.heads}${watching})`);
     return;
   }
   throw new Error(`unknown command: ${command}.\n${USAGE}`);

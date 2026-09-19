@@ -652,3 +652,220 @@ describe("tlog witness service", () => {
     }
   }, 15_000);
 });
+
+/** A stub hosted-style provider: `body()` is served at GET /tlog/head. */
+const serveHeadProvider = (body: () => unknown) => {
+  const server = Bun.serve({
+    port: 0,
+    fetch: (req) => {
+      if (req.method !== "GET" || new URL(req.url).pathname !== "/tlog/head") {
+        return new Response("not found", { status: 404 });
+      }
+      const value = body();
+      return typeof value === "string" ? new Response(value) : Response.json(value);
+    },
+  });
+  return { url: `http://127.0.0.1:${server.port}`, close: () => server.stop(true) };
+};
+
+/** Poll `check` until it holds, failing after `ms`. */
+const waitFor = async (check: () => boolean | Promise<boolean>, ms = 10_000): Promise<void> => {
+  const deadline = Date.now() + ms;
+  while (!(await check())) {
+    if (Date.now() > deadline) throw new Error("condition not met before the deadline");
+    await Bun.sleep(25);
+  }
+};
+
+const statusOf = async (url: string) =>
+  (await (await fetch(`${url}/status`)).json()) as {
+    ok: boolean;
+    pollMs?: number;
+    providersFile?: string;
+    providers: { url: string; lastPollAt?: string; lastResult?: string; keyId?: string }[];
+  };
+
+describe("tlog witness provider polling", () => {
+  test("polls configured providers and records each head under its embedded keyId", async () => {
+    const dir = mkdtempSync(join(tmpdir(), "clankdar-witness-poll-"));
+    const headsPath = join(dir, "heads.jsonl");
+    const providersPath = join(dir, "providers.json");
+    // Each provider re-signs on every fetch, but the committed claim stays the
+    // same — the witness must dedupe by claim, not by signature.
+    const providerA = serveHeadProvider(() => signHead(2, "a".repeat(64), verifier.privateJwk, new Date()));
+    let bClaim = { count: 3, tip: "b".repeat(64) };
+    const providerB = serveHeadProvider(() => signHead(bClaim.count, bClaim.tip, other.privateJwk, new Date()));
+    writeFileSync(providersPath, JSON.stringify([{ url: providerA.url }, { url: providerB.url }]));
+    const witness = serveWitness({ heads: headsPath, port: 0, providers: providersPath, pollMs: 50 });
+    try {
+      await waitFor(() => readHeads(headsPath).length === 2);
+      const heads = readHeads(headsPath);
+      expect(heads.map((head) => head.verifier.keyId).sort()).toEqual([verifier.keyId, other.keyId].sort());
+      expect(heads.find((head) => head.verifier.keyId === verifier.keyId)).toMatchObject({ count: 2, head: "a".repeat(64) });
+
+      // Per-provider poll state is observable — bounded fields, no secrets.
+      const status = await statusOf(witness.url);
+      expect(status).toMatchObject({ ok: true, pollMs: 50 });
+      expect(status.providers).toHaveLength(2);
+      const byUrl = new Map(status.providers.map((p) => [p.url, p]));
+      const a = byUrl.get(new URL(providerA.url).toString());
+      const b = byUrl.get(new URL(providerB.url).toString());
+      expect(a).toMatchObject({ lastResult: "ok", keyId: verifier.keyId });
+      expect(b).toMatchObject({ lastResult: "ok", keyId: other.keyId });
+      expect(Number.isFinite(Date.parse(a!.lastPollAt!))).toBe(true);
+
+      // Findings stay scoped per provider key across the intake.
+      expect(await (await fetch(`${witness.url}/equivocation/${verifier.keyId}`)).json()).toEqual({ ok: true, checked: 1 });
+      expect(await (await fetch(`${witness.url}/equivocation/${other.keyId}`)).json()).toEqual({ ok: true, checked: 1 });
+
+      // Several more cycles pass: identical claims are not re-appended, so a
+      // provider re-signing the same head cannot spam the registry.
+      await Bun.sleep(200);
+      expect(readHeads(headsPath)).toHaveLength(2);
+
+      // An advanced claim is new evidence and does get recorded.
+      bClaim = { count: 4, tip: "c".repeat(64) };
+      await waitFor(() => readHeads(headsPath).length === 3);
+      expect(readHeads(headsPath).at(-1)).toMatchObject({ count: 4, head: "c".repeat(64) });
+      expect(await (await fetch(`${witness.url}/equivocation/${other.keyId}`)).json()).toEqual({ ok: true, checked: 2 });
+    } finally {
+      witness.close();
+      providerA.close();
+      providerB.close();
+    }
+  }, 15_000);
+
+  test("two providers serving conflicting heads under one key surface an equivocation", async () => {
+    const dir = mkdtempSync(join(tmpdir(), "clankdar-witness-poll-"));
+    const headsPath = join(dir, "heads.jsonl");
+    const providersPath = join(dir, "providers.json");
+    // Two vantage points on the same issuer, same count, different tips — a
+    // certain fork, proven entirely from the self-describing heads.
+    const providerA = serveHeadProvider(() => signHead(2, "a".repeat(64), verifier.privateJwk, new Date()));
+    const providerB = serveHeadProvider(() => signHead(2, "c".repeat(64), verifier.privateJwk, new Date()));
+    writeFileSync(providersPath, JSON.stringify([{ url: providerA.url }, { url: providerB.url }]));
+    const witness = serveWitness({ heads: headsPath, port: 0, providers: providersPath, pollMs: 50 });
+    try {
+      // Two conflicting claims per keyId keep arriving each cycle, so the
+      // registry keeps growing — assert on the first proven fork.
+      await waitFor(() => readHeads(headsPath).length >= 2);
+      const report = await (await fetch(`${witness.url}/equivocation/${verifier.keyId}`)).json();
+      expect(report).toMatchObject({ ok: false, keyId: verifier.keyId });
+      expect(report.reason).toContain("different tips");
+      expect(report.conflict).toHaveLength(2);
+    } finally {
+      witness.close();
+      providerA.close();
+      providerB.close();
+    }
+  }, 15_000);
+
+  test("fetch failures, oversized bodies, and invalid heads record nothing but stay observable", async () => {
+    const dir = mkdtempSync(join(tmpdir(), "clankdar-witness-poll-"));
+    const headsPath = join(dir, "heads.jsonl");
+    const providersPath = join(dir, "providers.json");
+    const badHead = serveHeadProvider(() => ({ protocol: TLOG_PROTOCOL, kind: "head", count: -1 }));
+    const oversized = serveHeadProvider(() => "x".repeat(20 * 1024));
+    const probe = Bun.serve({ port: 0, fetch: () => new Response() });
+    const deadUrl = `http://127.0.0.1:${probe.port}`;
+    probe.stop(true);
+    // The {providers: [...]} wrapper shape is accepted too.
+    writeFileSync(providersPath, JSON.stringify({ providers: [{ url: badHead.url }, { url: oversized.url }, { url: deadUrl }] }));
+    const witness = serveWitness({ heads: headsPath, port: 0, providers: providersPath, pollMs: 50 });
+    try {
+      await waitFor(async () => {
+        const status = await statusOf(witness.url);
+        return status.providers.length === 3 && status.providers.every((p) => p.lastResult !== undefined);
+      });
+      const status = await statusOf(witness.url);
+      const byUrl = new Map(status.providers.map((p) => [p.url, p.lastResult]));
+      expect(byUrl.get(new URL(badHead.url).toString())).toBe("invalid-head");
+      expect(byUrl.get(new URL(oversized.url).toString())).toBe("fetch-error");
+      expect(byUrl.get(new URL(deadUrl).toString())).toBe("fetch-error");
+      expect(readHeads(headsPath)).toHaveLength(0);
+      expect(await (await fetch(`${witness.url}/healthz`)).json()).toEqual({ ok: true });
+    } finally {
+      witness.close();
+      badHead.close();
+      oversized.close();
+    }
+  }, 15_000);
+
+  test("re-reads the providers file each cycle; an invalid file skips the cycle without crashing", async () => {
+    const dir = mkdtempSync(join(tmpdir(), "clankdar-witness-poll-"));
+    const headsPath = join(dir, "heads.jsonl");
+    const providersPath = join(dir, "providers.json");
+    writeFileSync(providersPath, "not json");
+    const witness = serveWitness({ heads: headsPath, port: 0, providers: providersPath, pollMs: 50 });
+    const providerA = serveHeadProvider(() => signHead(2, "a".repeat(64), verifier.privateJwk, new Date()));
+    const providerB = serveHeadProvider(() => signHead(5, "d".repeat(64), other.privateJwk, new Date()));
+    try {
+      // The bad file is flagged on the status surface; the service stays up.
+      await waitFor(async () => (await statusOf(witness.url)).providersFile === "invalid");
+      expect(await (await fetch(`${witness.url}/healthz`)).json()).toEqual({ ok: true });
+      expect(readHeads(headsPath)).toHaveLength(0);
+
+      // Fixing the file picks providers up without a restart.
+      writeFileSync(providersPath, JSON.stringify([{ url: providerA.url }]));
+      await waitFor(() => readHeads(headsPath).length === 1);
+      expect((await statusOf(witness.url)).providersFile).toBeUndefined();
+
+      // Editing it again adds a second provider on a later cycle.
+      writeFileSync(providersPath, JSON.stringify([{ url: providerA.url }, { url: providerB.url }]));
+      await waitFor(() => readHeads(headsPath).length === 2);
+
+      // Removing one drops its status entry; recorded evidence stays.
+      writeFileSync(providersPath, JSON.stringify([{ url: providerB.url }]));
+      await waitFor(async () => (await statusOf(witness.url)).providers.length === 1);
+      const status = await statusOf(witness.url);
+      expect(status.providers[0].url).toBe(new URL(providerB.url).toString());
+      expect(readHeads(headsPath)).toHaveLength(2);
+
+      // Breaking the file once more flags the status without losing service.
+      writeFileSync(providersPath, '{"url": 7}');
+      await waitFor(async () => (await statusOf(witness.url)).providersFile === "invalid");
+      expect(await (await fetch(`${witness.url}/healthz`)).json()).toEqual({ ok: true });
+    } finally {
+      witness.close();
+      providerA.close();
+      providerB.close();
+    }
+  }, 15_000);
+
+  test("witness-serve --providers --poll-ms polls a hosted-style /tlog/head end to end", async () => {
+    const dir = mkdtempSync(join(tmpdir(), "clankdar-witness-poll-"));
+    const headsPath = join(dir, "heads.jsonl");
+    const providersPath = join(dir, "providers.json");
+    const provider = serveHeadProvider(() => signHead(4, "e".repeat(64), verifier.privateJwk, new Date()));
+    writeFileSync(providersPath, JSON.stringify([{ url: provider.url }]));
+    const probe = Bun.serve({ port: 0, fetch: () => new Response() });
+    const port = probe.port;
+    probe.stop(true);
+    const proc = Bun.spawn([
+      Bun.which("bun")!, resolve(import.meta.dir, "tlog.ts"), "witness-serve",
+      "--heads", headsPath, "--port", String(port),
+      "--providers", providersPath, "--poll-ms", "100",
+    ], { cwd: resolve(import.meta.dir, ".."), stdout: "pipe", stderr: "pipe" });
+    try {
+      const reader = proc.stderr.getReader();
+      let banner = "";
+      while (!banner.includes("\n")) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        banner += new TextDecoder().decode(value, { stream: true });
+      }
+      reader.releaseLock();
+      const url = /serving on (http:\/\/\S+)/.exec(banner)?.[1];
+      expect(url).toBeTruthy();
+      expect(banner).toContain("providers:");
+      await waitFor(() => readHeads(headsPath).length === 1);
+      expect(readHeads(headsPath)[0]).toMatchObject({ count: 4, head: "e".repeat(64) });
+      const status = await statusOf(url!);
+      expect(status.providers[0]).toMatchObject({ lastResult: "ok", keyId: verifier.keyId });
+    } finally {
+      proc.kill();
+      await proc.exited;
+      provider.close();
+    }
+  }, 15_000);
+});

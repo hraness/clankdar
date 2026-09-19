@@ -146,8 +146,12 @@ to the first divergent index — a proven fork — or reported as a consistent
 prefix. `tlog witness-serve --heads heads.jsonl` is a provider-neutral common
 intake: any issuer's self-describing signed head can be submitted, heads are
 indexed by their embedded `keyId`, bounded pages can filter by key, and
-conflict reports stay isolated per provider. It needs no provider registry;
-it does not discover or poll providers automatically.
+conflict reports stay isolated per provider. It needs no provider registry.
+`--providers providers.json --poll-ms N` additionally polls each configured
+provider's `GET /tlog/head` (default 60s, the file re-read every cycle) —
+a provider URL is configuration, not trust; only the embedded signature
+decides what is recorded. Provider discovery, gossip, witnessed
+co-signing, and external anchoring remain unimplemented.
 
 `bun drift` turns probes into monitoring: `drift run` appends each signed
 admission to a series file, `drift report` aggregates per-cell pass bands,
@@ -175,8 +179,9 @@ signed head an external witness pins), and `GET /tlog/proof/:sessionId`
 holdout pools and the rate-limit flags pass through. The state dir stays
 `0700` — published entries carry record digests, never seeds or responses.
 This publishes evidence, not trust: the issuer can still self-mint. A checker
-can submit heads to the provider-neutral witness intake for comparison, but
-a private fork stays invisible until both views reach one witness.
+can submit heads to the provider-neutral witness intake — or configure the
+witness to poll this endpoint — but a private fork stays invisible until
+both views reach one witness.
 
 `clankdar-holdout-v1` covers issuer-private cells: `bun holdout gen` mints a
 pool of published generator cells re-parameterized by secret labels, and gate
