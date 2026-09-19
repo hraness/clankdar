@@ -1,8 +1,9 @@
-# clankdar-attest-v1 + clankdar-gate-v1
+# clankdar-attest-v1 + clankdar-gate-v1 + clankdar-tlog-v1
 
-Sealed-seed capability attestation, and the admission-session profile built on
-it. The TypeScript reference is `bench/attest.ts` + `bench/gate.ts`; an
-independent Rust implementation lives in
+Sealed-seed capability attestation, the admission-session profile built on
+it, and the issuance transparency log derived from the gate ledger. The
+TypeScript reference is `bench/attest.ts` + `bench/gate.ts` + `bench/tlog.ts`;
+an independent Rust implementation lives in
 [hraness/valhalla](https://github.com/hraness/valhalla/tree/main/prototypes/clankdar-attest).
 
 **Status: experimental reference.** No hosted service, rate limiting, held-out
@@ -168,7 +169,7 @@ challenge (or this session), and the verifier embedded that proof inside the
 signed receipt — so one pseudonymous subject key can sign across receipts,
 sessions, and verifiers, enabling portable capability badges and
 receipt-chaining. What it does NOT prove: that the key holder produced the
-answer — a subject may delegate solving exactly as before (§11); a proof binds
+answer — a subject may delegate solving exactly as before (§12); a proof binds
 a key to a response, never a model, a person, or an authority, and it carries
 no liveness, expiry, or revocation of its own beyond the challenge window.
 
@@ -251,7 +252,9 @@ An operator serving admissions MUST:
 - refuse submissions for unknown, decided, or expired sessions;
 - bound every input (response count, body size, answer length).
 
-An in-memory guard alone is not a production admission ledger.
+An in-memory guard alone is not a production admission ledger. The
+`clankdar-tlog-v1` transparency log (§11) is a derived signed view over
+this same ledger.
 
 ## 10. HTTP surface (reference)
 
@@ -267,7 +270,79 @@ GET  /receipts/:challengeId         → receipt | 404
 The check→decide critical section is synchronous, so concurrent submits
 cannot double-spend a session.
 
-## 11. Threat model — say it plainly
+## 11. Issuance transparency (tlog-v1)
+
+The gate ledger (§9) records every session and every decision, but only the
+issuer sees it. `clankdar-tlog-v1` is a derived, signed view over that
+ledger (`gate-state.jsonl`); it makes issuance accountable without changing
+the gate protocol.
+
+Each ledger record becomes one hash-chained entry:
+
+```json
+{
+  "index": 0,
+  "type": "session",
+  "sessionId": "gs_…",
+  "digest": "<64 hex>",
+  "prev": "<64 hex>",
+  "entryHash": "<64 hex>"
+}
+```
+
+- `digest` = `SHA-256(canonical(record))` over the verbatim ledger record —
+  `{type:"session", session}` or `{type:"decision", sessionId, admission,
+  receipts}`.
+- `prev` = the previous entry's `entryHash`; the genesis entry uses 64
+  zeroes.
+- `entryHash` = `SHA-256(canonical(entry body))` over the five fields
+  above, excluding `entryHash`.
+
+The issuer signs a head — the analogue of a CT signed tree head:
+
+```json
+{
+  "protocol": "clankdar-tlog-v1",
+  "kind": "head",
+  "count": 4,
+  "head": "<entryHash of the last entry>",
+  "issuedAt": "2026-09-18T00:02:00.000Z",
+  "verifier": { "keyId": "…", "publicKey": "<base64url>" },
+  "signature": "<base64url Ed25519 over canonical(head minus signature)>"
+}
+```
+
+An empty log signs `count: 0` with the genesis `head` (64 zeroes).
+
+Commands (reference: `bench/tlog.ts`):
+
+- `build --dir GATE_STATE_DIR --key verifier.json [--out tlog.json]`
+  replays the ledger under the same rules as `GateStore` — a torn tail is
+  dropped; mid-log corruption, duplicate sessions, and decisions for
+  unknown or decided sessions are fatal — and emits `{head, entries}`.
+- `check tlog.json` recomputes every `entryHash` and `prev` link, enforces
+  ledger semantics on entry order (a session is issued once; a decision
+  names an issued, still-open session), recounts, and re-verifies the head
+  `keyId` and signature.
+- `prove tlog.json --session gs_…` emits `{sessionId, sessionIndex,
+  decisionIndex, head}` — the inclusion evidence a third party needs:
+  `check` the log, then confirm the session was issued (sessionIndex) and
+  its decision logged (decisionIndex; null while undecided).
+- `admit tlog.json ADMISSION.json` runs the full §8 admission check AND
+  requires the admission's `sessionId` to have both a session and a
+  decision entry in a log that itself verifies — `{ok, verdict, passed}`.
+
+The honest limit: the log binds *this* issuer's history under *its own*
+key. It does not stop self-minting — a verifier can always answer its own
+oracle — and it cannot detect a fork alone: an issuer could show different
+parties different logs. Equivocation is detectable only by comparing heads
+the issuer published elsewhere (gossip, witnessed co-signing, or external
+anchoring are future work). What the log buys is enumerability: every
+session and decision the issuer stands behind is committed, ordered, and
+replayable, so an admission that does not trace to a logged session is
+issuer-claimed only.
+
+## 12. Threat model — say it plainly
 
 - **Delegation.** A receipt binds a response to a window; an optional
   `subjectProof` binds it to a respondent key — but the key holder can still
@@ -276,8 +351,10 @@ cannot double-spend a session.
   Friction claims are robust to this; credential claims are not.
 - **Verifier self-minting.** The verifier knows every expected answer and can
   attest to itself. For self-issued admission this is meaningless by design
-  (a service trusting its own gate). Portable third-party badges need an
-  issuance transparency log — not implemented.
+  (a service trusting its own gate). Portable third-party badges are checked
+  against the issuance transparency log (§11): an admission that does not
+  trace to a logged session is issuer-claimed only. The log is issuer-keyed,
+  so fork detection still needs published-head comparison — not implemented.
 - **Per-family solver scripts.** Public generators admit canned solvers:
   a receipt proves "access to a solver for this cell," still real friction
   for anti-spam, weaker as a competence claim. Held-out pools restore the
@@ -291,10 +368,11 @@ cannot double-spend a session.
   decision. It must never, by itself, grant tool access, authorize a
   payment, or make a message trustworthy.
 
-## 12. Interoperability
+## 13. Interoperability
 
 The Rust prototype regenerates instances through `bench/instance.ts` (the
 generator oracle: `--suite`/`--suite-version --family --tier --seed` →
-`{prompt, answer}`), so canonical generation stays single-sourced. Receipt
-and admission formats are language-neutral; the canonical JSON and seedCommit
-constructions are deliberately trivial to reimplement.
+`{prompt, answer}`), so canonical generation stays single-sourced. Receipt,
+admission, and transparency-log formats are language-neutral; the canonical
+JSON, seedCommit, and entry-chain constructions are deliberately trivial to
+reimplement.
