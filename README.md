@@ -140,6 +140,17 @@ proofs upgrade issuer-claimed sessions to logged ones. A badge proves the
 subject key accumulated these admissions — never that the key holder solved
 them, and it is not an identity.
 
+`bun hosted` is the deployable issuer surface: one service that composes the
+gate and the transparency log, so a deployment third parties can hold
+accountable serves every `gate serve` endpoint plus `GET /tlog` (the signed
+log rebuilt fresh from the ledger on each request), `GET /tlog/head` (the
+signed head an external witness pins), and `GET /tlog/proof/:sessionId`
+(inclusion evidence). `bun hosted head` prints that head for pinning;
+holdout pools and the rate-limit flags pass through. The state dir stays
+`0700` — published entries carry record digests, never seeds or responses.
+This publishes evidence, not trust: the issuer can still self-mint, and fork
+detection still needs heads compared at a common witness.
+
 `clankdar-holdout-v1` covers issuer-private cells: `bun holdout gen` mints a
 pool of published generator cells re-parameterized by secret labels, and gate
 policies can name them as `h:family:tN`. The instance stream stays

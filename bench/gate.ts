@@ -42,7 +42,8 @@ import { integer, requestBudget } from "./options.ts";
 import { GateStore } from "./store.ts";
 
 export const GATE_PROTOCOL = "clankdar-gate-v1";
-const SESSION_ID = /^gs_[A-Za-z0-9_-]{12}$/;
+/** Session id shape — exported so composed services can route on it. */
+export const SESSION_ID = /^gs_[A-Za-z0-9_-]{12}$/;
 const CHALLENGE_ID = /^att_[A-Za-z0-9_-]{12}$/;
 const MAX_CELLS = 64;
 const MAX_CHALLENGES = 16;
@@ -370,99 +371,110 @@ const parseRateLimits = (limits: GateRateLimits | undefined): GateRateLimits | u
   return limits;
 };
 
-/**
- * The gate as an HTTP service. POST /sessions mints a session (tickets stay
- * server-side in the store); POST /sessions/:id/responses consumes it into a
- * signed admission; GET /receipts/:challengeId serves minted receipts;
- * GET /policy publishes the floor and verifier key. The check→decide
- * critical section is synchronous, so concurrent submits cannot double-spend
- * a session. Optional rateLimits bound session issuance (429).
- */
-export function serveGate(opts: {
+/** Everything the gate's request handler needs, minus the listen socket. */
+export interface GateHandlerOptions {
   policy: GatePolicy;
   verifierJwk: VerifierJwk;
   store: GateStore;
   rateLimits?: GateRateLimits;
   /** Pool supplying the policy's `h:` cells; required when the policy names any. */
   pool?: HoldoutPool;
-  host?: string;
-  port?: number;
-}): { url: string; close: () => void } {
+}
+
+/**
+ * The gate's request handler, factored out of `serveGate` so a composed
+ * service (the hosted issuer surface in bench/hosted.ts) can delegate to it
+ * instead of duplicating the routes. Same semantics: the check→decide
+ * critical section stays synchronous, so concurrent submits cannot
+ * double-spend a session.
+ */
+export function gateHandler(opts: GateHandlerOptions): (req: Request) => Promise<Response> {
   const policy = parsePolicy(opts.policy, { pool: opts.pool });
   const rateLimits = parseRateLimits(opts.rateLimits);
   const publicKey = publicKeyOf(opts.verifierJwk);
   const json = (data: unknown, status = 200) =>
     new Response(JSON.stringify(data), { status, headers: { "content-type": "application/json" } });
   const err = (status: number, message: string) => json({ error: message }, status);
+  return async (req) => {
+    const { pathname } = new URL(req.url);
+    if (req.method === "GET" && pathname === "/healthz") return json({ ok: true });
+    if (req.method === "GET" && pathname === "/policy") return json({ protocol: GATE_PROTOCOL, policy, verifier: { keyId: keyIdOf(publicKey), publicKey } });
+    const receiptMatch = new RegExp(`^/receipts/(${CHALLENGE_ID.source.slice(1, -1)})$`).exec(pathname);
+    if (req.method === "GET" && receiptMatch) {
+      const receipt = opts.store.receipt(receiptMatch[1]);
+      return receipt ? json(receipt) : err(404, "no receipt for that challenge");
+    }
+    if (req.method === "POST" && pathname === "/sessions") {
+      const body = await boundedJson(req);
+      if (body === null) return err(400, "request body must be a JSON object up to 128 KiB");
+      if (rateLimits !== undefined) {
+        const nowMs = Date.now();
+        const subject = body.subject === undefined ? "" : String(body.subject);
+        if (rateLimits.openTotal !== undefined && opts.store.openSessions(nowMs).length >= rateLimits.openTotal) {
+          return err(429, "gate at capacity; retry when open sessions drain");
+        }
+        if (rateLimits.openPerSubject !== undefined && opts.store.openSessions(nowMs, subject).length >= rateLimits.openPerSubject) {
+          return err(429, "too many open sessions for this subject");
+        }
+        const window = rateLimits.issueWindow;
+        if (window !== undefined && opts.store.issuedSince(nowMs - window.seconds * 1000).length >= window.max) {
+          return err(429, "session issuance rate exceeded; retry later");
+        }
+      }
+      try {
+        const { session, challenges } = issueSession({
+          policy, verifierJwk: opts.verifierJwk, pool: opts.pool,
+          subject: body.subject === undefined ? undefined : String(body.subject),
+          context: body.context === undefined ? undefined : String(body.context),
+        });
+        opts.store.issueSession(session);
+        return json({ sessionId: session.sessionId, expiresAt: session.expiresAt, challenges }, 201);
+      } catch {
+        return err(400, "session request rejected");
+      }
+    }
+    const submitMatch = new RegExp(`^/sessions/(${SESSION_ID.source.slice(1, -1)})/responses$`).exec(pathname);
+    if (req.method === "POST" && submitMatch) {
+      const entry = opts.store.session(submitMatch[1]);
+      if (!entry) return err(404, "unknown session");
+      if (entry.decided) return err(409, "session already decided");
+      if (Date.now() > Date.parse(entry.session.expiresAt)) return err(410, "session expired");
+      const body = await boundedJson(req);
+      if (body === null) return err(400, "request body must be a JSON object up to 128 KiB");
+      const responses = body.responses;
+      if (!responses || typeof responses !== "object" || Array.isArray(responses)) return err(400, "responses must map challenge ids to response strings");
+      for (const [id, value] of Object.entries(responses)) {
+        if (!CHALLENGE_ID.test(id)) return err(400, "malformed challenge id in responses");
+        if (typeof value !== "string" || value.length > MAX_ANSWER_LENGTH) return err(400, "responses must be bounded strings");
+      }
+      if (body.subjectProof !== undefined && !isSubjectProof(body.subjectProof)) return err(400, "subjectProof must be {publicKey, signature} strings");
+      try {
+        const { receipts, admission } = submitSession({
+          session: entry.session, responses: responses as Record<string, string>,
+          subjectProof: body.subjectProof as SubjectProof | undefined, pool: opts.pool, verifierJwk: opts.verifierJwk,
+        });
+        opts.store.decide(entry.session.sessionId, admission, receipts);
+        return json({ admission, receipts });
+      } catch {
+        return err(400, "response submission rejected");
+      }
+    }
+    return err(404, "not found");
+  };
+}
+
+/**
+ * The gate as an HTTP service. POST /sessions mints a session (tickets stay
+ * server-side in the store); POST /sessions/:id/responses consumes it into a
+ * signed admission; GET /receipts/:challengeId serves minted receipts;
+ * GET /policy publishes the floor and verifier key. Optional rateLimits
+ * bound session issuance (429).
+ */
+export function serveGate(opts: GateHandlerOptions & { host?: string; port?: number }): { url: string; close: () => void } {
   const server = Bun.serve({
     hostname: opts.host ?? "127.0.0.1",
     port: opts.port ?? 8787,
-    fetch: async (req) => {
-      const { pathname } = new URL(req.url);
-      if (req.method === "GET" && pathname === "/healthz") return json({ ok: true });
-      if (req.method === "GET" && pathname === "/policy") return json({ protocol: GATE_PROTOCOL, policy, verifier: { keyId: keyIdOf(publicKey), publicKey } });
-      const receiptMatch = new RegExp(`^/receipts/(${CHALLENGE_ID.source.slice(1, -1)})$`).exec(pathname);
-      if (req.method === "GET" && receiptMatch) {
-        const receipt = opts.store.receipt(receiptMatch[1]);
-        return receipt ? json(receipt) : err(404, "no receipt for that challenge");
-      }
-      if (req.method === "POST" && pathname === "/sessions") {
-        const body = await boundedJson(req);
-        if (body === null) return err(400, "request body must be a JSON object up to 128 KiB");
-        if (rateLimits !== undefined) {
-          const nowMs = Date.now();
-          const subject = body.subject === undefined ? "" : String(body.subject);
-          if (rateLimits.openTotal !== undefined && opts.store.openSessions(nowMs).length >= rateLimits.openTotal) {
-            return err(429, "gate at capacity; retry when open sessions drain");
-          }
-          if (rateLimits.openPerSubject !== undefined && opts.store.openSessions(nowMs, subject).length >= rateLimits.openPerSubject) {
-            return err(429, "too many open sessions for this subject");
-          }
-          const window = rateLimits.issueWindow;
-          if (window !== undefined && opts.store.issuedSince(nowMs - window.seconds * 1000).length >= window.max) {
-            return err(429, "session issuance rate exceeded; retry later");
-          }
-        }
-        try {
-          const { session, challenges } = issueSession({
-            policy, verifierJwk: opts.verifierJwk, pool: opts.pool,
-            subject: body.subject === undefined ? undefined : String(body.subject),
-            context: body.context === undefined ? undefined : String(body.context),
-          });
-          opts.store.issueSession(session);
-          return json({ sessionId: session.sessionId, expiresAt: session.expiresAt, challenges }, 201);
-        } catch {
-          return err(400, "session request rejected");
-        }
-      }
-      const submitMatch = new RegExp(`^/sessions/(${SESSION_ID.source.slice(1, -1)})/responses$`).exec(pathname);
-      if (req.method === "POST" && submitMatch) {
-        const entry = opts.store.session(submitMatch[1]);
-        if (!entry) return err(404, "unknown session");
-        if (entry.decided) return err(409, "session already decided");
-        if (Date.now() > Date.parse(entry.session.expiresAt)) return err(410, "session expired");
-        const body = await boundedJson(req);
-        if (body === null) return err(400, "request body must be a JSON object up to 128 KiB");
-        const responses = body.responses;
-        if (!responses || typeof responses !== "object" || Array.isArray(responses)) return err(400, "responses must map challenge ids to response strings");
-        for (const [id, value] of Object.entries(responses)) {
-          if (!CHALLENGE_ID.test(id)) return err(400, "malformed challenge id in responses");
-          if (typeof value !== "string" || value.length > MAX_ANSWER_LENGTH) return err(400, "responses must be bounded strings");
-        }
-        if (body.subjectProof !== undefined && !isSubjectProof(body.subjectProof)) return err(400, "subjectProof must be {publicKey, signature} strings");
-        try {
-          const { receipts, admission } = submitSession({
-            session: entry.session, responses: responses as Record<string, string>,
-            subjectProof: body.subjectProof as SubjectProof | undefined, pool: opts.pool, verifierJwk: opts.verifierJwk,
-          });
-          opts.store.decide(entry.session.sessionId, admission, receipts);
-          return json({ admission, receipts });
-        } catch {
-          return err(400, "response submission rejected");
-        }
-      }
-      return err(404, "not found");
-    },
+    fetch: gateHandler(opts),
   });
   return { url: `http://${server.hostname}:${server.port}`, close: () => server.stop(true) };
 }
