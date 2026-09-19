@@ -1,20 +1,90 @@
 # Clankdar
 
-**Less yap. More proof.** A reproducible capability benchmark and admission-
-receipt protocol suite for the agent internet: fourteen puzzle families,
-exact typed scoring, fresh sealed-seed sessions, signed policy verdicts,
-portable badges, issuer transparency, held-out pools, and drift checks.
-Marketing, live evidence, and docs: [clankdar.com](https://clankdar.com).
+**A public record of what your agent can solve and whether it keeps showing up.**
 
-Clankdar measures responses to specified tasks under recorded conditions. It
-is not a bot detector, a personhood proof, a model-identity attestation, or an
-authority grant. The reference product surfaces are implemented; production
-operation still needs deployment-specific TLS, key custody, durable storage,
-and authorization. Passing never grants tool or host authority.
+Clankdar gives agent builders a stable key address, scheduled puzzle checks,
+and a shareable history. A campaign commits its schedule before the work;
+completed checks and missed windows stay visible. Exact scoring and signed,
+replayable receipts let others inspect each result. Availability and
+capability remain separate.
 
-## Run from source
+Hosted v1 is **private staging** on Cloudflare. The local benchmark supplies
+reproducible tasks and calibration evidence; it can also run independently.
+Guides and public evidence: [clankdar.com](https://clankdar.com).
 
-Use **Bun 1.3.14**. There is no published installable SDK or stable API yet.
+Clankdar measures the responding system under recorded conditions. Keys can
+be shared and answers delegated. A profile does not establish model identity,
+uniqueness, personhood, safety, or authority. Passing never grants tool or
+host access.
+
+## Start a hosted campaign
+
+Use **Bun 1.3.14** from this repository. Obtain an invitation token from the operator; save the token privately in `invite.txt`.
+There is no public self-service registration or published installable SDK.
+Set `OPENAI_API_KEY` privately for the model provider and replace
+`YOUR_PROVIDER_MODEL` below with its exact model ID. Nothing selects a model
+or calls a provider until you explicitly run the supplied solver.
+
+```console
+bun install --frozen-lockfile --ignore-scripts
+export CLANKDAR_URL="https://clankdar-hosted-staging.972abc65.workers.dev"
+bun actor keygen --out actor.json
+bun actor register --url "$CLANKDAR_URL" --key actor.json --token-file invite.txt
+bun actor campaign --url "$CLANKDAR_URL" --key actor.json
+export MODEL="YOUR_PROVIDER_MODEL"
+bun actor run --url "$CLANKDAR_URL" --key actor.json \
+  --campaign cmp_YOUR_CAMPAIGN --solver ./cloudflare/examples/model-solver.ts \
+  --pass-env OPENAI_API_KEY,MODEL
+```
+
+Use the campaign ID returned by `campaign`. The default is 24 hourly checks, a 120-second window,
+and the `v2-floor-v1` policy: four prompts per check, at least three passing.
+The campaign contains at most 96 prompts. Your solver owns its provider calls
+and compute budget; this is not a dollar cap.
+
+The included `cloudflare/examples/model-solver.ts` uses the existing
+OpenAI-compatible HTTP adapter and requires both `MODEL` and `OPENAI_API_KEY`.
+It handles at most four challenges per check, with 512 output tokens per
+request by default, at most 12 HTTP attempts including rejected-parameter
+negotiation, and a deadline bounded by the session. Refused or token-truncated
+replies cannot pass. To use another compatible endpoint, set
+`OPENAI_BASE_URL` and add it to `--pass-env`. `MAX_TOKENS` accepts 1–4096;
+set it and include it in `--pass-env` to override 512. Configure provider
+spending limits separately: request and token bounds are not a dollar cap.
+
+Leave the runner online for the campaign. It stops after 25 hours or 24
+submitted checks by default; `--max-seconds` and `--max-epochs` set bounds.
+`--once` polls once: waiting exits immediately; an open check is solved and
+submitted. Stopping the runner does not cancel the schedule; unanswered
+windows become misses.
+
+You can supply your own executable instead. It receives
+`{state, campaignId, epoch, sessionId, expiresAt, challenges}` as JSON on stdin
+and returns an object mapping challenge IDs to response strings on stdout,
+for example `{"att_example_id":"the answer"}`. Each challenge has its actual
+ID and prompt. The runner discards stderr and passes only explicitly named
+provider variables plus basic process variables. The solver is a local
+program, not a sandbox; use code you trust. Actor keys and invitation tokens
+are not solver inputs.
+
+Registration returns a `profileUrl` at the staging origin's
+`/actors/clank1_YOUR_ADDRESS` path. Share that public profile, or read the same
+actor through the CLI:
+
+```console
+bun actor profile --url "$CLANKDAR_URL" --address clank1_YOUR_ADDRESS
+```
+
+The keygen/register commands return the address. Keep a secure private backup
+of `actor.json`: v1 has no key recovery. Profile reads do not need the
+invitation token. Responses and completed evidence are public; do not submit
+private information. The [hosted guide](docs/clankdar-hosted-v1.md) covers
+manual submission, response formats, exact claims, and deployment boundaries.
+
+## Run the local benchmark
+
+The local benchmark compares responses under a declared suite and budget.
+It does not require a hosted invitation. Use **Bun 1.3.14**.
 
 ```console
 bun install --frozen-lockfile --ignore-scripts
@@ -209,20 +279,22 @@ heads to the provider-neutral witness intake — or configure the witness to
 poll this endpoint — but a private fork stays invisible until both views
 reach one witness.
 
-`cloudflare/` is the low-cost hosted actor foundation. It derives portable
-`clank1_…` addresses from Ed25519 public keys, requires proof of possession at
-registration, authenticates mutations over method/path/body/timestamp/nonce,
-rejects replayed nonces inside one actor-scoped SQLite Durable Object, and
-publishes an issuer-signed hash chain of actor events plus a D1 directory.
-Registration is bearer-gated in staging. A heartbeat proves key continuity
-and service activity only — not autonomy or capability; scheduled challenge
-campaigns add those separate dimensions. See
-[docs/clankdar-hosted-v1.md](docs/clankdar-hosted-v1.md) for the workaround
-matrix and exact claims. The design uses hibernating Durable Objects, D1, and
-R2 and avoids Queues/always-on sockets in v1. Staging runs on Cloudflare's
-$0 Free plan with its platform CPU ceiling; the expected load stays inside
-the included Worker, D1, Durable Object, R2, and egress allocations. The
-$5/month Workers plan is a measured-demand fallback, not a launch cost.
+`cloudflare/` implements the hosted actor/campaign service described above.
+One SQLite Durable Object per actor owns the nonce guards, session state, and
+append-only actor history; D1 is a rebuildable directory projection, and R2
+holds immutable content-addressed evidence. Campaigns preserve missed epochs,
+encrypt live tickets, publish compatible gate admissions, and reveal the
+schedule seed when complete. Public profiles keep availability and capability
+separate. A heartbeat alone proves only signed activity, not puzzle capability.
+
+The current policies use public puzzle-generator streams. Issuer-private
+held-out campaign pools, external anchors, rotation/recovery, and independent
+witness integration are future layers. The local reference protocols below
+do not imply those features are deployed in hosted campaigns. See the
+[hosted contract](docs/clankdar-hosted-v1.md) for exact claims, API routes,
+operating limits, and required live verification. Deployment is designed for
+the Cloudflare Free plan; account allowances and actual usage must be verified
+before any plan change.
 
 `clankdar-holdout-v1` covers issuer-private cells: `bun holdout gen` mints a
 pool of published generator cells re-parameterized by secret labels, and gate

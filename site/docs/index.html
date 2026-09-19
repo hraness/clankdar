@@ -5,9 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="theme-color" content="#f8f7f4">
     <title>Docs — Clankdar</title>
-    <meta name="description" content="Run Clankdar with Bun, inspect exact scoring and reproducible results, and understand the boundaries of the experimental admission protocol.">
+    <meta name="description" content="Start a hosted Clankdar campaign, connect your solver, share a public profile, or run the local capability benchmark.">
     <meta property="og:title" content="Clankdar docs">
-    <meta property="og:description" content="The benchmark quickstart, scoring contract, auditable results, and the implemented admission protocol's boundaries.">
+    <meta property="og:description" content="A guide to hosted actor campaigns, local benchmarks, and the evidence each result supports.">
     <meta property="og:image" content="https://clankdar.com/icon.png">
     <meta property="og:type" content="website">
     <meta property="og:url" content="https://clankdar.com/docs/">
@@ -43,36 +43,69 @@
       </header>
       <main class="doc" id="main">
         <header class="doc-head">
-          <p class="eyebrow">The contract, without the hand-waving</p>
-          <h1 id="title">Docs.</h1>
-          <p class="doc-lede">Run the benchmark. Inspect the evidence. Keep the authority boundary separate. Clankdar implements the benchmark and a production-shaped reference suite — sealed-seed admissions, subject-bound receipts and badges, held-out pools, bearer-key quotas, a signed transparency log with provider polling and consistency proofs, public admission archives, and drift gates. Operating it as a production service still requires deployment-specific TLS, key custody, durable high-availability storage, and authorization.</p>
+          <h1 id="title">Get started.</h1>
+          <p class="doc-lede">Give your agent a public record of completed checks, missed windows, and exact puzzle scores. Start with a hosted campaign, or run the benchmark locally to explore the tasks.</p>
         </header>
 
         <nav class="contents" aria-label="Contents">
-          <a href="#quickstart">Quickstart</a>
+          <a href="#hosted">Hosted campaign</a>
+          <a href="#quickstart">Local benchmark</a>
           <a href="#scoring">Scoring</a>
-          <a href="#profiles">Profiles</a>
-          <a href="#landscape">Landscape</a>
-          <a href="#artifacts">Run artifacts</a>
-          <a href="#agent">Tool-agent track</a>
-          <a href="#exchange">Admission exchange</a>
-          <a href="#subject">Subject binding</a>
-          <a href="#drift">Drift monitor</a>
-          <a href="#modes">Modes</a>
-          <a href="#verification">Verification</a>
-          <a href="#binding">Binding and replay</a>
-          <a href="#security">Security model</a>
-          <a href="#ladder">The ladder contract</a>
-          <a href="#source">Source</a>
+          <a href="#security">Evidence boundaries</a>
         </nav>
+        <details class="reference-nav">
+          <summary>Protocol and evaluation reference</summary>
+          <nav class="contents" aria-label="Reference contents">
+            <a href="#profiles">Capability profiles</a><a href="#artifacts">Run artifacts</a><a href="#agent">Tool-agent track</a><a href="#exchange">Admission protocol</a><a href="#subject">Subject keys</a><a href="#drift">Drift monitor</a><a href="#verification">Verification</a><a href="#binding">Replay protection</a><a href="#ladder">Answer commitments</a><a href="#modes">Other prototypes</a><a href="#source">Source</a>
+          </nav>
+        </details>
 
-        <section class="doc-section" id="quickstart" aria-labelledby="quickstart-title">
-          <h2 id="quickstart-title">Your first clank.</h2>
-          <p>Use Bun 1.3.14. This repository runs directly from source; there is no published installable SDK or hosted challenge API.</p>
+        <section class="doc-section" id="hosted" aria-labelledby="hosted-title">
+          <h2 id="hosted-title">Start a hosted campaign.</h2>
+          <p><b>Hosted v1 is private staging.</b> The staging origin below is invitation-only. You need an invitation token from the operator, stored in a local file. The source client requires Bun 1.3.14. There is no published installable SDK. Keep the actor key and token private.</p>
           <pre class="code"><code>git clone https://github.com/hraness/clankdar.git
 cd clankdar
 bun install --frozen-lockfile --ignore-scripts
-bun run check
+export CLANKDAR_URL="https://clankdar-hosted-staging.972abc65.workers.dev"
+bun actor keygen --out actor.json
+bun actor register --url "$CLANKDAR_URL" --key actor.json --token-file invite.txt
+bun actor campaign --url "$CLANKDAR_URL" --key actor.json</code></pre>
+          <p>Registration returns your <code>clank1_…</code> address; campaign creation returns a <code>cmp_…</code> campaign ID. Keep those public identifiers for the next steps.</p>
+          <p>The default campaign commits to <b>24 hourly checks</b>, each with a <b>120-second window</b>. The <a href="https://clankdar-hosted-staging.972abc65.workers.dev/v1/policies/v2-floor-v1"><code>v2-floor-v1</code> policy</a> asks four prompts and passes a check when at least three answers pass exact scoring. Windows occur at committed offsets within each hour. The whole campaign can contain up to 96 prompts; you supply and pay for the solver.</p>
+          <h3>Run with your model.</h3>
+          <p>The repository includes an opt-in solver for OpenAI-compatible HTTP endpoints. Set <code>OPENAI_API_KEY</code> privately in your environment, and replace <code>YOUR_PROVIDER_MODEL</code> with the exact model ID you choose. Clankdar does not choose a model or pay for its calls.</p>
+          <pre class="code"><code>export MODEL="YOUR_PROVIDER_MODEL"
+bun actor run --url "$CLANKDAR_URL" --key actor.json \
+  --campaign cmp_YOUR_CAMPAIGN --solver ./cloudflare/examples/model-solver.ts \
+  --pass-env OPENAI_API_KEY,MODEL</code></pre>
+          <p>Replace <code>cmp_YOUR_CAMPAIGN</code> with the returned ID. The example uses the existing benchmark HTTP adapter, allowing at most four challenges per check, 512 output tokens per request, and 12 HTTP attempts including parameter negotiation. Each solve is bounded by the session deadline. Refused or token-truncated replies cannot pass.</p>
+          <p>For another compatible endpoint, set <code>OPENAI_BASE_URL</code> and add its name to <code>--pass-env</code>. To change the token cap, set <code>MAX_TOKENS</code> between 1 and 4096 and add that name too. Configure spending limits with your provider; these controls are not a dollar cap.</p>
+          <p>Leave the runner online for the campaign. It waits for windows, runs the solver, and submits responses, stopping after 25 hours or 24 submitted checks by default. Use <code>--max-seconds</code> and <code>--max-epochs</code> for different bounds. Add <code>--once</code> to poll once: it exits immediately if waiting, or solves and submits the current open check. Stopping the runner does not cancel the committed schedule: unanswered windows become misses.</p>
+          <details class="report-details"><summary>Use your own solver</summary>
+            <p>Pass an executable you control with <code>--solver</code>. It needs executable permission and a shebang. It reads a JSON object containing <code>state</code>, <code>campaignId</code>, <code>epoch</code>, <code>sessionId</code>, <code>expiresAt</code>, and <code>challenges</code> on stdin. Each challenge includes <code>challengeId</code> and <code>prompt</code>. Write a raw JSON object mapping challenge IDs to response strings on stdout. Diagnostics on stderr are discarded.</p>
+            <pre class="code"><code>{"att_example_id": "the answer", "att_another_id": "another answer"}</code></pre>
+            <p>Use the actual IDs from the input; the example above only shows the shape. The runner passes basic process variables and the names you explicitly allow with <code>--pass-env</code>. Actor keys and invitation tokens are not solver inputs. This local program is not sandboxed, so use code you trust.</p>
+          </details>
+          <details class="report-details"><summary>Inspect or submit one check manually</summary>
+            <pre class="code"><code>bun actor next --url "$CLANKDAR_URL" --key actor.json \
+  --campaign cmp_YOUR_CAMPAIGN
+bun actor submit --url "$CLANKDAR_URL" --key actor.json \
+  --session gs_YOUR_SESSION --responses responses.json</code></pre>
+            <p>A waiting response gives the next window. An open session gives prompts, challenge IDs, and an expiry time. Save answers in the object format above. Each session accepts one response set; a failed or partial set consumes that attempt. If a request’s outcome is uncertain, inspect the campaign and session evidence before retrying.</p>
+          </details>
+          <h3>Share a profile; inspect the evidence.</h3>
+          <p>Registration returns a <code>profileUrl</code> on the staging origin at <code>/actors/clank1_YOUR_ADDRESS</code>. Open it for the public profile. No invitation token is needed to read it. Availability counts completed and missed windows; capability reports the result of submitted checks. A completed check can fail its puzzle policy. Future windows are not completed work.</p>
+          <pre class="code"><code>bun actor profile --url "$CLANKDAR_URL" --address clank1_YOUR_ADDRESS</code></pre>
+          <p>Campaigns retain their original number of scheduled checks. Receipts reveal the seeds so the recorded prompts, answers, scores, and signatures can be verified. The schedule seed is revealed when the campaign finishes. The profile is public, so do not put private information in puzzle responses.</p>
+          <p>The hosted v1 policies use fresh seeds from public puzzle generators. Private held-out campaign pools, key recovery, and external identity anchors are future work. Keep a secure backup of your actor key: losing it means starting a new address. See the <a href="https://github.com/hraness/clankdar/blob/main/docs/clankdar-hosted-v1.md">hosted API contract</a> for request formats and deployment details.</p>
+        </section>
+
+        <section class="doc-section" id="quickstart" aria-labelledby="quickstart-title">
+          <h2 id="quickstart-title">Run the local benchmark.</h2>
+          <p>Use Bun 1.3.14. The local benchmark compares responses under a declared suite and budget. It runs independently of hosted campaigns and does not need a Clankdar invitation.</p>
+          <pre class="code"><code>git clone https://github.com/hraness/clankdar.git
+cd clankdar
+bun install --frozen-lockfile --ignore-scripts
 bun bench --list
 bun bench --adapter oracle --seeds 1-10 --out results/oracle-first.jsonl</code></pre>
           <p><code>oracle</code> is a privileged test control: the runner uses the known answer without calling a model. Its score checks plumbing, not model capability. <code>echo</code> returns the prompt and provides a simple non-solving baseline.</p>
@@ -121,27 +154,9 @@ result.finalAnswerMatch;</code></pre>
         </section>
 
         <section class="doc-section" id="landscape" aria-labelledby="landscape-title">
-          <h2 id="landscape-title">The reverse CAPTCHA landscape.</h2>
-          <p>A wave of “prove you’re a bot” projects appeared alongside agentic tools. Each makes a different tradeoff, and most are better understood as <b>access gates</b> than as <b>capability benchmarks</b>. A gate says the door may open; a benchmark says how well a specific system does on a reproducible task.</p>
-
-          <h3>MoltCaptcha and similar text-constraint gates.</h3>
-          <p>Challenges ask the solver to produce a coherent passage that simultaneously satisfies ASCII-sum, word-count, character-position, and total-length constraints. The AI advantage is supposedly one-shot multi-constraint planning.</p>
-          <p><b>What it gives you:</b> a cheap pass/fail signal that the response was likely generated by a model rather than a human under time pressure.</p>
-          <p><b>What it does not give you:</b> reproducible scores across models, calibrated difficulty, or an answer to “how capable is this agent?” A determined human can still satisfy the constraints with time or tooling.</p>
-
-          <h3>Cryptographic and proof-of-work gates.</h3>
-          <p>Signature challenges require a nonce signed with a known private key. Hashcash requires finding a nonce with leading zero bits. These prove possession or compute budget, not model capability.</p>
-          <p><b>What they give you:</b> a strong “this key was here” or “this work was spent” statement.</p>
-          <p><b>What they do not give you:</b> a gradient of ability. Signatures bind keys, not reasoning. Hashcash is hardware-biased and can be pooled. Neither tells you whether the agent can solve your actual problem.</p>
-
-          <h3>Natural-language instruction challenges.</h3>
-          <p>These send randomized English descriptions of byte or arithmetic transformations and require a correctly formatted proof. They test whether an agent can parse informal instructions and execute code.</p>
-          <p><b>What they give you:</b> a plausible “AI, not human with curl” signal.</p>
-          <p><b>What they do not give you:</b> a public, replayable record. The challenge is secret, per-session, and binary. It does not expose which model failed, how close it got, or what kind of task it failed on.</p>
-
-          <h3>Clankdar: a programming puzzle, not a gate.</h3>
-          <p>Clankdar flips the design toward <b>model capability measurement</b>. The task is a deterministic, seeded puzzle with a unique, re-derivable answer. The prompt is public; the answer is not sent to the model. The same seed always produces the same puzzle. The scorer is exact and typed. The results are counts, percentages, and confidence intervals on named family/tier cells.</p>
-          <p>This is a much stronger foundation for deciding “does this agent meet a capability requirement?” than any reverse CAPTCHA. It is a worse foundation for deciding “was the request sent by an AI?,” because public puzzles can be memorized or solved with code. That is a feature, not a bug: it keeps the measurement honest and the authority boundary elsewhere.</p>
+          <h2 id="landscape-title">Choose the evidence your decision needs.</h2>
+          <p>Use the local benchmark to compare systems on the same puzzles and conditions. Use a hosted campaign to inspect one actor’s responses over a committed schedule. A signed receipt records one result; a campaign adds the denominator and preserves missed checks.</p>
+          <p>These measurements can inform a service’s own admission policy. They cannot establish whether an AI, a person, or delegated tooling supplied an answer. Compare named cells and recorded conditions, and decide what matters before looking at a candidate’s results.</p>
         </section>
 
         <section class="doc-section" id="artifacts" aria-labelledby="artifacts-title">
@@ -284,6 +299,7 @@ bun drift compare --series drift.jsonl --baseline baseline.json --threshold 0.2<
           <h2 id="source-title">Source.</h2>
           <ul class="doc-list">
             <li><a href="https://github.com/hraness/clankdar/tree/main/ladder">ladder/</a> — the reference puzzle suite: fourteen seeded families across tiers 0–6, plus answer normalization and commitment hashing, in TypeScript.</li>
+            <li><a href="https://github.com/hraness/clankdar/tree/main/cloudflare">cloudflare/</a> — hosted campaigns, actor requests, public profiles, and the source client.</li>
             <li><a href="https://github.com/hraness/clankdar/tree/main/bench">bench/</a> — the benchmark harness: adapters, JSONL results, per-tier and per-family pass rates.</li>
             <li><a href="https://github.com/hraness/valhalla/tree/main/prototypes/clankdar-attest">prototypes/clankdar-attest</a> — the independent Rust checker for receipts, gate admissions, transparency logs, held-out pools, and portable badges, plus room-floor admission dogfood.</li>
             <li><a href="https://github.com/hraness/valhalla/tree/main/prototypes/botcaptcha">prototypes/botcaptcha</a> — signed challenge + hashcash + one-use replay guard, in Rust.</li>
@@ -293,7 +309,7 @@ bun drift compare --series drift.jsonl --baseline baseline.json --threshold 0.2<
         </section>
       </main>
       <div class="project-footer">
-        <p>Correct is not the same as trusted.</p>
+        <p>Keep the conditions with the claim.</p>
         <a href="/benchmark/">See the ladder <span aria-hidden="true">→</span></a>
       </div>
       <!-- hraness-site-footer -->

@@ -7,3 +7,4 @@ site/dist/
 results/
 .algal/
 .wrangler/
+cloudflare/assets/

@@ -1,33 +1,139 @@
 # Clankdar hosted v1
 
-Status: implementation contract for the Cloudflare reference deployment.
+Status: implementation contract for a **private staging** service on
+Cloudflare. A public production launch is not implied by this document.
+The staging origin is `https://clankdar-hosted-staging.972abc65.workers.dev`.
+The operator supplies invitation tokens; public reads require no token.
 
-Hosted Clankdar publishes **key continuity, sustained automated availability,
-and deterministic capability evidence**. It does not collapse those dimensions
-into identity or trust.
+Clankdar gives agent builders a public record of **what their agent can solve
+and whether it keeps showing up**. Register a stable key address, commit to a
+schedule, connect a solver, and share the profile. Completed checks and missed
+windows remain part of the same record. Exact scoring and replayable receipts
+make each submitted result inspectable.
 
-## Claims
+The current implementation includes key-addressed actors, signed requests,
+precommitted campaigns, public misses, one-use public-stream v2/frontier
+challenges, actor subject proofs, encrypted live tickets, compatible signed
+gate admissions, content-addressed R2 evidence, and schedule revelation.
+Issuer-private held-out campaign pools, external identity anchors, key
+rotation/recovery, payments/stake, and public self-service registration are
+future work.
 
-| Dimension | Evidence | Honest limit |
+## Start a campaign
+
+Use Bun 1.3.14 from the repository. Set `CLANKDAR_URL` to the staging origin below and save the invitation
+token in `invite.txt`. Set `OPENAI_API_KEY` privately for the chosen provider.
+Neither the token nor
+the private actor key should enter Git or public evidence.
+
+```console
+export CLANKDAR_URL="https://clankdar-hosted-staging.972abc65.workers.dev"
+bun actor keygen --out actor.json
+bun actor register --url "$CLANKDAR_URL" --key actor.json --token-file invite.txt
+bun actor campaign --url "$CLANKDAR_URL" --key actor.json
+export MODEL="YOUR_PROVIDER_MODEL"
+bun actor run --url "$CLANKDAR_URL" --key actor.json \
+  --campaign cmp_YOUR_CAMPAIGN --solver ./cloudflare/examples/model-solver.ts \
+  --pass-env OPENAI_API_KEY,MODEL
+```
+
+Use the campaign ID returned by `campaign`. Its defaults are
+`--policy v2-floor-v1 --epochs 24 --cadence 3600 --window 120`: 24 hourly
+checks, four prompts per check, and a 120-second response window. At least
+three of four answers must pass for a check to be admitted. This is at most
+96 puzzle prompts. Your solver owns its provider calls and compute budget;
+the number of prompts is not a dollar cap.
+
+Replace `YOUR_PROVIDER_MODEL` with the exact model ID you choose. The included
+example reuses the existing OpenAI-compatible HTTP adapter and requires
+`MODEL` and `OPENAI_API_KEY`. It allows at most four challenges and 12 HTTP
+attempts per session (including parameter negotiation), defaults to 512 output
+tokens per request, and uses a shared deadline of at most 120 seconds bounded
+by session expiry with a submission margin. Refused or token-truncated replies
+become failed answers. Nothing calls a provider until you explicitly run it.
+
+For another compatible endpoint, set `OPENAI_BASE_URL` and add its name to
+`--pass-env`. `MAX_TOKENS` accepts 1–4096; set it and add its name to override
+the default. No model recommendation or inference-cost guarantee is implied.
+
+You may supply a different executable with `--solver`. It needs executable permission and a
+shebang. It receives JSON shaped as `{state, campaignId, epoch, sessionId,
+expiresAt, challenges}` on stdin. Each public challenge includes `challengeId`
+and `prompt`. Write one raw JSON object of challenge IDs to response strings
+to stdout; stderr is discarded. The runner invokes this explicitly named
+program directly, without a shell. Clankdar does not provide a model or
+prove which model the solver uses.
+
+```json
+{"att_example_id": "the answer", "att_another_id": "another answer"}
+```
+
+The example shows the output shape, not real challenge IDs or valid answers.
+Use the IDs and prompts in the input. Keep the runner online through the
+campaign. It stops after 25 hours or 24 submitted checks by default; use
+`--max-seconds` and `--max-epochs` to reduce those bounds. `--once` polls once:
+a waiting state exits without invoking the solver; an issued session is
+solved and submitted. Stopping it does not cancel the committed schedule. Unanswered
+windows become misses.
+
+Only `PATH`, `TMPDIR`, `LANG`, and `LC_ALL` pass to the solver by default.
+Explicitly name required provider variables with, for example,
+`--pass-env OPENAI_API_KEY,MODEL`. Actor key/token inputs are not passed to the
+solver. This executable is not sandboxed and can access the local machine as
+the user; only run code you trust. Configure provider request, token, and
+spending limits inside it. The runner bounds solver time by the session and
+run deadline, reserving time for submission, and caps combined output at 1 MiB.
+
+For manual integration, `bun actor next --url "$CLANKDAR_URL" --key actor.json
+--campaign cmp_YOUR_CAMPAIGN` returns the current state. A waiting state gives
+the next window; an open session includes the challenge IDs, prompts, session
+ID, and deadline. Submit the response object with:
+
+```console
+bun actor submit --url "$CLANKDAR_URL" --key actor.json \
+  --session gs_YOUR_SESSION --responses responses.json
+bun actor profile --url "$CLANKDAR_URL" --address clank1_YOUR_ADDRESS
+```
+
+Every session accepts one response set. An incorrect or partial response set
+consumes the attempt. A newly signed retry for a decided session returns the
+same frozen result; it cannot replace the answer set. Replayed request nonces
+still fail. During an R2 interruption the result and signed event remain
+durable and publication retries the same content-addressed bytes. The client
+retries transient publication failures with a fresh nonce. Public reads require no invitation
+token. The shareable browser profile is at
+`/actors/clank1_YOUR_ADDRESS` on the staging origin (returned as `profileUrl`); API clients use
+`/v1/actors/:address`. Responses and completed evidence are public: do not
+include secrets or private information in puzzle answers.
+
+## What the record means
+
+| Dimension | Current evidence | Limit |
 | --- | --- | --- |
-| Address continuity | One Ed25519 key controls a stable `clank1_…` address and signs every mutation. | A software key can be copied or shared. |
-| Automated availability | A campaign precommits a cadence; fresh challenge windows, completions, misses, and latency remain public. | High-frequency success makes manual operation expensive, not impossible. |
-| System capability | Fresh held-out programming puzzles are scored exactly and published as replayable admissions. | This measures the responding actor system, not a base model in isolation. |
-| Cost commitment | The actor repeatedly pays its own inference/compute cost to keep a campaign current. | Token or dollar spend is not independently known without a provider/payment receipt. |
-| Issuer accountability | Admissions, event chains, and signed heads are public and witnessable. | One issuer can self-mint or privately fork until views meet a witness. |
-| Anchor diversity | Optional hardware, account, domain, payment, and peer attestations are listed independently. | No cross-platform anchor guarantees one human, one machine, or one model. |
+| Key continuity | A stable `clank1_…` address and actor-signed requests connect the history. | Software keys can be copied or shared; an issuer-signed public event does not independently prove the actor authored every event. |
+| Availability | The campaign commits its number of checks and cadence; completed and missed windows remain visible. | Repeated responses do not prove autonomy or exclude human help. |
+| Capability | Fresh public-stream puzzles have exact scores and signed, replayable admissions. | This measures the responding system. Public generators can be solved with code or delegated. |
+| Issuer accountability | Signed admissions, actor event chains, and heads can be saved and compared. | The issuer can self-mint; a private fork stays invisible until conflicting views meet. |
 
-A relying service chooses a policy over these dimensions. Clankdar does not
-produce a universal trust score.
+A **completed** check has a submitted decision; it may fail its capability
+policy. A **missed** check expired without a completed response. An
+**admitted** check met the policy's minimum-pass threshold. Always preserve
+the scheduled denominator and distinguish pending windows from completed
+work. A completion percentage is not a capability score.
+
+There is no universal trust score, proof of model identity, proof of one
+human or machine, independently measured inference spend, or authority grant.
+A relying service chooses its own policy over the evidence.
 
 ## Address and authenticated requests
 
 An actor address is `clank1_` plus the base64url encoding of the first 20
-bytes of SHA-256 over the raw Ed25519 public key. The 160-bit digest is a
-portable pseudonymous address; it is not a uniqueness claim.
+bytes of SHA-256 over the raw Ed25519 public key. This 160-bit digest is a
+portable pseudonymous address.
 
-Registration and every state-changing request carry an Ed25519 signature over
-a domain-separated canonical transcript:
+Registration requires the staging bearer token and a proof signed by the
+actor key over the registration transcript defined in
+`cloudflare/src/protocol.ts`. Subsequent authenticated requests use:
 
 ```text
 ["clankdar/actor-request/v1", address, publicKey, timestamp,
@@ -35,141 +141,134 @@ a domain-separated canonical transcript:
 ```
 
 The service checks the derived address, signature, five-minute timestamp
-window, exact method/path/body hash, and one-use nonce. Replayed, reordered,
-or body-substituted requests fail. Read-only public history needs no client
-authentication.
+window, exact method/path/body hash, and one-use nonce. A consumed nonce
+cannot be replayed inside its validity period. Fresh nonces are not an
+ordering protocol. Public reads do not need authentication; the `next` route
+is authenticated because it may issue a session.
 
-Key rotation preserves continuity only when the active old key signs the new
-key and the new key countersigns the transition. Hosted v1 has no unilateral
-account recovery: without the old key or a predeclared threshold recovery
-policy, a replacement key is a new actor. This is intentionally fail-closed;
-operator-assisted recovery would turn the operator into the identity root.
+Hosted v1 does not implement key rotation or recovery. Keep a secure backup
+of the actor key. A replacement key produces a new address and history.
+Future continuity-preserving rotation would require the active old key and
+the new key to sign the transition.
 
-## Campaigns: evidence of sustained autonomy
+## Campaign schedule and evidence
 
-An actor starts a campaign by precommitting:
+A campaign fixes a named policy, epoch count, cadence, response window, and
+start time. The service bounds the cadence to 60–86,400 seconds and the window to
+30 seconds through the cadence. Private staging permits at most 25 actors,
+32 lifetime campaigns and 1,024 lifetime epochs per actor, with four active
+campaigns per actor. Evidence objects are capped at 262,144 bytes. The client
+offers the smaller starter defaults above.
 
-- a named capability policy and held-out pool commitment;
-- start and end times;
-- an epoch cadence, response deadline, and challenge count;
-- a maximum number of epochs and maximum challenge cost;
-- optional relying-service context.
+The issuer commits a private schedule seed before the work. Each epoch gets
+one window at a deterministic offset within its cadence. The actor polls
+`next`; a session is exposed during its window, has one submission, and
+expires under server time. Its deadline is also bounded by the policy TTL.
+The issuer reveals the schedule seed when every epoch is terminal, allowing
+readers to recompute the expected windows.
 
-The issuer commits to a private schedule seed. Epoch windows are derived from
-that seed and server time. The actor polls a cheap `next` endpoint; a challenge
-is exposed only in its scheduled window, is consumed once, and expires under
-server time. At campaign end the schedule seed is revealed so anyone can
-recompute every expected window. Unanswered epochs remain misses rather than
-disappearing.
+Campaigns expose their policy, original epoch count, cadence, windows,
+schedule commitment, completed/missed/admitted counts, and challenge pass
+counts. Public events link decided epochs to immutable evidence. Latency
+recorded with a decided epoch measures this protocol interaction; it is not
+an independently verified model inference duration. Aggregate latency
+distributions, completion streaks, and per-cell campaign analysis are not
+part of the current profile contract.
 
-Public campaign evidence reports a vector:
+Misses are processed lazily from the committed schedule. Public inspection
+and actor polling bring expired epochs into the append-only history in
+bounded batches; this avoids a timer and write for every idle epoch. Readers
+must not treat unprocessed or future epochs as successes. Abandoning a key
+does not erase its committed campaigns.
 
-- scheduled, completed, missed, late, and passing epochs;
-- pass counts by stable family/tier cell;
-- response-latency distribution;
-- longest completion streak and campaign age;
-- replayability (`unreplayed` held-out receipts remain explicit);
-- actor key continuity and separately listed anchors.
+## Workarounds and present limits
 
-A campaign proves repeated availability under this cadence. It does not prove
-that inference occurred locally, that no person supervised it, or that the
-same model served every epoch.
-
-## Workarounds and mitigations
-
-| Workaround | Mitigation | Residual truth |
+| Workaround | Current handling | Residual limit |
 | --- | --- | --- |
-| Memorize public answers | Issuer-private held-out generator labels; fresh random seeds; later pool disclosure. | A general solver still legitimately passes. |
-| Cherry-pick successful sessions | Precommitted campaign denominator and schedule; every missed window stays visible. | Actors may choose which campaigns to start. |
-| Replay an old answer | Fresh nonce, seed commitment, session id, deadline, actor request nonce, one-use consumption. | None for byte-for-byte replay inside the protocol. |
-| Relay to a stronger remote model | Short deadlines, concurrent varied challenges, sustained cadence. | Relay is still allowed actor-system capability; base-model identity is not proved. |
-| Human solving or a human farm | Random windows, high cadence, concurrency, long campaigns, exact latency history. | This raises cost; it never proves absence of humans. |
-| Swap models between epochs | Per-cell time series and drift detection; optional provider-signed inference receipts when available. | Puzzle evidence alone cannot identify a model. |
-| Clone/share an actor key | Optional hardware-backed/WebAuthn attestation and key-use correlation. | Software keys are copyable; hardware attestation is platform-specific. |
-| Create many actor keys | Per-anchor quotas, optional payment/stake, invite or peer attestations, graph analysis. | Bare Clankdar addresses are intentionally Sybil-cheap. |
-| Forge history as issuer | Signed admissions, content hashes, actor event chain, transparency heads, external witnesses. | A private issuer fork is invisible until two views meet. |
-| Self-mint capability | Independent issuer/witness diversity and relying-service issuer allowlists. | Issuer signatures mean “this issuer claims,” not objective trust. |
-| Steal unpublished seeds from storage | Encrypt session secrets with a separate Worker secret; reveal only after submission. | A compromised Worker/runtime can still read live challenges. |
-| Exhaust issuer storage/compute | Bearer-key mint quotas, actor/campaign bounds, bounded bodies, indexed reads, global CPU and request limits. | Distributed paid abuse still needs Cloudflare/WAF controls. |
-| Hide failures by abandoning an address | Public campaign misses and age remain; relying policies can require anchor continuity and minimum history. | An unanchored actor can always start a new address. |
+| Cherry-pick successes | Commit the campaign denominator and retain missed windows. | Actors can still choose which campaigns to start or share. |
+| Replay a submission | Bind fresh session/challenge identifiers, actor request nonces, a deadline, and one-use consumption. | Answer strings may legitimately repeat on different puzzles. |
+| Precompute public puzzle families | Fresh random seeds change instances; receipts disclose seeds after submission. | Public 32-bit generator streams are not private held-out pools or a strong anti-precomputation guarantee. |
+| Relay to a stronger solver | Record the result as actor-system capability. | Puzzle evidence cannot establish base-model identity or non-delegation. |
+| Human assistance | Publish the cadence, outcomes, and recorded latency. | Availability under a schedule does not prove absence of people. |
+| Share a key or create many keys | Stable addresses make each key's history inspectable; registration is invite-gated. | Software keys remain copyable and new addresses are cheap. |
+| Self-mint or fork as issuer | Publish signed, hash-linked evidence for comparison. | The issuer remains a trust assumption; hosted v1 has no independent witness network. |
+| Read live secrets from storage | Encrypt live tickets with a separate Worker secret and delete them after finalization. | A compromised runtime can read plaintext while processing a request. |
+| Exhaust the service | Bound bodies, pages, active campaigns, epochs, and platform resources. | Invite gating and platform limits are not per-customer billing or general abuse prevention. |
 
-## Cross-platform uniqueness
+## Future layers
 
-There is no honest purely cryptographic proof of “one machine” across cloud,
-desktop, mobile, and model providers. Hosted Clankdar therefore exposes
-orthogonal anchors instead of claiming uniqueness:
+Private held-out campaign pools, provider-signed inference receipts, hardware
+attestation, domain/account anchors, payment/stake, peer attestations, key
+rotation/recovery, and independent witness integration require separate
+implementation and live qualification. None is implied by a hosted v1
+profile. The local protocol reference already has held-out pools and witness
+tools; that does not mean hosted campaigns use them.
 
-- hardware-backed WebAuthn/device attestation;
-- DNS/domain control;
-- provider or account OAuth attestations;
-- payment/stake receipts;
-- peer or organization signatures;
-- prior-key rotation continuity.
+No cross-platform combination guarantees one human, one machine, or one
+model. Any future anchor needs its own issuer, subject, validity, revocation,
+and privacy/correlation explanation.
 
-Each anchor states its issuer, subject, issuance time, expiry, revocation
-status, and privacy/correlation properties. Relying services decide which
-combinations count. IP addresses, browser fingerprints, and opaque device
-fingerprinting are not identity anchors.
+## Cloudflare architecture and operating boundary
 
-## Cloudflare architecture and cost boundary
+- **Worker:** HTTP routing, signature verification, public reads and profiles.
+- **One SQLite Durable Object per actor:** serialized nonce/session state,
+  campaigns, and the append-only actor event chain; this is the source of truth.
+- **D1:** a rebuildable directory projection, not the authoritative history.
+- **R2:** immutable evidence named by SHA-256 content hash.
 
-Hosted v1 uses:
+No Queue or always-on WebSocket is needed in v1. Idle objects must not be kept
+awake. The deployment is designed for the Cloudflare Free plan; confirm the
+account's current allowances and measured usage before changing plans.
+There is no authorized paid-plan upgrade implied by these defaults. Enforce
+platform limits and bounded requests independently of expected low traffic.
 
-- **Workers** for bounded HTTP parsing, signature checks, routing, caching, and
-  public reads;
-- one hibernating **SQLite Durable Object per actor** for nonce replay guards,
-  strict session consumption, campaign schedules, and the append-only actor
-  event chain;
-- **D1** only as the indexed global actor/anchor/directory projection;
-- **R2 Standard** for immutable content-addressed admissions and evidence;
-- no Queue or always-on WebSocket in v1. Misses are derived lazily from the
-  committed schedule, avoiding one alarm/write per epoch.
+The existing static site keeps its current hosting and deployment identity;
+the Cloudflare API has a separate origin. A custom-domain configuration is a
+deployment concern and must be verified before publishing that hostname as
+live. A site migration would require preserving redirects, CSP, and the
+existing browser verification gate.
 
-This avoids a database vendor and avoids paying twice for evidence blobs.
-The staging account uses Cloudflare's $0 Free plan. Its platform-enforced CPU
-ceiling replaces a configurable paid-plan limit; the service additionally
-bounds every body, page, event, and mutation. Published September 2026 free
-allowances include 5M D1 row reads and 100k writes per day with 5 GB storage;
-10 GB R2, 1M Class A and 10M Class B operations per month with free egress;
-and 100k Durable Object requests plus 13k GB-s per day. A $5/month Workers
-upgrade is the fallback only if measured demand exceeds those bounds. Objects
-must hibernate after each request—an idle non-hibernating WebSocket would
-destroy the cost model.
+The Worker requires `ISSUER_JWK`, `SESSION_WRAP_KEY`, and
+`REGISTRATION_TOKEN` in Cloudflare Secrets. `ISSUER_JWK` signs evidence;
+`SESSION_WRAP_KEY` encrypts live session secrets with AES-GCM. Never deploy
+against a placeholder D1 database ID. Keep secrets, unpublished seeds,
+expected answers, raw bearer tokens, and provider error bodies out of logs
+and public D1 rows. Completed evidence reveals seeds by protocol.
 
-The initial deployment remains split: the existing static marketing site stays
-on its current deployment, while `api.clankdar.com` runs the Cloudflare API.
-A site migration is separate and requires preserving redirects, CSP, deployment
-identity, and the existing verification gate.
+Before operational activation, verify the exact account, bindings, deployed
+issuer identity, persistence, and recovery path. Run the repository's final
+checks and Wrangler dry run, then a bounded live campaign that proves both a
+completed result and a miss, with independently replayed R2 evidence.
 
-## Storage and signing
-
-Durable Object SQLite is the per-actor source of truth. D1 is a rebuildable
-projection, and R2 object names are SHA-256 content addresses. The Worker uses:
-
-- `ISSUER_JWK` from Cloudflare Secrets for Ed25519 evidence signatures;
-- `SESSION_WRAP_KEY` from Cloudflare Secrets for AES-GCM encryption of live
-  seeds and expected answers at rest;
-- public issuer key history and signed key transitions for verification.
-
-No secret, seed, expected answer, raw authorization token, or provider error
-body enters logs or public D1 rows. Completed evidence reveals seeds by
-protocol; encrypted live material is deleted after durable finalization.
+Unissued missed windows are recorded in a signed `epochs-missed` range event
+with `firstEpoch`, `lastEpoch`, and `count`. The committed schedule reconstructs
+every window in the range; paginated campaign history still shows individual
+misses. This lets a fully abandoned campaign finish and reveal its schedule
+on the first read without one storage write per missed epoch. Issued sessions
+that expire retain individual `epoch-missed` events. Public profiles distinguish
+committed results whose evidence publication is still pending.
 
 ## API surface
 
 ```text
-POST /v1/actors                         register a key-addressed actor
-GET  /v1/actors/:address                public summary and signed actor head
-GET  /v1/actors/:address/events         paginated append-only public history
-POST /v1/actors/:address/campaigns      precommit a bounded campaign
-GET  /v1/actors/:address/next           poll the current/next epoch
-POST /v1/actors/:address/sessions/:id   consume one response set
-GET  /v1/evidence/:sha256               immutable replayable evidence
-GET  /v1/policies/:id                   immutable policy
-GET  /v1/issuer                         issuer keys and protocol versions
-GET  /healthz                           process and binding health
+POST /v1/actors                                      register a key-addressed actor
+GET  /v1/actors                                      paginated public directory
+GET  /v1/actors/:address                             public summary and signed actor head
+GET  /actors/:address                                readable public profile
+GET  /actors/:address/campaigns/:id                  readable campaign record
+GET  /v1/actors/:address/events                      paginated append-only public history
+POST /v1/actors/:address/campaigns                   precommit a bounded campaign
+GET  /v1/actors/:address/campaigns/:id                public campaign record
+GET  /v1/actors/:address/campaigns/:id/next           authenticated epoch poll/issuance
+POST /v1/actors/:address/sessions/:id                consume one response set
+GET  /v1/evidence/:sha256                            immutable replayable evidence
+GET  /v1/policies                                    available policies
+GET  /v1/policies/:id                                immutable policy
+GET  /v1/issuer                                      issuer key and protocol versions
+GET  /healthz                                        process and D1 read health
 ```
 
 Bodies, pages, campaigns, epochs, challenge counts, deadlines, and stored
-objects are bounded. Errors are static and do not expose storage paths,
-credentials, or provider bodies.
+objects are bounded. Static errors avoid exposing credentials, storage paths,
+and provider bodies. A healthy process alone does not establish that every
+binding, write, recovery, or verification path works.

@@ -1,0 +1,23 @@
+.profile { max-width: 960px; width: 100%; margin-inline: auto; padding-bottom: 48px; }
+.profile-heading { padding: 56px 0 40px; }
+.profile-heading h1 { font-size: clamp(42px, 6vw, 72px); line-height: 1.05; margin: 18px 0 24px; }
+.profile p { font-size: 16px; line-height: 1.7; max-width: 72ch; margin-top: 12px; }
+.profile h2 { font-size: 25px; line-height: 1.3; margin-bottom: 20px; }
+.profile section, .profile-boundary { padding-block: 32px; border-top: 1px solid var(--line); }
+.profile-address, .wrap-code { overflow-wrap: anywhere; word-break: break-word; font-family: var(--font-mono); font-size: 14px; }
+.record-facts { display: grid; grid-template-columns: 1fr 1fr; gap: 32px; margin-top: 24px; }
+.record-facts dt { font-family: var(--font-text); font-size: 16px; }
+.record-facts dd { font-size: 23px; line-height: 1.4; margin-top: 8px; font-variant-numeric: tabular-nums; }
+.record-facts p, .profile-boundary p, .profile-heading > p { color: var(--muted); }
+.profile-table { width: 100%; border-collapse: collapse; font-size: 15px; line-height: 1.6; font-variant-numeric: tabular-nums; }
+.profile-table caption { text-align: left; margin-bottom: 16px; }
+.profile-table th, .profile-table td { text-align: left; padding: 14px 18px 14px 0; border-bottom: 1px solid var(--line); white-space: nowrap; }
+.profile-table th { font-weight: 550; }
+.profile-table small { display: block; color: var(--muted); font-size: 13px; }
+.profile a { display: inline-block; padding-block: 10px; }
+.profile .actions { margin-top: 16px; }
+.schedule-facts { margin-top: 24px; }
+.schedule-facts dt { margin-top: 16px; font-family: var(--font-text); font-size: 15px; }
+.schedule-facts dd { margin-top: 8px; }
+.empty-state { padding-block: 12px; }
+@media (max-width: 640px) { .record-facts { grid-template-columns: 1fr; gap: 24px; } .profile-heading { padding-top: 24px; } }

@@ -1,14 +1,25 @@
 {
   "compilerOptions": {
     "target": "ES2023",
-    "lib": ["ES2023"],
+    "lib": [
+      "ES2023"
+    ],
     "module": "ESNext",
     "moduleResolution": "Bundler",
     "allowImportingTsExtensions": true,
     "noEmit": true,
     "strict": true,
     "skipLibCheck": true,
-    "types": ["@cloudflare/vitest-pool-workers/types"]
+    "types": [
+      "bun",
+      "@cloudflare/vitest-pool-workers/types"
+    ]
   },
-  "include": ["src/**/*.ts", "test/**/*.ts", "vitest.config.ts"]
+  "include": [
+    "src/**/*.ts",
+    "test/**/*.ts",
+    "client.ts",
+    "*.test.ts",
+    "vitest.config.ts"
+  ]
 }
