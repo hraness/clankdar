@@ -4,7 +4,7 @@
  *
  *   bun bench/gate.ts policy --suite frontier --cells automata:t6,knights:t5 --challenges 3 --min-pass 2 --ttl 300 [--out policy.json]
  *   bun bench/gate.ts issue --key verifier.json --policy policy.json [--subject agent-7 --context jobs-board] [--out session.json]
- *   bun bench/gate.ts submit --key verifier.json --session session.json --responses responses.json [--out admission.json]
+ *   bun bench/gate.ts submit --key verifier.json --session session.json --responses responses.json [--subject-key respondent.json] [--out admission.json]
  *   bun bench/gate.ts check admission.json
  *   bun bench/gate.ts serve --key verifier.json --policy policy.json --dir gate-state/ [--port 8787]
  *   bun bench/gate.ts probe --key verifier.json --policy policy.json --adapter openai:gpt-4.1 --rounds 3 [--execute --max-requests 200]
@@ -30,8 +30,8 @@ import { randomBytes, randomInt, verify as cryptoVerify } from "node:crypto";
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import {
-  ATTEST_PROTOCOL, canonical, checkReceipt, issueChallenge, keyIdOf, publicJwk, publicKeyOf,
-  signBody, verifyResponse, type Challenge, type Receipt, type Ticket, type VerifierJwk,
+  ATTEST_PROTOCOL, canonical, checkReceipt, isSubjectProof, issueChallenge, keyIdOf, publicJwk, publicKeyOf,
+  signBody, subjectProofFor, verifyResponse, type Challenge, type Receipt, type SubjectProof, type Ticket, type VerifierJwk,
 } from "./attest.ts";
 import { poolForVersion, suiteVersion, type SuiteName } from "../ladder/mod.ts";
 import { answerFormat, canonicalAnswer, MAX_ANSWER_LENGTH } from "../ladder/family.ts";
@@ -175,6 +175,8 @@ export function issueSession(opts: {
 export function submitSession(opts: {
   session: GateSession;
   responses: Record<string, string>;
+  /** Optional respondent key proof; session-scoped, so the same object embeds in every minted receipt. */
+  subjectProof?: SubjectProof;
   verifierJwk: VerifierJwk;
   now?: Date;
 }): { receipts: Receipt[]; admission: Admission } {
@@ -191,7 +193,7 @@ export function submitSession(opts: {
   for (const ticket of session.tickets) {
     const response = opts.responses[ticket.challenge.challengeId];
     if (typeof response !== "string" || canonicalAnswer(response, answerFormat(ticket.challenge.family)) === null) continue;
-    const receipt = verifyResponse({ ticket, response, verifierJwk: opts.verifierJwk, now });
+    const receipt = verifyResponse({ ticket, response, subjectProof: opts.subjectProof, verifierJwk: opts.verifierJwk, now });
     const replay = checkReceipt(receipt);
     if (!replay.ok) throw new Error(`minted receipt does not verify: ${replay.reason}`);
     receipts.push(receipt);
@@ -267,15 +269,21 @@ export function checkAdmission(admission: Admission): AdmissionCheck {
   const receipts = body.receipts;
   if (!Array.isArray(receipts) || receipts.length > challenges.length) return fail("malformed receipts");
   const answered = new Set<string>();
+  let subjectKey: string | undefined;
   let passed = 0;
   for (const receipt of receipts) {
     const replay = checkReceipt(receipt);
     if (!replay.ok) return fail(`embedded receipt does not verify: ${replay.reason}`);
-    const receiptChallenge = (JSON.parse(receipt.payload) as { challenge: Challenge }).challenge;
+    const receiptBody = JSON.parse(receipt.payload) as { challenge: Challenge; subjectProof?: SubjectProof };
+    const receiptChallenge = receiptBody.challenge;
     const listed = receiptChallenge && byId.get(receiptChallenge.challengeId);
     if (!listed || canonical(listed) !== canonical(receiptChallenge)) return fail("receipt is not for a listed session challenge");
     if (answered.has(receiptChallenge.challengeId)) return fail("two receipts for one challenge");
     answered.add(receiptChallenge.challengeId);
+    if (receiptBody.subjectProof !== undefined) {
+      if (subjectKey === undefined) subjectKey = receiptBody.subjectProof.publicKey;
+      else if (receiptBody.subjectProof.publicKey !== subjectKey) return fail("receipts mix subject keys");
+    }
     if (replay.verdict) passed++;
   }
   const verdict = body.verdict;
@@ -359,9 +367,11 @@ export function serveGate(opts: {
           if (!CHALLENGE_ID.test(id)) return err(400, "malformed challenge id in responses");
           if (typeof value !== "string" || value.length > MAX_ANSWER_LENGTH) return err(400, "responses must be bounded strings");
         }
+        if (body.subjectProof !== undefined && !isSubjectProof(body.subjectProof)) return err(400, "subjectProof must be {publicKey, signature} strings");
         try {
           const { receipts, admission } = submitSession({
-            session: entry.session, responses: responses as Record<string, string>, verifierJwk: opts.verifierJwk,
+            session: entry.session, responses: responses as Record<string, string>,
+            subjectProof: body.subjectProof as SubjectProof | undefined, verifierJwk: opts.verifierJwk,
           });
           opts.store.decide(entry.session.sessionId, admission, receipts);
           return json({ admission, receipts });
@@ -421,7 +431,7 @@ function loadJson(path: string): unknown {
 const USAGE = `usage: gate <command>
   policy --suite v2|frontier|agent --cells f:t1,g:t2 --challenges N --min-pass M --ttl SEC [--out policy.json]
   issue --key K --policy P [--subject S] [--context C] [--seed N] [--out session.json]
-  submit --key K --session S --responses R.json [--out admission.json]
+  submit --key K --session S --responses R.json [--subject-key KEY.json] [--out admission.json]
   check ADMISSION.json
   serve --key K --policy P --dir STATE [--host H] [--port N]
   probe --key K --policy P --adapter A --rounds N [--out DIR] [--execute --max-requests N --max-tokens N --timeout-ms N]`;
@@ -434,7 +444,7 @@ export async function main(args = process.argv.slice(2)): Promise<void> {
       key: { type: "string" }, out: { type: "string" }, policy: { type: "string" }, session: { type: "string" },
       suite: { type: "string" }, cells: { type: "string" }, challenges: { type: "string" }, "min-pass": { type: "string" },
       ttl: { type: "string" }, subject: { type: "string" }, context: { type: "string" }, seed: { type: "string" },
-      responses: { type: "string" }, dir: { type: "string" }, host: { type: "string" }, port: { type: "string" },
+      responses: { type: "string" }, "subject-key": { type: "string" }, dir: { type: "string" }, host: { type: "string" }, port: { type: "string" },
       adapter: { type: "string" }, rounds: { type: "string" },
       execute: { type: "boolean" }, "max-requests": { type: "string" }, "max-tokens": { type: "string" }, "timeout-ms": { type: "string" },
       help: { type: "boolean", short: "h" },
@@ -477,10 +487,12 @@ export async function main(args = process.argv.slice(2)): Promise<void> {
   }
   if (command === "submit") {
     need(values.key, values.session, values.responses);
+    const session = loadJson(values.session!) as GateSession;
     const responses = loadJson(values.responses!) as Record<string, string>;
+    if (values["subject-key"] !== undefined && !session.tickets?.length) throw new Error("session has no challenges to bind a subject proof to");
+    const subjectProof = values["subject-key"] !== undefined ? subjectProofFor(session.tickets[0].challenge, loadJson(values["subject-key"]) as VerifierJwk) : undefined;
     const { receipts, admission } = submitSession({
-      session: loadJson(values.session!) as GateSession,
-      responses, verifierJwk: loadJson(values.key!) as VerifierJwk,
+      session, responses, subjectProof, verifierJwk: loadJson(values.key!) as VerifierJwk,
     });
     if (values.out) writeFileSync(values.out, JSON.stringify({ admission, receipts }, null, 2) + "\n", { flag: "wx" });
     else console.log(JSON.stringify({ admission, receipts }, null, 2));

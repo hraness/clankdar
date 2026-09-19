@@ -93,8 +93,9 @@ recorded prompt), rescores with `clankdar-score-v2`, and signs:
 ```
 
 `ReceiptBody` = `{kind:"receipt", challenge, seed, expected, response,
-verdict:{pass, format, answeredAt}}`. `expected` is the canonical answer;
-`format` is the family answer format.
+subjectProof?, verdict:{pass, format, answeredAt}}`. `expected` is the
+canonical answer; `format` is the family answer format. `subjectProof`
+(optional, §7) embeds inside the signed payload like every other member.
 
 ## 6. Independent check
 
@@ -114,12 +115,64 @@ A checker MUST:
    receipt — gates treat it as a failed challenge with no receipt);
 8. rescore `(expected, response, format)` and require equality with
    `verdict.pass`;
-9. require `answeredAt ≤ challenge.expiresAt`.
+9. require `answeredAt ≤ challenge.expiresAt`;
+10. when `subjectProof` is present in the body, require the §7 subject-proof
+    check to pass.
 
 A valid receipt attests exactly: this response was scored this verdict against
-this instance inside this window, signed by this verifier key.
+this instance inside this window, signed by this verifier key. When the
+receipt carries a `subjectProof`, it additionally attests that the holder of
+that key signed the challenge's subject transcript (§7) — the response is
+bound to a respondent key, still not to a model or a person.
 
-## 7. clankdar-gate-v1 — admission sessions
+## 7. Subject binding (optional)
+
+A receipt MAY carry a `subjectProof` that binds the response to an Ed25519 key
+the respondent controls:
+
+```json
+"subjectProof": { "publicKey": "<base64url>", "signature": "<base64url>" }
+```
+
+`publicKey` is a base64url Ed25519 JWK `x` member — the same encoding as
+verifier keys, and the same keygen produces respondent keys. `signature` is a
+base64url Ed25519 signature by that key over a domain-separated transcript
+built from the recorded challenge:
+
+- **Session-scoped** — the challenge carries `sessionId` (a gate session):
+  `canonical(["clankdar/subject/v1", sessionId, publicKey])`.
+  One proof covers every challenge in the session, so a gate submit carries a
+  single `subjectProof` and the same object embeds in every minted receipt.
+- **Challenge-scoped** — a standalone challenge (no `sessionId`):
+  `canonical(["clankdar/subject/v1", challengeId, nonce, publicKey])`.
+
+The domain label separates subject proofs from receipt and admission
+signatures, and from the seed commitment, so a proof can never be reinterpreted
+as any other message in the protocol.
+
+Issuer behavior: `verify` validates the proof's shape and requires the
+signature to verify over the transcript for that challenge; an invalid proof
+is a minting error, never a receipt field — no receipt is produced.
+
+Checker behavior: when `subjectProof` is present in the receipt body, a
+checker MUST require `{publicKey, signature}` to be strings, recompute the
+transcript from the recorded challenge per the scope rule above, and require
+the Ed25519 signature to verify under `subjectProof.publicKey`. An admission
+checker MUST additionally require that every embedded receipt carrying a
+`subjectProof` uses the same `publicKey` — one subject per session. Receipts
+and admissions without proofs remain fully valid; checkers ignore unknown
+members as before.
+
+What it proves: the holder of `publicKey` signed the transcript covering this
+challenge (or this session), and the verifier embedded that proof inside the
+signed receipt — so one pseudonymous subject key can sign across receipts,
+sessions, and verifiers, enabling portable capability badges and
+receipt-chaining. What it does NOT prove: that the key holder produced the
+answer — a subject may delegate solving exactly as before (§11); a proof binds
+a key to a response, never a model, a person, or an authority, and it carries
+no liveness, expiry, or revocation of its own beyond the challenge window.
+
+## 8. clankdar-gate-v1 — admission sessions
 
 A **policy** is the floor a relying party applies:
 
@@ -143,11 +196,12 @@ one shared `expiresAt` (each challenge carries `sessionId`, and optionally
 server-side; the respondent sees only challenges.
 
 A single **submit** consumes the session. For every challenge, the respondent
-supplies a response or leaves it unanswered. Each format-canonical response is
-verified into a receipt; the issuer runs the independent check on each minted
-receipt before signing the admission. A missing or non-canonical response is
-a failed challenge with no receipt — completeness lives in the signed
-challenge list, so a failed challenge cannot be hidden.
+supplies a response or leaves it unanswered, plus at most one session-scoped
+`subjectProof` (§7) that embeds in every minted receipt. Each format-canonical
+response is verified into a receipt; the issuer runs the independent check on
+each minted receipt before signing the admission. A missing or non-canonical
+response is a failed challenge with no receipt — completeness lives in the
+signed challenge list, so a failed challenge cannot be hidden.
 
 ### Admission
 
@@ -178,12 +232,14 @@ A checker MUST additionally require:
    challenges' verifier key;
 5. every embedded receipt passes the §6 check and canonical-equals a listed
    challenge (no grafted receipts, at most one per challenge);
-6. `verdict.passed` equals the count of passing receipts,
+6. every embedded receipt carrying a `subjectProof` uses the same
+   `publicKey` — one subject per session;
+7. `verdict.passed` equals the count of passing receipts,
    `verdict.required === policy.minPass`,
    `verdict.pass === (passed ≥ minPass)`;
-7. `decidedAt ≤ expiresAt`.
+8. `decidedAt ≤ expiresAt`.
 
-## 8. Ledger requirements (serving a gate)
+## 9. Ledger requirements (serving a gate)
 
 An operator serving admissions MUST:
 
@@ -197,13 +253,13 @@ An operator serving admissions MUST:
 
 An in-memory guard alone is not a production admission ledger.
 
-## 9. HTTP surface (reference)
+## 10. HTTP surface (reference)
 
 ```
 GET  /healthz                       → {ok:true}
 GET  /policy                        → {protocol, policy, verifier:{keyId,publicKey}}
 POST /sessions                      {subject?, context?} → 201 {sessionId, expiresAt, challenges[]}
-POST /sessions/:id/responses        {responses:{challengeId:response}} → 200 {admission, receipts}
+POST /sessions/:id/responses        {responses:{challengeId:response}, subjectProof?} → 200 {admission, receipts}
                                     404 unknown · 409 decided · 410 expired
 GET  /receipts/:challengeId         → receipt | 404
 ```
@@ -211,11 +267,13 @@ GET  /receipts/:challengeId         → receipt | 404
 The check→decide critical section is synchronous, so concurrent submits
 cannot double-spend a session.
 
-## 10. Threat model — say it plainly
+## 11. Threat model — say it plainly
 
-- **Delegation.** A receipt binds a response to a window, not a subject.
-  Anyone can relay the challenge to a stronger solver. Friction claims are
-  robust to this; credential claims are not.
+- **Delegation.** A receipt binds a response to a window; an optional
+  `subjectProof` binds it to a respondent key — but the key holder can still
+  relay the challenge to a stronger solver and sign the transcript
+  afterward. The proof says who claimed the episode, not who solved it.
+  Friction claims are robust to this; credential claims are not.
 - **Verifier self-minting.** The verifier knows every expected answer and can
   attest to itself. For self-issued admission this is meaningless by design
   (a service trusting its own gate). Portable third-party badges need an
@@ -233,7 +291,7 @@ cannot double-spend a session.
   decision. It must never, by itself, grant tool access, authorize a
   payment, or make a message trustworthy.
 
-## 11. Interoperability
+## 12. Interoperability
 
 The Rust prototype regenerates instances through `bench/instance.ts` (the
 generator oracle: `--suite`/`--suite-version --family --tier --seed` →

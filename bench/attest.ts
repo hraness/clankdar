@@ -16,9 +16,11 @@
  * bytes verbatim, so checkers never re-serialize.
  *
  * Scope: a receipt attests that one signed response satisfied one challenge
- * inside one time window. It is not a liveness credential, does not prove a
- * model (or AI) produced the response, grants no authority, and provides no
- * durable replay protection — consumers should issue fresh challenges.
+ * inside one time window; an optional subjectProof additionally binds the
+ * response to a respondent-held Ed25519 key. It is not a liveness credential,
+ * does not prove a model (or AI) produced the response, grants no authority,
+ * and provides no durable replay protection — consumers should issue fresh
+ * challenges.
  */
 import { parseArgs } from "node:util";
 import { createHash, generateKeyPairSync, createPrivateKey, createPublicKey, randomBytes, sign, verify as cryptoVerify, type KeyObject } from "node:crypto";
@@ -28,6 +30,7 @@ import { answerFormat, scoreAnswer, canonicalAnswer, MAX_ANSWER_LENGTH, type Ans
 
 export const ATTEST_PROTOCOL = "clankdar-attest-v1";
 const COMMIT_DOMAIN = "clankdar/attest-seed/v1";
+const SUBJECT_DOMAIN = "clankdar/subject/v1";
 const SUITES: SuiteName[] = ["v2", "frontier", "agent"];
 
 export interface Challenge {
@@ -57,6 +60,18 @@ export interface Ticket {
   expected: string;
 }
 
+/**
+ * A respondent's optional key proof: `publicKey` is a base64url Ed25519 JWK
+ * `x` member (the same encoding as verifier keys) and `signature` is a
+ * base64url Ed25519 signature over the challenge's subject transcript. It
+ * binds the response to a key the respondent controls — never to a model,
+ * a person, or an authority.
+ */
+export interface SubjectProof {
+  publicKey: string;
+  signature: string;
+}
+
 /** The signed body, serialized inside `Receipt.payload`. */
 export interface ReceiptBody {
   kind: "receipt";
@@ -64,6 +79,8 @@ export interface ReceiptBody {
   seed: number;
   expected: string;
   response: string;
+  /** Optional respondent key proof, embedded inside the signed payload. */
+  subjectProof?: SubjectProof;
   verdict: { pass: boolean; format: AnswerFormat; answeredAt: string };
 }
 
@@ -129,6 +146,39 @@ export function generateVerifier(): { privateJwk: VerifierJwk; publicKey: string
   return { privateJwk: jwk, publicKey: jwk.x, keyId: keyIdOf(jwk.x) };
 }
 
+/** Shape check for a subject proof; unknown members are ignored. */
+export const isSubjectProof = (value: unknown): value is SubjectProof =>
+  !!value && typeof value === "object" && typeof (value as SubjectProof).publicKey === "string" && typeof (value as SubjectProof).signature === "string";
+
+/**
+ * The domain-separated transcript a subject proof signs. Session-scoped when
+ * the challenge carries `sessionId` — one proof then covers every challenge
+ * minted under that gate session. Standalone challenges bind the proof to
+ * the single `challengeId` + `nonce` instead.
+ */
+export const subjectTranscript = (challenge: Pick<Challenge, "challengeId" | "nonce" | "sessionId">, publicKey: string): string =>
+  canonical(
+    challenge.sessionId !== undefined
+      ? [SUBJECT_DOMAIN, challenge.sessionId, publicKey]
+      : [SUBJECT_DOMAIN, challenge.challengeId, challenge.nonce, publicKey],
+  );
+
+/** Mint a subject proof for a challenge with a respondent Ed25519 JWK (same shape as verifier keys). */
+export function subjectProofFor(challenge: Pick<Challenge, "challengeId" | "nonce" | "sessionId">, respondentJwk: VerifierJwk): SubjectProof {
+  const publicKey = publicKeyOf(respondentJwk);
+  const signature = sign(null, Buffer.from(subjectTranscript(challenge, publicKey)), privateKey(respondentJwk));
+  return { publicKey, signature: b64url(signature) };
+}
+
+/** Independently verify a subject proof against the challenge's transcript. */
+export function checkSubjectProof(challenge: Pick<Challenge, "challengeId" | "nonce" | "sessionId">, proof: SubjectProof): boolean {
+  try {
+    return cryptoVerify(null, Buffer.from(subjectTranscript(challenge, proof.publicKey)), publicJwk(proof.publicKey), Buffer.from(proof.signature, "base64url"));
+  } catch {
+    return false;
+  }
+}
+
 export interface IssueOptions {
   suite: SuiteName;
   family: string;
@@ -176,6 +226,8 @@ export function issueChallenge(opts: IssueOptions): { challenge: Challenge; tick
 export interface VerifyOptions {
   ticket: Ticket;
   response: string;
+  /** Optional respondent key proof, verified against the challenge transcript before minting. */
+  subjectProof?: SubjectProof;
   verifierJwk: VerifierJwk;
   now?: Date;
 }
@@ -192,10 +244,16 @@ export function verifyResponse(opts: VerifyOptions): Receipt {
   if (instance.prompt !== challenge.prompt) throw new Error("challenge prompt does not regenerate from the committed seed");
   const format = answerFormat(challenge.family);
   if (canonicalAnswer(expected, format) !== expected || canonicalAnswer(instance.answer, format) !== expected) throw new Error("ticket answer does not match the regenerated instance");
+  if (opts.subjectProof !== undefined) {
+    if (!isSubjectProof(opts.subjectProof)) throw new Error("subject proof must be {publicKey, signature} strings");
+    if (!checkSubjectProof(challenge, opts.subjectProof)) throw new Error("subject proof does not verify for this challenge");
+  }
   const scored = scoreAnswer(instance.answer, opts.response, format);
   const body: ReceiptBody = {
     kind: "receipt", challenge, seed, expected,
-    response: opts.response, verdict: { pass: scored.pass, format, answeredAt: now.toISOString() },
+    response: opts.response,
+    ...(opts.subjectProof !== undefined ? { subjectProof: opts.subjectProof } : {}),
+    verdict: { pass: scored.pass, format, answeredAt: now.toISOString() },
   };
   const signature = sign(null, Buffer.from(canonical(body)), privateKey(opts.verifierJwk));
   return { protocol: ATTEST_PROTOCOL, payload: canonical(body), signature: b64url(signature) };
@@ -247,6 +305,10 @@ export function checkReceipt(receipt: Receipt): CheckResult {
   if (canonicalAnswer(expected, format) !== expected || canonicalAnswer(instance.answer, format) !== expected) return fail("recorded answer disagrees with regeneration");
   if (scoreAnswer(instance.answer, response, format).pass !== verdict.pass) return fail("verdict does not rescore");
   if (Date.parse(verdict.answeredAt) > Date.parse(challenge.expiresAt)) return fail("answer is later than the challenge expiry");
+  if (body.subjectProof !== undefined) {
+    if (!isSubjectProof(body.subjectProof)) return fail("malformed subject proof");
+    if (!checkSubjectProof(challenge, body.subjectProof)) return fail("subject proof does not verify");
+  }
   return { ok: true, verdict: verdict.pass };
 }
 
@@ -265,11 +327,11 @@ export function main(args = process.argv.slice(2)): void {
     options: {
       key: { type: "string" }, out: { type: "string" }, suite: { type: "string" }, family: { type: "string" },
       tier: { type: "string" }, seed: { type: "string" }, ttl: { type: "string" }, context: { type: "string" },
-      ticket: { type: "string" }, "response-file": { type: "string" }, help: { type: "boolean", short: "h" },
+      ticket: { type: "string" }, "response-file": { type: "string" }, "subject-key": { type: "string" }, help: { type: "boolean", short: "h" },
     },
     allowPositionals: true, strict: true,
   });
-  const usage = "usage: attest keygen --out KEY.json | issue --key KEY.json --suite v2|frontier|agent --family NAME --tier N [--seed N] [--ttl SEC] [--context TEXT] [--out TICKET.json] | verify --key KEY.json --ticket TICKET.json --response-file FILE [--out RECEIPT.json] | check RECEIPT.json";
+  const usage = "usage: attest keygen --out KEY.json | issue --key KEY.json --suite v2|frontier|agent --family NAME --tier N [--seed N] [--ttl SEC] [--context TEXT] [--out TICKET.json] | verify --key KEY.json --ticket TICKET.json --response-file FILE [--subject-key KEY.json] [--out RECEIPT.json] | check RECEIPT.json";
   if (values.help || !command) { console.log(usage); return; }
   if (command === "keygen") {
     if (!values.out) throw new Error("keygen requires --out");
@@ -297,7 +359,9 @@ export function main(args = process.argv.slice(2)): void {
   }
   if (command === "verify") {
     if (!values.key || !values.ticket || !values["response-file"]) throw new Error("verify requires --key --ticket --response-file");
-    const receipt = verifyResponse({ ticket: loadJson(values.ticket) as Ticket, response: readFileSync(values["response-file"], "utf8").trim(), verifierJwk: loadJson(values.key) as VerifierJwk });
+    const ticket = loadJson(values.ticket) as Ticket;
+    const subjectProof = values["subject-key"] !== undefined ? subjectProofFor(ticket.challenge, loadJson(values["subject-key"]) as VerifierJwk) : undefined;
+    const receipt = verifyResponse({ ticket, response: readFileSync(values["response-file"], "utf8").trim(), subjectProof, verifierJwk: loadJson(values.key) as VerifierJwk });
     if (values.out) writeFileSync(values.out, JSON.stringify(receipt, null, 2) + "\n", { flag: "wx" });
     else console.log(JSON.stringify(receipt, null, 2));
     return;
