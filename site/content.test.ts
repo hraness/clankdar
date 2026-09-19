@@ -73,7 +73,8 @@ describe("public site contract", () => {
     const headers = Object.fromEntries(config.headers[0].headers.map((header: { key: string; value: string }) => [header.key, header.value]));
     expect(headers["Content-Security-Policy"]).toBe("default-src 'none'; script-src 'self'; style-src 'self'; font-src 'self'; img-src 'self'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'");
     expect(headers["X-Content-Type-Options"]).toBe("nosniff");
-    expect(config.redirects).toContainEqual({ source: "/:path*", has: [{ type: "host", value: "botcaptcha.dev" }], destination: "https://clankdar.com/:path*", permanent: true });
+    // Vercel compiles sources with strict:true; :path* misses root and trailing slashes.
+    expect(config.redirects).toContainEqual({ source: "/:path(.*)", has: [{ type: "host", value: "botcaptcha.dev" }], destination: "https://clankdar.com/:path*", permanent: true });
   });
 
   test("icon bytes match the maintained brand manifest", () => {

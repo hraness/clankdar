@@ -7,7 +7,7 @@
   "cleanUrls": true,
   "redirects": [
     {
-      "source": "/:path*",
+      "source": "/:path(.*)",
       "has": [{ "type": "host", "value": "botcaptcha.dev" }],
       "destination": "https://clankdar.com/:path*",
       "permanent": true
