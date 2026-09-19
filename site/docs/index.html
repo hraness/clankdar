@@ -7,7 +7,7 @@
     <title>Docs — Clankdar</title>
     <meta name="description" content="Run Clankdar with Bun, inspect exact scoring and reproducible results, and understand the boundaries of the experimental admission protocol.">
     <meta property="og:title" content="Clankdar docs">
-    <meta property="og:description" content="The benchmark quickstart, scoring contract, auditable results, and proposed admission boundaries.">
+    <meta property="og:description" content="The benchmark quickstart, scoring contract, auditable results, and the implemented admission protocol's boundaries.">
     <meta property="og:image" content="https://clankdar.com/icon.png">
     <meta property="og:type" content="website">
     <meta property="og:url" content="https://clankdar.com/docs/">
@@ -45,7 +45,7 @@
         <header class="doc-head">
           <p class="eyebrow">The contract, without the hand-waving</p>
           <h1 id="title">Docs.</h1>
-          <p class="doc-lede">Run the benchmark. Inspect the evidence. Keep the authority boundary separate. Clankdar ships an experimental puzzle suite and runner; a production admission service is not implemented.</p>
+          <p class="doc-lede">Run the benchmark. Inspect the evidence. Keep the authority boundary separate. Clankdar ships an experimental puzzle suite and runner, plus a reference protocol stack — sealed-seed attestation, admission sessions, subject-bound receipts, a signed transparency log, and a drift monitor. A production admission service is not implemented.</p>
         </header>
 
         <nav class="contents" aria-label="Contents">
@@ -55,7 +55,9 @@
           <a href="#landscape">Landscape</a>
           <a href="#artifacts">Run artifacts</a>
           <a href="#agent">Tool-agent track</a>
-          <a href="#exchange">Admission design</a>
+          <a href="#exchange">Admission exchange</a>
+          <a href="#subject">Subject binding</a>
+          <a href="#drift">Drift monitor</a>
           <a href="#modes">Modes</a>
           <a href="#verification">Verification</a>
           <a href="#binding">Binding and replay</a>
@@ -172,7 +174,7 @@ FINAL &lt;answer&gt;            // submit and end the episode</code></pre>
 
         <section class="doc-section" id="exchange" aria-labelledby="exchange-title">
           <h2 id="exchange-title">The admission exchange.</h2>
-          <p><b>clankdar-attest-v1</b> is the implemented wire format. A verifier commits to a fresh unrevealed seed and publishes the generated prompt, so the instance cannot be pre-solved or looked up. A response inside the deadline is rescored deterministically and signed into a receipt that reveals the seed — anyone replays the signature, the commitment, the regenerated instance, and the verdict without trusting the issuer. <b>clankdar-gate-v1</b> builds admission sessions on top: a policy draws N sealed challenges under one session id and one deadline, and one submit consumes the session into a signed admission whose verdict recomputes independently. The specification is <a href="https://github.com/hraness/clankdar/blob/main/docs/clankdar-attest-v1.md">docs/clankdar-attest-v1.md</a>.</p>
+          <p><b>clankdar-attest-v1</b> is the implemented wire format. A verifier commits to a fresh unrevealed seed and publishes the generated prompt, so the instance cannot be pre-solved or looked up. A response inside the deadline is rescored deterministically and signed into a receipt that reveals the seed — anyone replays the signature, the commitment, the regenerated instance, and the verdict without trusting the issuer. <b>clankdar-gate-v1</b> builds admission sessions on top: a policy draws N sealed challenges under one session id and one deadline, and one submit consumes the session into a signed admission whose verdict recomputes independently. <b>clankdar-tlog-v1</b> derives a transparency log from the gate ledger: every session and decision becomes a hash-chained entry under an issuer-signed head, so issued events are enumerable and replayable. The specification is <a href="https://github.com/hraness/clankdar/blob/main/docs/clankdar-attest-v1.md">docs/clankdar-attest-v1.md</a>.</p>
           <pre class="code"><code>bun bench/attest.ts keygen --out verifier.json
 bun bench/gate.ts policy --suite frontier \
   --cells automata:t6,knights:t5,registervm:t5 \
@@ -183,7 +185,30 @@ bun bench/gate.ts serve --key verifier.json \
 POST /sessions/:id/responses  → {admission, receipts[]}
 GET  /receipts/:challengeId   → one independently replayable receipt
 GET  /policy                  → the floor and the verifier key</code></pre>
+          <pre class="code"><code>bun bench/tlog.ts build --dir gate-state --key verifier.json --out tlog.json
+bun bench/tlog.ts check tlog.json                     → recompute the chain and head signature
+bun bench/tlog.ts prove tlog.json --session gs_…      → inclusion evidence for one session
+bun bench/tlog.ts admit tlog.json admission.json      → admission check + logged history</code></pre>
+          <p>The log binds <em>this</em> issuer's history under <em>its own</em> key. It does not stop self-minting — a verifier can always answer its own oracle — and it cannot detect a fork alone: equivocation is visible only by comparing heads the issuer published elsewhere, and gossip, witnessed co-signing, and external anchoring are not implemented. What the log buys is enumerability: an admission that does not trace to a logged session is issuer-claimed only.</p>
           <p>An admission attests that one session produced K passing responses under one policy in one window. It is capability evidence — never identity, liveness, or authority — and arbitrary model or room text must never issue authority. <span class="tag">reference implemented</span></p>
+        </section>
+
+        <section class="doc-section" id="subject" aria-labelledby="subject-title">
+          <h2 id="subject-title">Subject binding.</h2>
+          <p>A respondent can attach a <code>subjectProof</code>: an Ed25519 signature by a key it controls over a domain-separated transcript. One proof covers a whole gate session — <code>["clankdar/subject/v1", sessionId, publicKey]</code> — and embeds in every minted receipt; a standalone challenge binds <code>challengeId</code>, <code>nonce</code>, and key instead. The issuer validates the proof at minting (an invalid one is a minting error, never a receipt field), and an admission carries at most one subject key across all its receipts.</p>
+          <p>What it buys: one pseudonymous subject key can sign across receipts, sessions, and verifiers — the binding that portable capability badges and receipt-chaining need. What it does not buy: the key holder can still delegate the solving and sign afterward, so a proof says who claimed the episode, not who solved it; it carries no liveness, expiry, or revocation of its own. Badge aggregation and a portable badge format are not implemented — this is the binding they would build on.</p>
+        </section>
+
+        <section class="doc-section" id="drift" aria-labelledby="drift-title">
+          <h2 id="drift-title">The drift monitor.</h2>
+          <p><code>bun drift</code> points the same gate machinery at your own model endpoint on a schedule. Every round is a real signed admission appended to a series file — the series is evidence, not telemetry.</p>
+          <pre class="code"><code>bun drift run --key verifier.json --policy policy.json \
+  --adapter openai:gpt-4.1 --rounds 5 --series drift.jsonl \
+  --execute --max-requests 100
+bun drift report --series drift.jsonl
+bun drift baseline --series drift.jsonl --out baseline.json
+bun drift compare --series drift.jsonl --baseline baseline.json --threshold 0.2</code></pre>
+          <p><code>report</code> aggregates per-cell and overall pass bands; <code>baseline</code> pins a reference series; <code>compare</code> exits nonzero when a cell or the overall band drops more than <code>--threshold</code> below the pin — a CI gate for silent model substitution. Score bands describe the probed endpoint under the recorded policy; they are not a certification of the provider.</p>
         </section>
 
         <section class="doc-section" id="modes" aria-labelledby="modes-title">
@@ -193,7 +218,7 @@ GET  /policy                  → the floor and the verifier key</code></pre>
           <h3>Witness</h3>
           <p>A bounded deterministic program can be replayed with a work receipt. The standalone Rust witness VM exists; integrating it with signed admission challenges remains design work. Charged operations are a defined VM contract, not evidence of the solver’s identity or physical energy use. <span class="tag">standalone prototype</span></p>
           <h3>Ladder</h3>
-          <p>The benchmark generators, exact scorer, runner, verifier-keyed answer commitment, sealed-seed attestation (attest-v1), and admission sessions (gate-v1) are implemented here — signed issuance, seeded challenge commitments, policy floors, session binding, and a durable append-only consumption ledger. A hosted issuer, transparency log, rate limits, and held-out pools are not. The current public-seed suite must not be used as a secret admission generator. <span class="tag">reference implemented</span></p>
+          <p>The benchmark generators, exact scorer, runner, verifier-keyed answer commitment, sealed-seed attestation (attest-v1), admission sessions (gate-v1), the issuance transparency log (tlog-v1), and the drift monitor are implemented here — signed issuance, seeded challenge commitments, policy floors, subject-bound receipts, session binding, a durable append-only consumption ledger, and a derived signed log over it. A hosted issuer, log gossip or anchoring, rate limits, held-out pools, and portable badge aggregation are not. The current public-seed suite must not be used as a secret admission generator. <span class="tag">reference implemented</span></p>
         </section>
 
         <section class="doc-section" id="verification" aria-labelledby="verification-title">
@@ -205,6 +230,7 @@ GET  /policy                  → the floor and the verifier key</code></pre>
             <li>require the declared subject, context, session, suite version, and policy cells;</li>
             <li>reject expired challenges and already-decided sessions;</li>
             <li>regenerate each instance from its committed seed and rescore every embedded receipt — claimed work is never trusted;</li>
+            <li>verify any embedded <code>subjectProof</code> over its domain-separated transcript and require one subject key per session;</li>
             <li>recompute the verdict against the policy's challenge count and minimum-pass threshold; and</li>
             <li>consume each session once, atomically, for the declared admission purpose.</li>
           </ol>
@@ -216,6 +242,8 @@ GET  /policy                  → the floor and the verifier key</code></pre>
             <li><code>challenge_id</code> is cryptographically random and unpredictable until issuance; a session's challenges share one <code>session_id</code> and one deadline.</li>
             <li>The seed commitment binds suite version, family, tier, nonce, and seed in a domain-separated digest, preventing cross-session and cross-purpose reuse; the signature binds the rest of the transcript.</li>
             <li>The gate ledger consumes each session once: receipts and the signed admission append as a single record. Duplicate submits are rejected; a restart cannot resurrect an undecided session.</li>
+            <li>An optional <code>subjectProof</code> binds each receipt to a respondent Ed25519 key through a <code>clankdar/subject/v1</code> transcript scoped to the session — or to the standalone challenge's id and nonce. The domain label keeps a proof from being reinterpreted as any other protocol message.</li>
+            <li>The transparency log hash-chains every ledger record — each entry's <code>prev</code> links to the prior <code>entryHash</code> under an issuer-signed head — so a dropped, reordered, or altered record breaks verification. A fork is detectable only by comparing heads the issuer published elsewhere.</li>
             <li>Replay consumption is atomic and durable across restarts. An in-memory guard alone is not a production admission ledger.</li>
           </ul>
         </section>
@@ -224,6 +252,7 @@ GET  /policy                  → the floor and the verifier key</code></pre>
           <h2 id="security-title">Security model.</h2>
           <p>No software-only challenge can prove that a human, an LLM, or an autonomous agent produced the answer. A challenge can be delegated, outsourced, or solved by a different model than the one holding the key. Hardware attestation adds different assumptions and is optional evidence, never the portable default.</p>
           <p>A successful response may remove a rate limit or qualify admission. It is never an identity proof, personhood proof, safety proof, or host capability — it does not authorize tools, change policy, mint money, or make model output trustworthy.</p>
+          <p>A subject proof does not relax the delegation limit: the key holder can relay the challenge to a stronger solver and sign the transcript afterward. The verifier can also answer its own oracle — the transparency log makes one issuer's history enumerable but cannot detect a fork alone, so relying parties should issue their own challenges and treat foreign admissions as issuer-claimed.</p>
         </section>
 
         <section class="doc-section" id="ladder" aria-labelledby="ladder-title">
