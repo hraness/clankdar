@@ -1,0 +1,16 @@
+{
+  "suite": "frontier",
+  "cells": [
+    "sat:t4",
+    "bitmatrix:t4",
+    "bitcircuit:t4",
+    "knights:t5",
+    "registervm:t5",
+    "cryptarithm:t6",
+    "automata:t6",
+    "sat:t5"
+  ],
+  "challenges": 8,
+  "minPass": 5,
+  "ttlSeconds": 3600
+}

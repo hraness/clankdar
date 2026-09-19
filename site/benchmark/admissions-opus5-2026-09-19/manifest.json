@@ -1,0 +1,68 @@
+{
+  "protocol": "clankdar-admission-archive-v1",
+  "id": "opus5-admissions-2026-09-19",
+  "collectedAt": "2026-09-19T06:25:00.000Z",
+  "producerClaim": {
+    "adapter": "cli:claude:opus",
+    "requestedModel": "opus",
+    "resolvedModel": "claude-opus-5",
+    "tools": "none",
+    "caveat": "The issuer reports the adapter and model provenance. Signatures prove the recorded work and score, not model identity or exclusive authorship."
+  },
+  "runner": {
+    "sourceRevision": "51c69f74454ac2734f1cf0ad98415c4fc20373ad",
+    "sourceDirty": true,
+    "runtime": "bun@1.3.14",
+    "cliVersion": "2.1.274"
+  },
+  "verifier": {
+    "keyId": "da0d70eae14cf7df",
+    "publicKey": "MMP-mO0IcwK9gE43NeBPeZ7xsFtol0lXYtiQWZcHFf8"
+  },
+  "tracks": [
+    {
+      "name": "v2",
+      "policyFile": "policies/v2.json",
+      "admissions": [
+        {
+          "file": "admissions/v2-001.json",
+          "sha256": "1fc308b02267209c7984ddceb3c87cca5132e9f535ebae8ac0436cbab0170400",
+          "sessionId": "gs_uR8S41lbi2Xg",
+          "verdict": true,
+          "passed": 7,
+          "challenges": 8
+        },
+        {
+          "file": "admissions/v2-002.json",
+          "sha256": "36cae147b116113f4677e2539fb55a96e884484defafec6c5d870a970980b496",
+          "sessionId": "gs_DXq36x8e1uGa",
+          "verdict": true,
+          "passed": 8,
+          "challenges": 8
+        }
+      ]
+    },
+    {
+      "name": "frontier",
+      "policyFile": "policies/frontier.json",
+      "admissions": [
+        {
+          "file": "admissions/frontier-001.json",
+          "sha256": "4bb0a3903e7a6fcf3c597b7619f1cb86d30d292379ed0a333f2cb162fd035b03",
+          "sessionId": "gs_YG4EGW9qs7yE",
+          "verdict": true,
+          "passed": 5,
+          "challenges": 8
+        },
+        {
+          "file": "admissions/frontier-002.json",
+          "sha256": "4c0531c67879361aaf7a85bb92eb110e04d994eaa20eed3b90feddaa7bac9059",
+          "sessionId": "gs_TotmaeaWu6AT",
+          "verdict": false,
+          "passed": 4,
+          "challenges": 8
+        }
+      ]
+    }
+  ]
+}
