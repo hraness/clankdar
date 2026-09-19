@@ -352,8 +352,9 @@ Commands (reference: `bench/tlog.ts`):
   each issuer key and exits 2 on a proven fork.
 - `compare LOG_A.json LOG_B.json` decides whether two full logs under one
   issuer key are identical, strict-prefix consistent, or forked (§17).
-- `witness-serve --heads heads.jsonl [--host H] [--port N]` exposes the
-  provider-neutral common intake in §18.
+- `witness-serve --heads heads.jsonl [--host H] [--port N] [--providers
+  PROVIDERS.json] [--poll-ms N]` exposes the provider-neutral common
+  intake in §18, optionally polling configured providers too.
 
 ### Head witnessing
 
@@ -394,11 +395,12 @@ oracle — and a single log cannot detect a fork alone: an issuer could
 show different parties different logs. Fork detection is now implemented
 as local head comparison: `witness` accumulates every head an operator
 sees and `equivocate` proves the same-count and same-tip cases from the
-signed heads themselves. `witness-serve` (§18) adds explicit common intake,
-and full-log comparison (§17) decides different-length forks when both
-views are available. What is still missing is automatic discovery and
-transport — polling, gossip, witnessed co-signing, external anchoring —
-and compact suffix proofs. What the log buys is enumerability:
+signed heads themselves. `witness-serve` (§18) adds explicit common
+intake plus automatic polling of configured providers, and full-log
+comparison (§17) decides different-length forks when both views are
+available. What is still missing is provider discovery and
+witness-to-witness transport — gossip, witnessed co-signing, external
+anchoring — and compact suffix proofs. What the log buys is enumerability:
 every session and decision the issuer stands behind is committed,
 ordered, and replayable, so an admission that does not trace to a logged
 session is issuer-claimed only.
@@ -416,9 +418,10 @@ session is issuer-claimed only.
   against the issuance transparency log (§11): an admission that does not
   trace to a logged session is issuer-claimed only. The log is issuer-keyed,
   so fork detection needs published-head comparison; the reference
-  implements local and HTTP witness intake (§11, §18), same-count and
-  same-tip findings from heads, and full-log fork comparison (§17). It does
-  not implement provider polling, gossip, witnessed co-signing, or external
+  implements local and HTTP witness intake (§11, §18) with optional
+  configured-provider polling, same-count and same-tip findings from
+  heads, and full-log fork comparison (§17). It does not implement
+  provider discovery, gossip, witnessed co-signing, or external
   anchoring.
 - **Per-family solver scripts.** Public generators admit canned solvers:
   a receipt proves "access to a solver for this cell," still real friction
@@ -686,11 +689,12 @@ different log to another. The signed head is the accountability hook: a
 witness that pins `/tlog/head` output over time, or across vantage
 points, accumulates exactly the signed artifacts `equivocate` compares.
 Heads still have to reach a common witness before they can be compared.
-The explicit intake in §18 accepts them; automatic polling, gossip,
-witnessed co-signing, and external anchoring remain unimplemented. This
-is a reference surface, not a production deployment: TLS termination,
-client authentication on the write path, and high-availability operation
-are out of scope.
+The explicit intake in §18 accepts them and can poll configured
+providers' `/tlog/head` endpoints automatically; provider discovery,
+gossip, witnessed co-signing, and external anchoring remain
+unimplemented. This is a reference surface, not a production deployment:
+TLS termination, client authentication on the write path, and
+high-availability operation are out of scope.
 
 ## 17. Fork comparison over published logs
 
@@ -727,12 +731,13 @@ issuer-chosen.
 
 ## 18. Provider-neutral head witness
 
-`tlog witness-serve --heads HEADS.jsonl [--host H] [--port N]` exposes an
-explicit common intake for signed tlog heads. It is multi-provider by
-construction: every `TlogHead` embeds an Ed25519 public key, its derived
-`keyId`, and the signature, so the witness needs no provider registry or
-provider-specific adapter. Findings are always scoped to one `keyId`;
-heads under different keys never conflict.
+`tlog witness-serve --heads HEADS.jsonl [--host H] [--port N] [--providers
+PROVIDERS.json] [--poll-ms N]` exposes an explicit common intake for
+signed tlog heads. It is multi-provider by construction: every `TlogHead`
+embeds an Ed25519 public key, its derived `keyId`, and the signature, so
+the witness needs no provider registry or provider-specific adapter.
+Findings are always scoped to one `keyId`; heads under different keys
+never conflict.
 
 HTTP surface:
 
@@ -748,7 +753,40 @@ HTTP surface:
   `next` is the next offset or null.
 - `GET /equivocation/:keyId` runs §11 head comparison for exactly one
   provider key.
+- `GET /status` reports per-provider poll state — the configured `url`,
+  `lastPollAt`, `lastResult` (`ok` / `fetch-error` / `invalid-head`), and
+  the accepted head's `keyId` — plus `pollMs` and a `providersFile` flag
+  when the last providers-file read failed. Entries are bounded (the URL
+  is operator-supplied configuration, never a secret) and carry no raw
+  error strings.
 - `GET /healthz` reports process health.
+
+### Provider polling
+
+With `--providers PROVIDERS.json`, the witness polls each listed
+provider's `GET /tlog/head` every `--poll-ms` milliseconds (default
+60,000, bounded 1..86,400,000). The file is a JSON list of `{url}`
+entries — `{providers: [...]}` is accepted too — up to 256 unique
+http(s) base URLs, and it is **re-read every cycle**, so operators add
+or remove providers without a restart. An unreadable, oversized, or
+malformed file logs a bounded stderr warning and skips that cycle; the
+service stays up.
+
+Each fetched head goes through exactly the `POST /heads` path: bounded
+16 KiB body (10s fetch timeout), shape and signature check, unknown
+members stripped, then append — except a fetched head whose `count`+tip
+is identical to the latest stored head for its `keyId` is not
+re-appended, so a provider re-signing the same claim every cycle cannot
+spam the registry. An unreachable provider or an invalid head records
+nothing and surfaces only as a stderr warning plus the `/status`
+`lastResult`.
+
+A provider URL is configuration, **not trust**: only each head's own
+embedded verifier signature decides what is recorded, the registry
+bucket is the embedded `keyId` rather than the source URL, and two
+providers serving different keys stay isolated — even two providers
+serving contradictory heads under one key, which is exactly the
+equivocation evidence the registry exists to collect.
 
 The backing file is the same append-only registry used by `tlog witness`
 and `tlog equivocate`, so CLI and HTTP observations converge on one evidence
@@ -758,11 +796,12 @@ external identity system links the keys; Clankdar does not infer that link.
 ### Honest limits
 
 The service is an experimental intake, not gossip or a production witness.
-It does not discover providers, poll `/tlog/head`, co-sign observations,
-anchor them externally, authenticate submitters, impose provider quotas, or
-replicate its registry. Anyone can submit a valid harvested head, and a
+It does not discover providers, co-sign observations, anchor them
+externally, authenticate submitters or providers, impose provider quotas,
+or replicate its registry. Anyone can submit a valid harvested head, and a
 provider controlling a signing key can create enough valid heads to consume
 the registry bound. A private fork remains invisible until both signed views
-reach this or another common witness. TLS termination, abuse controls,
-high-availability storage, and witness-to-witness transport belong outside
-this reference process.
+reach this or another common witness — polling only closes the transport
+gap for providers the operator already chose to configure. TLS
+termination, abuse controls, high-availability storage, and
+witness-to-witness transport belong outside this reference process.
