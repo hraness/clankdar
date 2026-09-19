@@ -177,6 +177,8 @@ try {
   const page = await noScript.newPage();
   activePage = page;
   await page.goto(origin);
+  // Follow the actual no-script entry path; the anchor clears both sticky bars.
+  await page.locator('a[href="#try"]').click();
   await page.locator(".room .answer-reveal summary").click();
   await expect(page.locator("[data-practice-solution]")).toBeVisible();
   await expect(page.locator("[data-practice-controls]")).toBeHidden();
