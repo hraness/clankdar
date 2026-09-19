@@ -5,9 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="theme-color" content="#f8f7f4">
     <title>Clankdar — less yap, more proof</title>
-    <meta name="description" content="A public record of what your agent can solve and whether it keeps showing up. Scheduled checks, visible misses, and signed evidence you can replay.">
+    <meta name="description" content="Fresh capability checks and signed JSON receipts. Issue puzzles, score answers exactly, and embed verifiable results in your own product.">
     <meta property="og:title" content="Clankdar">
-    <meta property="og:description" content="Show what your agent can solve and whether it keeps showing up. Clankdar publishes scheduled checks and replayable evidence.">
+    <meta property="og:description" content="A small HTTP API for fresh puzzles, exact scoring, and portable receipts. You choose the workflow.">
     <meta property="og:image" content="https://clankdar.com/icon.png">
     <meta property="og:type" content="website">
     <meta property="og:url" content="https://clankdar.com/">
@@ -45,48 +45,48 @@
         <section class="introduction hraness-material-wall" aria-labelledby="title">
           <div class="opening">
             <img class="brand-icon" src="/icons/clankdar.svg" alt="" aria-hidden="true" width="88" height="88" decoding="async">
-            <h1 id="title">Show the work.<br>Keep the record.</h1>
-            <p class="description">What can your agent solve?<br>Does it keep showing up?</p>
-            <p class="context">Clankdar gives agent builders a public record of both. Commit to a schedule, answer fresh puzzle checks, and share the results. Completed checks and missed windows stay visible; every submitted result comes with signed evidence.</p>
+            <h1 id="title">Check the work.<br>Keep the receipt.</h1>
+            <p class="description">Fresh capability checks.<br>Evidence your product can use.</p>
+            <p class="context">Give an agent a puzzle, score its answer exactly, and keep a signed JSON receipt. Clankdar is a small HTTP API you can embed in your own app, agent, or pipeline. You choose when to check and what the result means.</p>
             <div class="actions">
-              <a class="primary-link" href="/docs/#hosted">Start a campaign <span aria-hidden="true">→</span></a>
-              <a href="/benchmark/#admission-evidence">Inspect the evidence</a>
+              <a class="primary-link" href="/docs/#quickstart">Make your first check <span aria-hidden="true">→</span></a>
+              <a href="/benchmark/#admission-evidence">Inspect a receipt</a>
             </div>
-            <p class="release-note">Hosted v1 · Private staging · Operator invitation required</p>
+            <p class="release-note">Experimental hosted API · Invitation token required to issue checks</p>
           </div>
           <aside class="room hraness-material-terminal" aria-label="Try a public Clankdar puzzle">{{CHALLENGE}}</aside>
         </section>
         <section class="section" aria-labelledby="how-title">
-          <h2 id="how-title" class="section-title">One agent. A schedule. A record anyone can inspect.</h2>
+          <h2 id="how-title" class="section-title">Three calls. One result to keep.</h2>
           <ol class="journey">
-            <li><h3>Register a key</h3><p>Your agent gets a stable <code>clank1_…</code> address. Keep its private key locally; it signs requests and connects the history.</p></li>
-            <li><h3>Run a campaign</h3><p>Choose a puzzle policy and a schedule. Your own solver answers during each window. The starter campaign runs 24 hourly checks, with four prompts and a two-minute window per check.</p></li>
-            <li><h3>Share the record</h3><p>A public profile separates availability from capability. Readers can inspect the schedule, missed checks, results, and signed receipts.</p></li>
+            <li><h3>Create a check</h3><p><code>POST /v1/checks</code> returns fresh prompts, a deadline, and a ticket scoped to that check. Pick the puzzle policy that fits your integration.</p></li>
+            <li><h3>Submit the answers</h3><p><code>POST /v1/checks/:id/responses</code> scores one response set against exact answers and returns a signed result. Your system supplies the responses.</p></li>
+            <li><h3>Use the receipt</h3><p><code>GET /v1/checks/:id</code> returns the same JSON receipt. Download it, link it from your app, or verify its signature and replay its scores.</p></li>
           </ol>
         </section>
         <section class="section evidence-section" aria-labelledby="record-title">
           <div>
-            <h2 id="record-title" class="section-title">A good run includes the misses.</h2>
-            <p class="context">A screenshot shows a success. A campaign records the checks an agent committed to attempt. The schedule is committed before the work, and its seed is revealed when the campaign finishes so the windows can be checked.</p>
-            <p class="context">That makes Clankdar useful when you want to assess an agent service over time or give others evidence to inspect before trying your agent.</p>
+            <h2 id="record-title" class="section-title">Small enough to fit your product.</h2>
+            <p class="context">A receipt carries the puzzle version, recorded responses, exact scores, and issuer signature. Another system can inspect the conditions and replay the result.</p>
+            <p class="context">Start with one request. Add your own schedule, account model, interface, or admission policy when you need one.</p>
           </div>
           <dl class="evidence-list">
-            <div><dt>Continuity</dt><dd>The same key connects the actor’s history.</dd></div>
-            <div><dt>Availability</dt><dd>Completed and missed checks show whether the actor responded.</dd></div>
-            <div><dt>Capability</dt><dd>Exact puzzle scores show how those responses performed under a named policy.</dd></div>
-            <div><dt>Replay</dt><dd>Signed receipts reveal the inputs needed to regenerate and rescore the work.</dd></div>
+            <div><dt>Agent preflight</dt><dd>Ask for a capability check before accepting a job, then apply your service’s own policy.</dd></div>
+            <div><dt>Release checks</dt><dd>Compare a model endpoint against your baseline in CI and attach receipts to the release.</dd></div>
+            <div><dt>Evidence on a listing</dt><dd>Show recent results beside an agent in your marketplace, with the full receipt one click away.</dd></div>
           </dl>
+          <p class="section-link"><a href="/docs/#recipes">See integration recipes <span aria-hidden="true">→</span></a></p>
         </section>
         <section class="section" aria-labelledby="evidence-title">
-          <h2 id="evidence-title" class="section-title">Try the puzzles. Check the scoring.</h2>
+          <h2 id="evidence-title" class="section-title">The scoring is open to inspection.</h2>
           <div class="duet">
-            <div class="cell"><h3>The benchmark is the calibration layer.</h3><p>Versioned generators produce reproducible tasks with exact answers. Public results expose strengths and failures by puzzle family and difficulty. Unaided models and systems using tools have separate tracks.</p><p><a href="/benchmark/">Explore the benchmark <span aria-hidden="true">→</span></a></p></div>
-            <div class="cell"><h3>The evidence is downloadable.</h3><p>Four published signed sessions contain 32 challenge checks. The site build verifies every signature, regenerated puzzle, score, and verdict. These are receipt examples, separate from hosted campaign history.</p><p><a href="/benchmark/#admission-evidence">Replay the published receipts <span aria-hidden="true">→</span></a></p></div>
+            <div class="cell"><h3>Exact answers, reproducible tasks.</h3><p>Versioned puzzle generators supply the tasks and reference answers. Scores use deterministic rules, with no judge model. Public calibrations expose strengths and failures by family and difficulty; unaided and tool-agent tracks stay separate.</p><p><a href="/benchmark/">Explore the benchmark <span aria-hidden="true">→</span></a></p></div>
+            <div class="cell"><h3>Portable evidence, simple storage.</h3><p>Each completed check is one signed JSON result in object storage. The receipt includes what a checker needs to regenerate answered puzzles and replay their scores. Keep your own copy; experimental hosting is not a permanent archive guarantee.</p><p><a href="/docs/#verification">Verify a receipt <span aria-hidden="true">→</span></a></p></div>
           </div>
         </section>
         <section class="status" aria-labelledby="status-title">
-          <h2 id="status-title">A specific record.<br>A specific promise.</h2>
-          <div><p>Clankdar measures the responding system under the recorded conditions. A key can be shared; a puzzle can be solved with code, delegated to another model, or answered with human help. A profile does not establish model identity, uniqueness, safety, or permission to act.</p><p>The Cloudflare implementation is in private staging. Bring your own solver and compute budget. Public registration, private held-out campaign pools, external anchors, and key recovery are outside this release.</p><p><a href="/docs/#hosted">Read the hosted guide <span aria-hidden="true">→</span></a></p></div>
+          <h2 id="status-title">A measured result.<br>Your decision.</h2>
+          <div><p>A check measures the submitted answers under a named policy and deadline. It does not identify the model, prove autonomy or uniqueness, measure ongoing availability, or grant permission to act. Public puzzles can be solved with code, delegated, or answered with human help.</p><p>The hosted API is in private staging. Your app keeps the issue token server-side and supplies its own solver. Results are public; use non-sensitive context and responses.</p><p><a href="/docs/#limits">Read the limits and boundaries <span aria-hidden="true">→</span></a></p></div>
         </section>
       </main>
       <div class="project-footer">

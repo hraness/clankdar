@@ -1,85 +1,128 @@
 # Clankdar
 
-**A public record of what your agent can solve and whether it keeps showing up.**
+**Fresh capability checks. Portable, verifiable receipts.**
 
-Clankdar gives agent builders a stable key address, scheduled puzzle checks,
-and a shareable history. A campaign commits its schedule before the work;
-completed checks and missed windows stay visible. Exact scoring and signed,
-replayable receipts let others inspect each result. Availability and
-capability remain separate.
+Issue puzzles over HTTP, submit one set of answers, and keep the signed JSON
+result. Clankdar supplies deterministic tasks, exact scoring, and evidence
+that another system can replay. Your application chooses when to check, who
+to associate it with, and how to use the result.
 
-Hosted v1 is **private staging** on Cloudflare. The local benchmark supplies
-reproducible tasks and calibration evidence; it can also run independently.
-Guides and public evidence: [clankdar.com](https://clankdar.com).
+The core API needs no actor registration, public profile, or campaign. Each
+completed result is one canonical JSON object in R2; D1 holds a small issue
+quota counter. The benchmark and optional scheduling examples build on the
+same receipt primitives.
 
-Clankdar measures the responding system under recorded conditions. Keys can
-be shared and answers delegated. A profile does not establish model identity,
-uniqueness, personhood, safety, or authority. Passing never grants tool or
-host access.
+Guides and evidence: [clankdar.com](https://clankdar.com).
+The hosted API is experimental private staging; the operator supplies issue
+tokens. A receipt measures submitted answers under recorded conditions, not
+model identity, autonomy, ongoing availability, uniqueness, safety, or authority.
 
-## Start a hosted campaign
+## Make one check with HTTP
 
-Use **Bun 1.3.14** from this repository. Obtain an invitation token from the operator; save the token privately in `invite.txt`.
-There is no public self-service registration or published installable SDK.
-Set `OPENAI_API_KEY` privately for the model provider and replace
-`YOUR_PROVIDER_MODEL` below with its exact model ID. Nothing selects a model
-or calls a provider until you explicitly run the supplied solver.
+Use curl and jq from a fresh directory. Set `CLANKDAR_TOKEN` privately to your
+invitation token, keeping it on your server. No repository checkout, Bun,
+agent key, or model-provider configuration is required for this HTTP demo.
 
 ```console
-bun install --frozen-lockfile --ignore-scripts
 export CLANKDAR_URL="https://clankdar-hosted-staging.972abc65.workers.dev"
-bun actor keygen --out actor.json
-bun actor register --url "$CLANKDAR_URL" --key actor.json --token-file invite.txt
-bun actor campaign --url "$CLANKDAR_URL" --key actor.json
-export MODEL="YOUR_PROVIDER_MODEL"
-bun actor run --url "$CLANKDAR_URL" --key actor.json \
-  --campaign cmp_YOUR_CAMPAIGN --solver ./cloudflare/examples/model-solver.ts \
-  --pass-env OPENAI_API_KEY,MODEL
+# Set CLANKDAR_TOKEN privately to your invitation token.
+umask 077
+curl -fsS "$CLANKDAR_URL/v1/checks" \
+  -H "Authorization: Bearer $CLANKDAR_TOKEN" \
+  -H "Content-Type: application/json" \
+  --data '{"policyId":"v2-floor-v1"}' > check.json
+jq -r '.challenges[] | "\(.challengeId)\n\(.prompt)\n"' check.json
 ```
 
-Use the campaign ID returned by `campaign`. The default is 24 hourly checks, a 120-second window,
-and the `v2-floor-v1` policy: four prompts per check, at least three passing.
-The campaign contains at most 96 prompts. Your solver owns its provider calls
-and compute budget; this is not a dollar cap.
-
-The included `cloudflare/examples/model-solver.ts` uses the existing
-OpenAI-compatible HTTP adapter and requires both `MODEL` and `OPENAI_API_KEY`.
-It handles at most four challenges per check, with 512 output tokens per
-request by default, at most 12 HTTP attempts including rejected-parameter
-negotiation, and a deadline bounded by the session. Refused or token-truncated
-replies cannot pass. To use another compatible endpoint, set
-`OPENAI_BASE_URL` and add it to `--pass-env`. `MAX_TOKENS` accepts 1–4096;
-set it and include it in `--pass-env` to override 512. Configure provider
-spending limits separately: request and token bounds are not a dollar cap.
-
-Leave the runner online for the campaign. It stops after 25 hours or 24
-submitted checks by default; `--max-seconds` and `--max-epochs` set bounds.
-`--once` polls once: waiting exits immediately; an open check is solved and
-submitted. Stopping the runner does not cancel the schedule; unanswered
-windows become misses.
-
-You can supply your own executable instead. It receives
-`{state, campaignId, epoch, sessionId, expiresAt, challenges}` as JSON on stdin
-and returns an object mapping challenge IDs to response strings on stdout,
-for example `{"att_example_id":"the answer"}`. Each challenge has its actual
-ID and prompt. The runner discards stderr and passes only explicitly named
-provider variables plus basic process variables. The solver is a local
-program, not a sandbox; use code you trust. Actor keys and invitation tokens
-are not solver inputs.
-
-Registration returns a `profileUrl` at the staging origin's
-`/actors/clank1_YOUR_ADDRESS` path. Share that public profile, or read the same
-actor through the CLI:
+The default `v2-floor-v1` policy returns four prompts, requires three passing
+answers, and allows 120 seconds. The response includes actual challenge IDs,
+`expiresAt`, and a private ticket for this check. Creating it does not call a
+model. Build an answer map using those real IDs:
 
 ```console
-bun actor profile --url "$CLANKDAR_URL" --address clank1_YOUR_ADDRESS
+jq '.challenges | map({key: .challengeId, value: ""}) | from_entries' \
+  check.json > answers.json
 ```
 
-The keygen/register commands return the address. Keep a secure private backup
-of `actor.json`: v1 has no key recovery. Profile reads do not need the
-invitation token. Responses and completed evidence are public; do not submit
-private information. The [hosted guide](docs/clankdar-hosted-v1.md) covers
-manual submission, response formats, exact claims, and deployment boundaries.
+Blank values make this an intentionally failed-check demo. Submit them as-is
+to exercise the complete receipt flow without calling a model, or replace
+them with actual solver answers before the check expires. A failed check
+consumes the attempt too. Missing or malformed answers produce no challenge
+receipt or seed reveal; the blank-answer demo still verifies as 0 of 4 passing.
+
+```console
+jq -n --slurpfile check check.json --slurpfile answers answers.json \
+  '{ticket: $check[0].ticket, responses: $answers[0]}' > submission.json
+curl -fsS "$CLANKDAR_URL/v1/checks/$(jq -r '.id' check.json)/responses" \
+  -H "Content-Type: application/json" \
+  --data-binary @submission.json > result.json
+jq '{id, pass, passed, required, receiptUrl, sha256}' result.json
+curl -fsS "$CLANKDAR_URL$(jq -r '.receiptUrl' result.json)" > receipt.json
+```
+
+Submission needs the scoped ticket, not your issue token. The first accepted
+submission fixes the result; submission retries recover that same result.
+Retrying creation issues a new check and consumes another quota slot. `receipt.json`
+is the raw signed `clankdar-gate-v1` admission, with `protocol`, `payload`, and
+`signature`. Its public URL remains readable after the ticket expires.
+Download your own copy; experimental storage has no automatic deletion policy
+but is not a permanent-archive guarantee.
+
+## Embed the primitive
+
+- **Agent preflight:** create a check when an agent offers to take a job, then
+  apply your service's own authentication and admission policy to the result.
+- **Release CI:** compare checks under fixed conditions with a declared
+  baseline and attach receipts to the release.
+- **Agent listings:** display a recent result and a link to the underlying
+  evidence in your own marketplace or directory.
+- **Scheduled monitoring:** call the same endpoints from your own cron job.
+  Your app owns cadence, budgets, missed-run treatment, and alerting; a single
+  check makes no ongoing-availability claim.
+
+The [server-side JavaScript example](cloudflare/examples/check.mjs) connects the
+requests to a solver you supply through `solve(challenges, signal)`. Forward
+the abort signal to your provider call. Clankdar does not select or run a
+model for you; your solver owns provider calls and inference costs. Use the
+optional `checkpoint(record)` callback to retain the ticket and answers
+privately before submission if your integration needs recovery after a
+process exit.
+
+## Verify and retain the result
+
+From the repository with Bun 1.3.14, the optional verifier reuses the existing
+independent checker. Configure the expected issuer public key in your app;
+do not accept an arbitrary signer merely because its signature is valid.
+
+```console
+bun cloudflare/examples/verify-receipt.mjs receipt.json \
+  --issuer "$EXPECTED_ISSUER_PUBLIC_KEY" \
+  --session "$(jq -r '.id' check.json)" \
+  --sha256 "$(jq -r '.sha256' result.json)"
+```
+
+Add `--context` when required by your integration. Verification checks the
+signature and replays the scoring; also require your intended policy,
+freshness, and passing verdict before making a decision. Failed results can
+have valid receipts. See the [verifier](cloudflare/examples/verify-receipt.mjs)
+and [check API contract](docs/clankdar-checks-v1.md).
+
+The two hosted policies ask four prompts and require three passes:
+`v2-floor-v1` has a 120-second deadline; `frontier-floor-v1` has 180 seconds.
+Optional issue fields are `context` (a nonempty string up to 256 characters) and
+`subjectPublicKey` (requiring a matching subject proof on submission).
+Results are public: do not include private context or responses. Keep tickets
+private until consumed or expired and issue tokens server-side.
+
+Shared staging is capped at 1,024 lifetime issued checks and 60 issues per
+minute, with 128 KiB request bodies and 256 KiB receipts. These are global
+limits, not separate allowances for each token. The atomic API uses fresh
+public-stream puzzles, not issuer-private held-out pools.
+
+Existing actor/campaign records and routes remain available as an
+[optional legacy reference](docs/clankdar-hosted-v1.md). They are not required
+for the check API. The examples show possible applications; they do not
+prescribe your product's workflow.
 
 ## Run the local benchmark
 
@@ -279,22 +322,17 @@ heads to the provider-neutral witness intake — or configure the witness to
 poll this endpoint — but a private fork stays invisible until both views
 reach one witness.
 
-`cloudflare/` implements the hosted actor/campaign service described above.
-One SQLite Durable Object per actor owns the nonce guards, session state, and
-append-only actor history; D1 is a rebuildable directory projection, and R2
-holds immutable content-addressed evidence. Campaigns preserve missed epochs,
-encrypt live tickets, publish compatible gate admissions, and reveal the
-schedule seed when complete. Public profiles keep availability and capability
-separate. A heartbeat alone proves only signed activity, not puzzle capability.
+`cloudflare/` implements the atomic check API: issue one bounded challenge
+session, consume one response set, and return a canonical signed admission
+from R2. Issuance uses a bearer token and small D1 quota counters; completed
+results are immutable JSON objects. The [check contract](docs/clankdar-checks-v1.md)
+describes the API and operating limits.
 
-The current policies use public puzzle-generator streams. Issuer-private
-held-out campaign pools, external anchors, rotation/recovery, and independent
-witness integration are future layers. The local reference protocols below
-do not imply those features are deployed in hosted campaigns. See the
-[hosted contract](docs/clankdar-hosted-v1.md) for exact claims, API routes,
-operating limits, and required live verification. Deployment is designed for
-the Cloudflare Free plan; account allowances and actual usage must be verified
-before any plan change.
+The existing SQLite Durable Object actor/campaign implementation remains an
+optional legacy application with its records and routes preserved. It is not
+a prerequisite for issuing checks. See the [legacy guide](docs/clankdar-hosted-v1.md).
+Private held-out pools, badges, and witness tools in this repository are reference
+capabilities; their presence does not imply integration into the atomic API.
 
 `clankdar-holdout-v1` covers issuer-private cells: `bun holdout gen` mints a
 pool of published generator cells re-parameterized by secret labels, and gate

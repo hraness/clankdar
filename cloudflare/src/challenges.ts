@@ -41,14 +41,25 @@ export interface HostedChallenge {
   seedCommit: string;
   nonce: string;
   expiresAt: string;
-  context: string;
-  subject: string;
+  context?: string;
+  subject?: string;
   sessionId: string;
   verifier: { keyId: string; publicKey: string };
 }
 
 export interface HostedTicket { challenge: HostedChallenge; seed: number; expected: string }
-export interface HostedSessionSecret { sessionId: string; policy: HostedPolicy; actor: string; campaignId: string; epoch: number; issuedAt: string; expiresAt: string; tickets: HostedTicket[] }
+export interface CheckSessionSecret {
+  sessionId: string;
+  policy: HostedPolicy;
+  issuedAt: string;
+  expiresAt: string;
+  tickets: HostedTicket[];
+  subject?: string;
+  context?: string;
+  subjectPublicKey?: string;
+}
+export interface HostedSessionSecret extends CheckSessionSecret { actor: string; campaignId: string; epoch: number }
+export interface SubjectProof { publicKey: string; signature: string }
 export interface HostedReceipt { protocol: typeof ATTEST_PROTOCOL; payload: string; signature: string }
 export interface HostedAdmission { protocol: typeof GATE_PROTOCOL; payload: string; signature: string }
 
@@ -68,9 +79,11 @@ const cell = (value: string) => {
 const seedCommit = (challenge: Pick<HostedChallenge, "suiteVersion" | "family" | "tier" | "nonce">, seed: number) =>
   sha256([COMMIT_DOMAIN, challenge.suiteVersion, challenge.family, challenge.tier, challenge.nonce, seed].join("\0"));
 
-export async function issueHostedSession(opts: {
-  policy: HostedPolicy; actor: string; campaignId: string; epoch: number; issuer: IssuerIdentity; now: Date; expiresAt: Date;
-}): Promise<{ secret: HostedSessionSecret; challenges: HostedChallenge[] }> {
+/** Environment-neutral gate primitives; scheduling and durable acceptance belong to callers. */
+export async function issueCheckSession(opts: {
+  policy: HostedPolicy; issuer: IssuerIdentity; now: Date; expiresAt: Date;
+  subject?: string; context?: string; subjectPublicKey?: string;
+}): Promise<{ secret: CheckSessionSecret; challenges: HostedChallenge[] }> {
   const policy = opts.policy;
   if (policy.challenges < 1 || policy.challenges > 16 || policy.minPass < 1 || policy.minPass > policy.challenges) throw new Error("hosted policy bounds are invalid");
   const version = suiteVersion(policy.suite);
@@ -88,45 +101,54 @@ export async function issueHostedSession(opts: {
     const challenge: HostedChallenge = {
       protocol: ATTEST_PROTOCOL, kind: "challenge", challengeId: `att_${random(9)}`, suiteVersion: version,
       family: family.name, tier: selected.tier, prompt: instance.prompt, seedCommit: "", nonce: random(12),
-      expiresAt: opts.expiresAt.toISOString(), context: opts.campaignId, subject: opts.actor, sessionId,
+      expiresAt: opts.expiresAt.toISOString(), sessionId,
+      ...(opts.context !== undefined ? { context: opts.context } : {}),
+      ...(opts.subject !== undefined ? { subject: opts.subject } : {}),
       verifier: { keyId: opts.issuer.keyId, publicKey: opts.issuer.publicKey },
     };
     challenge.seedCommit = await seedCommit(challenge, seed);
     tickets.push({ challenge, seed, expected });
   }
   return {
-    secret: { sessionId, policy, actor: opts.actor, campaignId: opts.campaignId, epoch: opts.epoch, issuedAt: opts.now.toISOString(), expiresAt: opts.expiresAt.toISOString(), tickets },
+    secret: { sessionId, policy, issuedAt: opts.now.toISOString(), expiresAt: opts.expiresAt.toISOString(), tickets,
+      ...(opts.context !== undefined ? { context: opts.context } : {}),
+      ...(opts.subject !== undefined ? { subject: opts.subject } : {}),
+      ...(opts.subjectPublicKey !== undefined ? { subjectPublicKey: opts.subjectPublicKey } : {}) },
     challenges: tickets.map((ticket) => ticket.challenge),
   };
 }
 
-export async function submitHostedSession(opts: {
-  session: HostedSessionSecret;
+export async function verifySessionSubject(session: Pick<CheckSessionSecret, "sessionId" | "subjectPublicKey">, proof?: SubjectProof): Promise<boolean> {
+  if (session.subjectPublicKey !== undefined && proof?.publicKey !== session.subjectPublicKey) return false;
+  return proof === undefined || await verifyActorSignature(proof.publicKey, [SUBJECT_DOMAIN, session.sessionId, proof.publicKey], proof.signature);
+}
+
+export async function submitCheckSession(opts: {
+  session: CheckSessionSecret;
   responses: Record<string, string>;
-  subjectProof: { publicKey: string; signature: string };
-  actorPublicKey: string;
+  subjectProof?: SubjectProof;
   issuer: IssuerIdentity;
   now: Date;
 }): Promise<{ admission: HostedAdmission; receipts: HostedReceipt[]; passed: number; verdict: boolean }> {
   const { session } = opts;
   if (opts.now.getTime() > Date.parse(session.expiresAt)) throw new Error("session expired");
-  if (opts.subjectProof?.publicKey !== opts.actorPublicKey || !await verifyActorSignature(opts.actorPublicKey, [SUBJECT_DOMAIN, session.sessionId, opts.actorPublicKey], opts.subjectProof.signature)) throw new Error("subject proof does not verify");
+  if (!await verifySessionSubject(session, opts.subjectProof)) throw new Error("subject proof does not verify");
   const known = new Set(session.tickets.map((ticket) => ticket.challenge.challengeId));
   if (Object.keys(opts.responses).some((id) => !known.has(id))) throw new Error("response names an unknown challenge");
   const receipts: HostedReceipt[] = [];
   let passed = 0;
   for (const ticket of session.tickets) {
     const response = opts.responses[ticket.challenge.challengeId];
-    if (typeof response !== "string" || response.length > MAX_ANSWER_LENGTH || canonicalAnswer(response, answerFormat(ticket.challenge.family)) === null) continue;
     if (await seedCommit(ticket.challenge, ticket.seed) !== ticket.challenge.seedCommit) throw new Error("ticket commitment does not verify");
     const family = poolForVersion(ticket.challenge.suiteVersion).find((candidate) => candidate.name === ticket.challenge.family);
     if (!family) throw new Error("ticket family is unknown");
     const instance = family.generate(ticket.challenge.tier, ticket.seed);
     if (instance.prompt !== ticket.challenge.prompt || canonicalAnswer(instance.answer, answerFormat(family.name)) !== ticket.expected) throw new Error("ticket does not regenerate");
+    if (typeof response !== "string" || response.length > MAX_ANSWER_LENGTH || canonicalAnswer(response, answerFormat(ticket.challenge.family)) === null) continue;
     const scored = scoreAnswer(instance.answer, response, answerFormat(ticket.challenge.family));
     const body = {
       kind: "receipt", challenge: ticket.challenge, seed: ticket.seed, expected: ticket.expected, response,
-      subjectProof: opts.subjectProof,
+      ...(opts.subjectProof !== undefined ? { subjectProof: opts.subjectProof } : {}),
       verdict: { pass: scored.pass, format: answerFormat(ticket.challenge.family), answeredAt: opts.now.toISOString() },
     };
     const payload = canonical(body);
@@ -137,10 +159,27 @@ export async function submitHostedSession(opts: {
   const admissionBody = {
     kind: "admission", sessionId: session.sessionId,
     policy: { suite: session.policy.suite, cells: session.policy.cells, challenges: session.policy.challenges, minPass: session.policy.minPass, ttlSeconds: session.policy.ttlSeconds },
-    subject: session.actor, context: session.campaignId,
+    ...(session.subject !== undefined ? { subject: session.subject } : {}),
+    ...(session.context !== undefined ? { context: session.context } : {}),
     challenges: session.tickets.map((ticket) => ticket.challenge), receipts,
     verdict: { pass: verdict, passed, required: session.policy.minPass, decidedAt: opts.now.toISOString() },
   };
   const payload = canonical(admissionBody);
   return { admission: { protocol: GATE_PROTOCOL, payload, signature: await opts.issuer.sign(payload) }, receipts, passed, verdict };
+}
+
+/** Legacy campaign tickets and admissions retain their actor-key enforcement and wire bindings. */
+export async function issueHostedSession(opts: {
+  policy: HostedPolicy; actor: string; campaignId: string; epoch: number; issuer: IssuerIdentity; now: Date; expiresAt: Date;
+}): Promise<{ secret: HostedSessionSecret; challenges: HostedChallenge[] }> {
+  const issued = await issueCheckSession({ ...opts, subject: opts.actor, context: opts.campaignId });
+  return { ...issued, secret: { ...issued.secret, actor: opts.actor, campaignId: opts.campaignId, epoch: opts.epoch } };
+}
+
+export async function submitHostedSession(opts: {
+  session: HostedSessionSecret; responses: Record<string, string>; subjectProof: SubjectProof;
+  actorPublicKey: string; issuer: IssuerIdentity; now: Date;
+}): Promise<{ admission: HostedAdmission; receipts: HostedReceipt[]; passed: number; verdict: boolean }> {
+  return submitCheckSession({ ...opts, session: { ...opts.session,
+    subject: opts.session.actor, context: opts.session.campaignId, subjectPublicKey: opts.actorPublicKey } });
 }
