@@ -4,6 +4,7 @@ import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { canonical, generateVerifier, publicKeyOf, signBody, subjectProofFor, type VerifierJwk } from "./attest.ts";
 import { issueSession, submitSession, type Admission, type GatePolicy, type GateSession } from "./gate.ts";
+import { generatePool, type HoldoutPool } from "./holdout.ts";
 import { GateStore } from "./store.ts";
 import { buildLog, proveSession } from "./tlog.ts";
 import { BADGE_PROTOCOL, checkBadge, packBadge, type Badge, type BadgeBody, type BadgeProof } from "./badge.ts";
@@ -28,6 +29,18 @@ const boundAdmission = (opts: { verifierJwk?: VerifierJwk; subjectJwk?: Verifier
   const subjectProof = subjectProofFor(issued.session.tickets[0].challenge, subjectJwk);
   const { admission } = submitSession({ session: issued.session, responses: answersOf(issued.session), subjectProof, verifierJwk, now: later });
   return { issued, admission };
+};
+
+const heldoutBoundAdmission = (opts: { verifierJwk?: VerifierJwk; seedBase?: number } = {}): { admission: Admission; pool: HoldoutPool } => {
+  const verifierJwk = opts.verifierJwk ?? verifier.privateJwk;
+  const pool = generatePool({ suite: "v2", cells: ["arithmetic:t0"] });
+  const heldoutPolicy: GatePolicy = { suite: "v2", cells: ["h:arithmetic:t0"], challenges: 2, minPass: 1, ttlSeconds: 300 };
+  const issued = issueSession({ policy: heldoutPolicy, verifierJwk, pool, now, pick: () => 0, seedBase: opts.seedBase ?? 700_000 });
+  const subjectProof = subjectProofFor(issued.session.tickets[0].challenge, subject.privateJwk);
+  const { admission } = submitSession({
+    session: issued.session, responses: answersOf(issued.session), subjectProof, verifierJwk, pool, now: later,
+  });
+  return { admission, pool };
 };
 
 /** A real admission with no subject proof — valid, but not badge material. */
@@ -87,6 +100,32 @@ describe("badge pack and check", () => {
     expect(checkBadge(badge)).toEqual({ ok: true, subject: subject.publicKey, admissions: 2, passed: 2, logged: 0 });
   });
 
+  test("held-out scores stay visible across many issuer pools until each pool is disclosed", () => {
+    const a = heldoutBoundAdmission();
+    const b = heldoutBoundAdmission({ verifierJwk: other.privateJwk, seedBase: 800_000 });
+    const badge = packBadge({ admissions: [a.admission, b.admission], subjectJwk: subject.privateJwk, now: built });
+    expect(checkBadge(badge)).toEqual({
+      ok: true, subject: subject.publicKey, admissions: 2, passed: 2, logged: 0, unreplayed: 4,
+    });
+    expect(checkBadge(badge, { pools: [a.pool] })).toEqual({
+      ok: true, subject: subject.publicKey, admissions: 2, passed: 2, logged: 0, unreplayed: 2,
+    });
+    expect(checkBadge(badge, { pools: [a.pool, b.pool] })).toEqual({
+      ok: true, subject: subject.publicKey, admissions: 2, passed: 2, logged: 0,
+    });
+    expect(packBadge({
+      admissions: [a.admission, b.admission], pools: [a.pool, b.pool], subjectJwk: subject.privateJwk, now: built,
+    }).protocol).toBe(BADGE_PROTOCOL);
+  });
+
+  test("badge checking rejects duplicate or invalid disclosed pools", () => {
+    const a = heldoutBoundAdmission();
+    const badge = packBadge({ admissions: [a.admission], subjectJwk: subject.privateJwk, now: built });
+    expect(checkBadge(badge, { pools: [a.pool, a.pool] }).reason).toContain("share a poolKey");
+    const tampered = { ...a.pool, cells: a.pool.cells.map((cell, index) => index ? cell : { ...cell, label: `${cell.label}x` }) };
+    expect(checkBadge(badge, { pools: [tampered] }).reason).toContain("pool does not verify");
+  });
+
   test("a badge can carry a failing verdict — it reports, it does not certify", () => {
     const strict: GatePolicy = { ...policy, minPass: 2 };
     const issued = issueSession({ policy: strict, verifierJwk: verifier.privateJwk, now, pick: () => 0, seedBase: 700_000 });
@@ -122,6 +161,13 @@ describe("badge checking", () => {
     const result = checkBadge(badge);
     expect(result.ok).toBe(false);
     expect(result.reason).toContain("not subject-bound");
+  });
+
+  test("rejects malformed admission members without throwing", () => {
+    for (const admission of [null, "not-an-admission", { payload: 7 }]) {
+      const badge = badgeOf({ admissions: [admission as unknown as Admission] });
+      expect(checkBadge(badge)).toMatchObject({ ok: false, reason: "admission does not verify: not a gate admission" });
+    }
   });
 
   test("rejects two admissions sharing one session", () => {
@@ -243,6 +289,33 @@ describe("badge CLI", () => {
     const bad = await badge("check", join(dir, "tampered.json"));
     expect(bad.code).toBe(2);
     expect(JSON.parse(bad.stdout).ok).toBe(false);
+  });
+
+  test("check accepts many disclosed pools and reports undisclosed scores", async () => {
+    const dir = mkdtempSync(join(tmpdir(), "clankdar-badge-holdout-"));
+    const a = heldoutBoundAdmission();
+    const b = heldoutBoundAdmission({ verifierJwk: other.privateJwk, seedBase: 800_000 });
+    const keyFile = join(dir, "subject.json");
+    const badgeFile = join(dir, "badge.json");
+    const admissionA = join(dir, "a.json");
+    const admissionB = join(dir, "b.json");
+    const poolA = join(dir, "pool-a.json");
+    const poolB = join(dir, "pool-b.json");
+    writeFileSync(keyFile, JSON.stringify(subject.privateJwk));
+    writeFileSync(admissionA, JSON.stringify(a.admission));
+    writeFileSync(admissionB, JSON.stringify(b.admission));
+    writeFileSync(poolA, JSON.stringify(a.pool));
+    writeFileSync(poolB, JSON.stringify(b.pool));
+    expect((await badge(
+      "pack", "--subject-key", keyFile, "--admissions", `${admissionA},${admissionB}`, "--out", badgeFile,
+    )).code).toBe(0);
+
+    const claimed = await badge("check", badgeFile);
+    expect(JSON.parse(claimed.stdout)).toMatchObject({ ok: true, unreplayed: 4 });
+    const replayed = await badge("check", badgeFile, "--pools", `${poolA},${poolB}`);
+    expect(JSON.parse(replayed.stdout)).toEqual({
+      ok: true, subject: subject.publicKey, admissions: 2, verdicts: { pass: 2 }, logged: 0,
+    });
   });
 
   test("pack exits nonzero on an unbound admission", async () => {

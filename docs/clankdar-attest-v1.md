@@ -340,9 +340,11 @@ Commands (reference: `bench/tlog.ts`):
   decisionIndex, head}` — the inclusion evidence a third party needs:
   `check` the log, then confirm the session was issued (sessionIndex) and
   its decision logged (decisionIndex; null while undecided).
-- `admit tlog.json ADMISSION.json` runs the full §8 admission check AND
-  requires the admission's `sessionId` to have both a session and a
-  decision entry in a log that itself verifies — `{ok, verdict, passed}`.
+- `admit tlog.json ADMISSION.json [--pool POOL.json]` runs the full §8
+  admission check AND requires the admission's `sessionId` to have both a
+  session and a decision entry in a log that itself verifies. Held-out
+  receipts without the matching disclosed pool remain valid but surface as
+  `unreplayed`; supplying the pool upgrades them to fully replayed evidence.
 - `witness --heads heads.jsonl tlog.json` runs the full `check`, then
   appends the log's head to a local head registry (below). Re-witnessing
   an identical head is a no-op, not an error.
@@ -492,7 +494,11 @@ A checker MUST:
    `clankdar-badge-v1` protocol, and a `subjectKey` that decodes as an
    Ed25519 JWK `x` member;
 2. require `admissions` to hold 1–64 entries, each passing the §8 admission
-   check, with distinct `sessionId`s — one decision per session (§9);
+   check, with distinct `sessionId`s — one decision per session (§9). When
+   holdout pools are disclosed, index up to 64 distinct pools by `poolKey`
+   and replay each admission against its matching pool; sum every admission's
+   remaining `unreplayed` receipt count rather than treating issuer-claimed
+   scores as fully replayed;
 3. require every admission to be subject-bound: every embedded receipt that
    carries a `subjectProof` MUST use `publicKey === subjectKey`, and at
    least one receipt MUST carry a proof — the session-scoped transcript
@@ -523,18 +529,23 @@ admissions. It does **not** prove the key holder solved anything — §7
 delegation survives aggregation — and it does **not** prove the admissions
 were earned: an issuer can always self-mint for a colluding subject, which
 is why `tlog` inclusion proofs are optional but recommended (an admission
-whose session has no logged decision is issuer-claimed only). A badge is a
-dossier, not an identity: it carries no liveness or revocation of its own,
-verdicts inside it may be passes or fails, and it grants no authority.
+whose session has no logged decision is issuer-claimed only). A badge result
+with `unreplayed > 0` also contains held-out score claims the checker could
+not regenerate; `passed` reports signed verdicts, not proof that those scores
+were replayed. Pool disclosure is checker input, never embedded secret
+material in the badge. A badge is a dossier, not an identity: it carries no
+liveness or revocation of its own, verdicts inside it may be passes or fails,
+and it grants no authority.
 
 Commands (reference: `bench/badge.ts`):
 
 - `pack --subject-key KEY.json --admissions a.json,b.json [--proofs
-  proofs.json] [--out badge.json]` packs a badge and replays it through the
-  checker before emitting — `proofs.json` is `[{log, proof}]` assembled by
-  the caller (`tlog build` + `tlog prove`).
-- `check badge.json` → `{ok, subject, admissions, verdicts:{pass},
-  logged}`; exit 2 on failure.
+  proofs.json] [--pools p1.json,p2.json] [--out badge.json]` packs a badge
+  and replays it through the checker before emitting — `proofs.json` is
+  `[{log, proof}]` assembled by the caller (`tlog build` + `tlog prove`).
+- `check badge.json [--pools p1.json,p2.json]` → `{ok, subject,
+  admissions, verdicts:{pass}, logged, unreplayed?}`; pools from multiple
+  issuers may mix and are selected by committed `poolKey`; exit 2 on failure.
 
 ## 15. Held-out pools (holdout-v1)
 

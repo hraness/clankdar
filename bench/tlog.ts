@@ -5,7 +5,7 @@
  *   bun bench/tlog.ts build --dir gate-state/ --key verifier.json [--out tlog.json]
  *   bun bench/tlog.ts check tlog.json
  *   bun bench/tlog.ts prove tlog.json --session gs_xxx
- *   bun bench/tlog.ts admit tlog.json admission.json
+ *   bun bench/tlog.ts admit tlog.json admission.json [--pool pool.json]
  *   bun bench/tlog.ts witness --heads heads.jsonl tlog.json
  *   bun bench/tlog.ts equivocate --heads heads.jsonl
  *   bun bench/tlog.ts compare log-a.json log-b.json
@@ -42,6 +42,7 @@ import {
   type Receipt, type VerifierJwk,
 } from "./attest.ts";
 import { checkAdmission, type Admission, type AdmissionBody, type GateSession } from "./gate.ts";
+import { parsePool, type HoldoutPool } from "./holdout.ts";
 
 export const TLOG_PROTOCOL = "clankdar-tlog-v1";
 /** The ledger file `bench/store.ts` appends to inside a gate state dir. */
@@ -298,6 +299,8 @@ export interface AdmittedCheck {
   ok: boolean;
   verdict?: boolean;
   passed?: number;
+  /** Held-out receipts whose scores remain issuer-claimed without a disclosed pool. */
+  unreplayed?: number;
   reason?: string;
 }
 
@@ -305,19 +308,30 @@ export interface AdmittedCheck {
  * Combined check: the admission must pass `checkAdmission` on its own AND
  * its sessionId must have both a session entry and a decision entry in a
  * log that itself verifies. This is the portable-badge test — a valid
- * admission with no logged session is issuer-claimed only.
+ * admission with no logged session is issuer-claimed only. A disclosed
+ * holdout pool upgrades matching held-out scores from issuer-claimed to
+ * replayed; without it, `unreplayed` is preserved in every result.
  */
-export function checkLoggedAdmission(log: TransparencyLog, admission: Admission): AdmittedCheck {
-  const result = checkAdmission(admission);
+export function checkLoggedAdmission(
+  log: TransparencyLog,
+  admission: Admission,
+  opts?: { pool?: HoldoutPool },
+): AdmittedCheck {
+  const result = checkAdmission(admission, opts);
   if (!result.ok) return { ok: false, reason: result.reason };
+  const replay = {
+    verdict: result.verdict,
+    passed: result.passed,
+    ...(result.unreplayed !== undefined ? { unreplayed: result.unreplayed } : {}),
+  };
   const body = JSON.parse(admission.payload) as AdmissionBody;
   const check = checkLog(log);
-  if (!check.ok) return { ok: false, verdict: result.verdict, passed: result.passed, reason: `transparency log failed check: ${check.reason}` };
+  if (!check.ok) return { ok: false, ...replay, reason: `transparency log failed check: ${check.reason}` };
   const hasSession = log.entries.some((entry) => entry.type === "session" && entry.sessionId === body.sessionId);
-  if (!hasSession) return { ok: false, verdict: result.verdict, passed: result.passed, reason: `session ${body.sessionId} is not in the transparency log` };
+  if (!hasSession) return { ok: false, ...replay, reason: `session ${body.sessionId} is not in the transparency log` };
   const hasDecision = log.entries.some((entry) => entry.type === "decision" && entry.sessionId === body.sessionId);
-  if (!hasDecision) return { ok: false, verdict: result.verdict, passed: result.passed, reason: `session ${body.sessionId} has no logged decision` };
-  return { ok: true, verdict: result.verdict, passed: result.passed };
+  if (!hasDecision) return { ok: false, ...replay, reason: `session ${body.sessionId} has no logged decision` };
+  return { ok: true, ...replay };
 }
 
 /** Maximum lines a heads registry may hold — a corrupt registry is fatal, not unbounded. */
@@ -685,7 +699,7 @@ const USAGE = `usage: tlog <command>
   build --dir GATE_STATE_DIR --key VERIFIER.json [--out tlog.json]
   check TLOG.json
   prove TLOG.json --session gs_xxx
-  admit TLOG.json ADMISSION.json
+  admit TLOG.json ADMISSION.json [--pool POOL.json]
   witness --heads HEADS.jsonl TLOG.json
   equivocate --heads HEADS.jsonl
   compare TLOG_A.json TLOG_B.json
@@ -696,7 +710,7 @@ export function main(args = process.argv.slice(2)): void {
   const { values, positionals } = parseArgs({
     args: rest,
     options: {
-      dir: { type: "string" }, key: { type: "string" }, out: { type: "string" },
+      dir: { type: "string" }, key: { type: "string" }, out: { type: "string" }, pool: { type: "string" },
       session: { type: "string" }, heads: { type: "string" }, help: { type: "boolean", short: "h" },
       host: { type: "string" }, port: { type: "string" },
     },
@@ -739,6 +753,7 @@ export function main(args = process.argv.slice(2)): void {
     const result = checkLoggedAdmission(
       loadJson(positionals[0]!) as TransparencyLog,
       loadJson(positionals[1]!) as Admission,
+      { pool: values.pool === undefined ? undefined : parsePool(loadJson(values.pool)) },
     );
     console.log(JSON.stringify(result));
     if (!result.ok) process.exitCode = 2;
