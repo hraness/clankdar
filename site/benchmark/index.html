@@ -17,6 +17,7 @@
     <link rel="apple-touch-icon" href="/apple-icon.png" sizes="180x180">
     <link rel="stylesheet" href="/design/fonts.css">
     <link rel="stylesheet" href="/design/paper-theme.css">
+    <link rel="stylesheet" href="/design/product-marketing.css">
     <link rel="stylesheet" href="/design/product-marketing-preset.css">
     <link rel="stylesheet" href="/design/lantern-material.css">
     <link rel="stylesheet" href="/design/appearance-menu.css">
@@ -26,11 +27,11 @@
   </head>
   <body>
     <a class="skip-link" href="#main">Skip to content</a>
-    <div class="page">
-      <header class="masthead hraness-material-chrome">
-        <a class="wordmark" href="/" aria-label="Clankdar home"><img class="mark" alt="" aria-hidden="true" src="/marks/clankdar.svg" width="24" height="24">clankdar</a>
-        <div class="header-actions"><nav class="site-nav" aria-label="Site"><a href="/docs/">Docs</a><a href="/benchmark/" aria-current="page">Benchmark</a></nav><a class="source-link" href="https://github.com/hraness/clankdar">GitHub <svg aria-hidden="true" viewBox="0 0 16 16"><path d="M4 12 12 4M4 4h8v8"/></svg></a>
-        <div class="hraness-design-theme-toggle" data-hraness-appearance-menu data-presentation="menu" data-ready="false">
+    <header class="masthead hraness-marketing-header hraness-material-chrome" data-hraness-marketing="header">
+      <div class="hraness-marketing-header__inner">
+        <a class="wordmark hraness-marketing-header__brand" href="/" aria-label="Clankdar home"><img class="mark" alt="" aria-hidden="true" src="/marks/clankdar.svg" width="24" height="24">clankdar</a>
+        <nav class="site-nav hraness-marketing-header__nav" aria-label="Site"><a href="/docs/">Docs</a><a href="/benchmark/" aria-current="page">Benchmark</a><a class="source-link" href="https://github.com/hraness/clankdar">GitHub <svg aria-hidden="true" viewBox="0 0 16 16"><path d="M4 12 12 4M4 4h8v8"/></svg></a></nav>
+        <div class="header-actions hraness-marketing-header__actions"><div class="hraness-design-theme-toggle" data-hraness-appearance-menu data-presentation="menu" data-ready="false">
           <button type="button" class="hraness-design-theme-toggle__trigger" aria-label="Appearance: System" aria-haspopup="menu" aria-expanded="false" aria-controls="appearance-menu"><span data-current-appearance-icon="system" aria-hidden="true">◐</span></button>
           <div class="hraness-design-theme-toggle__popover" hidden>
             <div class="hraness-design-theme-toggle__menu" id="appearance-menu" role="menu" aria-label="Appearance">
@@ -40,13 +41,16 @@
             </div>
           </div>
         </div></div>
-      </header>
+      </div>
+    </header>
+    <div class="page">
       <main class="doc" id="main">
         <header class="doc-head">
           <p class="eyebrow">A benchmark, not a badge of trust</p>
           <h1 id="title">The ladder.</h1>
           <p class="doc-lede">Fourteen families. Seven parameter tiers. One question: under these conditions, what can a model actually solve?</p>
         </header>
+        <p class="note">These recorded suites predate the new <a href="/docs/#algal">Algal program suite</a>, which has no model calibration yet. Scores retain their original suite and run conditions.</p>
         <nav class="contents" aria-label="Contents"><a href="#v2-results">V2 calibration</a><a href="#admission-evidence">Signed admissions</a><a href="#frontier-results">Frontier</a><a href="#agent-results">Tool-agent</a><a href="#signal">Signal</a><a href="#profiles">Profiles</a><a href="#findings">What we learned</a><a href="#pilot-results">Legacy pilot</a><a href="#tiers">The suite</a><a href="#method">Method</a><a href="#run">Run it</a></nav>
 
         <section class="doc-section" id="v2-results" aria-labelledby="v2-title">

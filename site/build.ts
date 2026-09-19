@@ -3,7 +3,7 @@ import { fileURLToPath } from "node:url";
 import { dirname, resolve } from "node:path";
 import { createHash } from "node:crypto";
 import { supportFooter } from "./support-footer.ts";
-import { renderAdmissionEvidence, renderAgent, renderChallenge, renderFrontier, renderPilot, renderProfiles, renderTiers, renderV2 } from "./content.ts";
+import { renderAdmissionEvidence, renderAgent, renderBenchmarkSnapshot, renderChallenge, renderHarderChallenge, renderFrontier, renderPilot, renderProfiles, renderTiers, renderV2 } from "./content.ts";
 import { verifyPilot } from "../bench/pilot.ts";
 import { verifyCalibration } from "../bench/archive.ts";
 import { verifyAdmissionArchive, type AdmissionArchiveManifest } from "../bench/admission-archive.ts";
@@ -23,7 +23,7 @@ const admissionDir = resolve(root, "benchmark/admissions-opus5-2026-09-19");
 const admissionReport = verifyAdmissionArchive(admissionDir);
 const admissionManifest = JSON.parse(await readFile(resolve(admissionDir, "manifest.json"), "utf8")) as AdmissionArchiveManifest;
 const substitutions: Record<string, string> = {
-  "{{CHALLENGE}}": renderChallenge(), "{{TIERS}}": renderTiers(), "{{PILOT_RESULTS}}": renderPilot(pilot), "{{V2_RESULTS}}": renderV2(v2), "{{FRONTIER_RESULTS}}": renderFrontier(frontier), "{{AGENT_RESULTS}}": renderAgent(agent, agentDiag), "{{PROFILE_RESULTS}}": renderProfiles(v2), "{{ADMISSION_RESULTS}}": renderAdmissionEvidence(admissionReport, admissionManifest),
+  "{{ALGAL_CHALLENGE}}": renderChallenge(), "{{HARDER_CHALLENGE}}": renderHarderChallenge(), "{{BENCHMARK_SNAPSHOT}}": renderBenchmarkSnapshot(v2, frontier), "{{TIERS}}": renderTiers(), "{{PILOT_RESULTS}}": renderPilot(pilot), "{{V2_RESULTS}}": renderV2(v2), "{{FRONTIER_RESULTS}}": renderFrontier(frontier), "{{AGENT_RESULTS}}": renderAgent(agent, agentDiag), "{{PROFILE_RESULTS}}": renderProfiles(v2), "{{ADMISSION_RESULTS}}": renderAdmissionEvidence(admissionReport, admissionManifest),
   "{{SUITE_VERSION}}": SUITE_VERSION, "{{SCORER_VERSION}}": SCORER_VERSION,
 };
 await rm(output, { recursive: true, force: true });
@@ -44,7 +44,7 @@ for (const page of pages) {
 for (const archive of ["pilot-v0", "v2-calibration-0", "frontier-v0", "agent-v0", "admissions-opus5-2026-09-19"]) await cp(resolve(root, `benchmark/${archive}`), resolve(output, `benchmark/${archive}`), { recursive: true });
 await writeFile(resolve(output, "benchmark/v2-calibration-0/profiles.json"), JSON.stringify({ schemaVersion: 1, suiteHash: v2.suiteHash, profiles: CAPABILITY_PROFILES, models: profileReport(v2) }, null, 2) + "\n");
 await cp(fileURLToPath(import.meta.resolve("@hraness/site-footer/stylex.css")), resolve(output, "footer.css"));
-const files = ["paper-theme.css", "product-marketing-preset.css", "lantern-material.css", "appearance-menu.css", "fonts.css"];
+const files = ["paper-theme.css", "product-marketing.css", "product-marketing-preset.css", "lantern-material.css", "appearance-menu.css", "fonts.css"];
 for (const name of files) await cp(resolve(kit, name), resolve(output, "design", name));
 await cp(resolve(kit, "fonts/nebula-sans"), resolve(output, "design/fonts/nebula-sans"), { recursive: true });
 await cp(resolve(kit, "fonts/instrument-serif"), resolve(output, "design/fonts/instrument-serif"), { recursive: true });

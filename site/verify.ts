@@ -37,9 +37,59 @@ let browser: Browser | undefined;
 let activePage: Page | undefined;
 const errors: string[] = [];
 let checked = 0;
+
+async function verifyChrome(page: Page, width: number): Promise<void> {
+  const geometry = () => page.evaluate(() => {
+    const box = (selector: string) => {
+      const element = document.querySelector<HTMLElement>(selector)!;
+      const rect = element.getBoundingClientRect();
+      return { top: rect.top, bottom: rect.bottom, left: rect.left, right: rect.right, height: rect.height, center: rect.top + rect.height / 2, position: getComputedStyle(element).position };
+    };
+    return {
+      header: box(".masthead"), brand: box(".masthead .wordmark"), nav: box(".masthead .site-nav"),
+      appearance: box(".masthead [data-hraness-appearance-menu] > button"),
+      footer: box("#hraness-site-footer .hraness-site-footer__inner"), viewportHeight: innerHeight, scrollY,
+      footerFootprint: document.querySelector("#hraness-site-footer")!.getBoundingClientRect().height,
+    };
+  });
+  const initial = await geometry();
+  expect(initial.header.position).toBe("sticky");
+  expect(initial.header.top).toBeCloseTo(0, 0);
+  expect(initial.footer.position).toBe("fixed");
+  expect(initial.footer.bottom).toBeCloseTo(initial.viewportHeight, 0);
+  expect(initial.footerFootprint).toBeGreaterThanOrEqual(initial.footer.height - 1);
+  expect(Math.abs(initial.brand.center - initial.appearance.center)).toBeLessThanOrEqual(2);
+  expect(initial.appearance.right).toBeGreaterThan(initial.brand.right);
+  expect(initial.header.height).toBeLessThanOrEqual(width <= 768 ? 112 : 80);
+  await expect(page.locator(".masthead .site-nav a")).toHaveText(["Docs", "Benchmark", "GitHub"]);
+  if (width <= 768) {
+    expect(initial.nav.top).toBeGreaterThanOrEqual(initial.appearance.bottom);
+    expect(initial.nav.left).toBeCloseTo(initial.brand.left, 0);
+  } else expect(Math.abs(initial.nav.center - initial.appearance.center)).toBeLessThanOrEqual(2);
+
+  await page.evaluate(() => scrollTo(0, 650));
+  await expect.poll(async () => (await geometry()).scrollY).toBeGreaterThan(0);
+  const scrolled = await geometry();
+  expect(scrolled.header.top).toBeCloseTo(0, 0);
+  expect(scrolled.footer.bottom).toBeCloseTo(scrolled.viewportHeight, 0);
+
+  const anchor = page.locator("#main h2[id]").first();
+  const anchorId = await anchor.getAttribute("id");
+  expect(anchorId).toBeTruthy();
+  await page.evaluate((id) => document.getElementById(id!)!.scrollIntoView({ block: "start" }), anchorId);
+  await expect.poll(async () => (await anchor.boundingBox())!.y - (await geometry()).header.bottom).toBeGreaterThanOrEqual(8);
+
+  await page.evaluate(() => scrollTo(0, document.documentElement.scrollHeight));
+  await expect.poll(() => page.evaluate(() => {
+    const footer = document.querySelector("#hraness-site-footer")!;
+    return footer.querySelector(".hraness-site-footer__inner")!.getBoundingClientRect().top - footer.previousElementSibling!.getBoundingClientRect().bottom;
+  })).toBeGreaterThanOrEqual(-1);
+  await page.evaluate(() => scrollTo(0, 0));
+}
+
 try {
   browser = await chromium.launch({ channel: values.channel, headless: true });
-  for (const width of [1280, 390, 320]) {
+  for (const width of [1280, 608, 390, 320]) {
     for (const theme of ["light", "dark"] as const) {
       const context = await browser.newContext({ viewport: { width, height: 900 }, colorScheme: theme, reducedMotion: "reduce", serviceWorkers: "block" });
       await context.route("**/*", (route) => {
@@ -69,10 +119,14 @@ try {
           const paths = await page.locator('a[href^="/"]').evaluateAll((links) => [...new Set(links.map((link) => link.getAttribute("href")!.split("#")[0]))]);
           for (const href of paths) expect((await context.request.get(origin + href)).status()).toBe(200);
         }
+        await verifyChrome(page, width);
         if (path === "/") {
-          await page.locator(".answer-reveal summary").click();
-          await expect(page.locator(".answer-reveal code")).toHaveText("rednoy");
-          await page.locator(".answer-reveal summary").click();
+          await page.locator(".room .answer-reveal summary").click();
+          await expect(page.locator(".room .answer-reveal code")).toHaveText("34");
+          await page.locator(".room .answer-reveal summary").click();
+          // Disclosure clicks scroll into view; capture sticky chrome from the page top.
+          await page.evaluate(() => scrollTo(0, 0));
+          await expect.poll(() => page.evaluate(() => scrollY)).toBe(0);
         }
         const slug = path === "/" ? "home" : profilePaths.includes(path) ? (path === profilePaths[0] ? "actor" : "campaign") : path.replaceAll("/", "");
         await page.screenshot({ path: resolve(screenshots, `${slug}-${width}-${theme}.png`), fullPage: path === "/" });
@@ -111,13 +165,13 @@ try {
   const page = await noScript.newPage();
   activePage = page;
   await page.goto(origin);
-  await page.locator(".answer-reveal summary").click();
-  await expect(page.locator(".answer-reveal code")).toBeVisible();
+  await page.locator(".room .answer-reveal summary").click();
+  await expect(page.locator(".room .answer-reveal code")).toBeVisible();
   await page.goto(origin + "/benchmark/");
   await expect(page.locator("#pilot-results .results-table").first()).toBeVisible();
   await noScript.close();
   expect(errors).toEqual([]);
-  console.log(JSON.stringify({ pagesChecked: checked, widths: [1280, 390, 320], themes: ["light", "dark"], noScript: true, browserErrors: errors.length, screenshots }, null, 2));
+  console.log(JSON.stringify({ pagesChecked: checked, widths: [1280, 608, 390, 320], themes: ["light", "dark"], noScript: true, browserErrors: errors.length, screenshots }, null, 2));
 } catch (error) {
   if (activePage && !activePage.isClosed()) await activePage.screenshot({ path: resolve(screenshots, "failure.png") }).catch(() => {});
   throw error;

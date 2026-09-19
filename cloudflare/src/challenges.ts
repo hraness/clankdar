@@ -18,6 +18,10 @@ export interface HostedPolicy {
 }
 
 export const HOSTED_POLICIES: Record<string, HostedPolicy> = Object.assign(Object.create(null), {
+  "algal-floor-v1": {
+    id: "algal-floor-v1", suite: "algal", cells: ["algal:t1", "algal:t2", "algal:t3"],
+    challenges: 4, minPass: 3, ttlSeconds: 180,
+  },
   "v2-floor-v1": {
     id: "v2-floor-v1", suite: "v2",
     cells: ["arithmetic:t2", "strings:t2", "sequence:t2", "cipher:t2", "ordering:t3", "gridpath:t3", "knights:t3", "registervm:t3"],

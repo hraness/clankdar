@@ -1,8 +1,9 @@
 import { describe, expect, test } from "bun:test";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
+import { gunzipSync } from "node:zlib";
 import { createHash } from "node:crypto";
-import { escapeHtml, renderChallenge, renderPilot, renderProfiles, renderTiers, renderV2 } from "./content.ts";
+import { escapeHtml, renderBenchmarkSnapshot, renderChallenge, renderHarderChallenge, renderPilot, renderProfiles, renderTiers, renderV2 } from "./content.ts";
 import { verifyPilot } from "../bench/pilot.ts";
 import { verifyCalibration } from "../bench/archive.ts";
 import { verifyAdmissionArchive } from "../bench/admission-archive.ts";
@@ -12,8 +13,9 @@ const root = import.meta.dir;
 
 describe("public site contract", () => {
   test("the sample is real and every registered family appears in the ladder", () => {
-    expect(renderChallenge()).toContain("rednoy");
-    expect(renderChallenge()).toContain("seed 5");
+    expect(renderChallenge()).toContain(">34</code>");
+    expect(renderChallenge()).toContain("[1,3,2,5]");
+    expect(renderChallenge()).toContain("Algal evaluator");
     const table = renderTiers();
     for (const family of FAMILIES) expect(table).toContain(`<code>${family.name}</code>`);
     expect(table).toContain(SUITE_VERSION);
@@ -38,6 +40,31 @@ describe("public site contract", () => {
     malicious.models[0].model = '<script>alert("no")</script>';
     expect(renderPilot(malicious)).not.toContain("<script>");
     expect(escapeHtml('<a href="x">&')).toBe("&lt;a href=&quot;x&quot;&gt;&amp;");
+  });
+
+  test("the compact snapshot uses verified counts and separates the uncalibrated Algal suite", () => {
+    const v2 = verifyCalibration(resolve(root, "benchmark/v2-calibration-0"));
+    const frontier = verifyCalibration(resolve(root, "benchmark/frontier-v0"));
+    const html = renderBenchmarkSnapshot(v2, frontier);
+    for (const count of ["437/499", "403/500", "205/500", "140/500", "47/500", "217/340", "186/340", "31/340", "8/340", "0/340"]) expect(html).toContain(count);
+    expect(html.match(/<th scope="row">/g)).toHaveLength(5);
+    expect(html).toContain("87.6%");
+    expect(html).toContain("provider errors excluded");
+    expect(html).toContain("new Algal suite, which has no model calibration yet");
+    expect(html).toContain('href="/benchmark/"');
+    expect(() => renderBenchmarkSnapshot(v2, { ...frontier, models: [] })).toThrow("missing frontier snapshot model");
+  });
+
+  test("the harder practice prompt and answer match the immutable published attempt", () => {
+    const records = gunzipSync(readFileSync(resolve(root, "benchmark/frontier-v0/openai_gpt-5-mini-020751dc92eb.jsonl.gz"))).toString("utf8").trim().split("\n").map((line) => JSON.parse(line));
+    const recorded = records.find((record) => record.family === "bitmatrix" && record.tier === 4 && record.seed === 302);
+    expect(recorded.expected).toBe("111000");
+    const html = renderHarderChallenge();
+    expect(html).toContain(escapeHtml(recorded.prompt));
+    expect(html).toContain(`<code>${recorded.expected}</code>`);
+    expect(html).toContain("Public practice");
+    expect(html).toContain("frontier-v0");
+    expect(html).toContain("does not issue a receipt");
   });
 
   test("published admission evidence replays every signature, commitment, score, and verdict", () => {

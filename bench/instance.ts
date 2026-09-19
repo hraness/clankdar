@@ -17,11 +17,11 @@ export function main(args = process.argv.slice(2)): void {
     options: { suite: { type: "string" }, "suite-version": { type: "string" }, family: { type: "string" }, tier: { type: "string" }, seed: { type: "string" }, help: { type: "boolean", short: "h" } },
     strict: true,
   });
-  if (values.help) { console.log("usage: instance (--suite v2|frontier|agent | --suite-version VERSION) --family NAME --tier N --seed N"); return; }
+  if (values.help) { console.log("usage: instance (--suite v2|frontier|agent|algal | --suite-version VERSION) --family NAME --tier N --seed N"); return; }
   if (!values.family || values.tier === undefined || values.seed === undefined) throw new Error("requires --family --tier --seed");
   if (!values.suite === !values["suite-version"]) throw new Error("pass exactly one of --suite or --suite-version");
   const version = values["suite-version"] ?? suiteVersion(values.suite as SuiteName);
-  if (values.suite && !["v2", "frontier", "agent"].includes(values.suite)) throw new Error("suite must be v2, frontier, or agent");
+  if (values.suite && !["v2", "frontier", "agent", "algal"].includes(values.suite)) throw new Error("suite must be v2, frontier, agent, or algal");
   const family = poolForVersion(version).find((f) => f.name === values.family);
   const tier = Number(values.tier);
   const seed = Number(values.seed);

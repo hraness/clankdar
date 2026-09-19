@@ -19,10 +19,10 @@ secret authorizes this operation; it is an integrator credential, not an
 agent identity.
 
 ```json
-{"policyId":"v2-floor-v1","context":"release-42-preflight"}
+{"policyId":"algal-floor-v1","context":"release-42-preflight"}
 ```
 
-- `policyId` is optional; the default is `v2-floor-v1`.
+- `policyId` is optional; the default is `algal-floor-v1`.
 - `context` is an optional nonempty application correlation string, up to 256
   characters. It appears in public signed evidence; use an opaque reference,
   never private data or credentials.
@@ -41,9 +41,12 @@ outcome is known and do not log or publish it. An ID alone cannot authorize a
 submission. Unanswered tickets expire without storing a result object.
 
 `GET /v1/policies` lists the published policies; `GET /v1/policies/:id` returns
-one immutable policy. Both current policies ask four puzzles and require
-three passing responses. `v2-floor-v1` allows 120 seconds;
-`frontier-floor-v1` allows 180 seconds. Policy names refer to recorded puzzle
+one immutable policy. All three policies ask four puzzles and require three
+passing responses. `algal-floor-v1` uses the shared Algal expression evaluator
+with a 180-second deadline; `v2-floor-v1` allows 120 seconds and
+`frontier-floor-v1` allows 180 seconds. Explicit older policies and issued
+tickets retain their original behavior. The [Algal suite](clankdar-algal-v1.md)
+has not yet been calibrated against models. Policy names refer to recorded puzzle
 conditions, not certified model classes. A create retry issues a fresh check
 and consumes another quota slot; it is not an idempotent retry.
 
@@ -83,8 +86,10 @@ ok, id, pass, passed, required, receiptUrl, sha256, receipt
 `receipt` is the complete existing `clankdar-gate-v1` signed admission. Its
 `payload` is a signed JSON string containing the challenges, any answered
 challenge receipts, policy, bindings, and verdict. The protocol name remains
-unchanged so existing independent checkers continue to work. The convenient
-top-level score fields are projections of the signed payload.
+unchanged. Existing checkers retain support for their recognized older suites;
+Algal receipts require a checker that recognizes `clankdar-algal-v1` and its
+pinned evaluator. The convenient top-level score fields are projections of
+the signed payload.
 
 The API accepts a result when its create-only R2 write succeeds. Concurrent
 submissions cannot replace it. Every later valid retry returns the first

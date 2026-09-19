@@ -35,7 +35,7 @@ export function parseInts(spec: string, max = 0xffffffff): number[] {
 export function selection(values: Record<string, string | boolean | undefined>): BenchOptions {
   const text = (key: string, fallback: string) => typeof values[key] === "string" ? values[key] as string : fallback;
   const suite = text("suite", "v2");
-  if (suite !== "v2" && suite !== "frontier" && suite !== "agent") throw new Error("--suite must be v2, frontier, or agent");
+  if (suite !== "v2" && suite !== "frontier" && suite !== "agent" && suite !== "algal") throw new Error("--suite must be v2, frontier, agent, or algal");
   return {
     seeds: parseInts(text("seeds", "1-10")),
     tiers: values.tiers === undefined ? undefined : parseInts(text("tiers", ""), 8),

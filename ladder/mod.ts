@@ -1,6 +1,7 @@
 export type { Family, Instance, Puzzle, AnswerFormat } from "./family.ts";
 export { normalize, answersMatch, answerFormat, canonicalAnswer, scoreAnswer, SCORER_VERSION } from "./family.ts";
 export const SUITE_VERSION = "clankdar-suite-v2";
+export const ALGAL_SUITE_VERSION = "clankdar-algal-v1";
 /** Published frozen suite: deeper unaided cells incl. the legacy CA rule pool. */
 export const FRONTIER_SUITE_VERSION_V0 = "clankdar-frontier-v0";
 export const FRONTIER_SUITE_VERSION = "clankdar-frontier-v1";
@@ -8,12 +9,13 @@ export const FRONTIER_SUITE_VERSION = "clankdar-frontier-v1";
 export const AGENT_SUITE_VERSION_V0 = "clankdar-agent-v0";
 export const AGENT_SUITE_VERSION = "clankdar-agent-v1";
 export const AGENT_SUITE_VERSIONS: ReadonlySet<string> = new Set([AGENT_SUITE_VERSION_V0, AGENT_SUITE_VERSION]);
-export const KNOWN_SUITE_VERSIONS: readonly string[] = Object.freeze([SUITE_VERSION, FRONTIER_SUITE_VERSION_V0, FRONTIER_SUITE_VERSION, AGENT_SUITE_VERSION_V0, AGENT_SUITE_VERSION]);
-export type SuiteName = "v2" | "frontier" | "agent";
+export const KNOWN_SUITE_VERSIONS: readonly string[] = Object.freeze([ALGAL_SUITE_VERSION, SUITE_VERSION, FRONTIER_SUITE_VERSION_V0, FRONTIER_SUITE_VERSION, AGENT_SUITE_VERSION_V0, AGENT_SUITE_VERSION]);
+export type SuiteName = "v2" | "frontier" | "agent" | "algal";
 export { answerCommitment, verifyAnswer } from "./commit.ts";
 export { rng } from "./rng.ts";
 
 import type { Family } from "./family.ts";
+import { algal } from "./families/algal.ts";
 import { echo } from "./families/echo.ts";
 import { arithmetic } from "./families/arithmetic.ts";
 import { strings } from "./families/strings.ts";
@@ -45,6 +47,9 @@ function freeze(families: readonly Family[]): readonly Family[] {
     },
   })));
 }
+
+/** Pinned official Algal expression execution; no model calibration is published. */
+export const ALGAL_FAMILIES: readonly Family[] = freeze([algal]);
 
 /** The published v2 suite: frozen family/tier coverage for the recorded calibration. */
 export const FAMILIES: readonly Family[] = freeze([
@@ -84,14 +89,15 @@ export const AGENT_FAMILIES_V0: readonly Family[] = freeze([
 ]);
 
 export function suiteVersion(name: SuiteName): string {
-  return name === "frontier" ? FRONTIER_SUITE_VERSION : name === "agent" ? AGENT_SUITE_VERSION : SUITE_VERSION;
+  return name === "algal" ? ALGAL_SUITE_VERSION : name === "frontier" ? FRONTIER_SUITE_VERSION : name === "agent" ? AGENT_SUITE_VERSION : SUITE_VERSION;
 }
 
 export function suitePool(name: SuiteName): readonly Family[] {
-  return name === "frontier" ? FRONTIER_FAMILIES : name === "agent" ? AGENT_FAMILIES : FAMILIES;
+  return name === "algal" ? ALGAL_FAMILIES : name === "frontier" ? FRONTIER_FAMILIES : name === "agent" ? AGENT_FAMILIES : FAMILIES;
 }
 
 export function poolForVersion(version: string): readonly Family[] {
+  if (version === ALGAL_SUITE_VERSION) return ALGAL_FAMILIES;
   if (version === SUITE_VERSION) return FAMILIES;
   if (version === FRONTIER_SUITE_VERSION_V0) return FRONTIER_FAMILIES_V0;
   if (version === FRONTIER_SUITE_VERSION) return FRONTIER_FAMILIES;
@@ -106,7 +112,7 @@ export function familyByName(name: string): Family | undefined {
 
 /** Every registered family object whose name and tier cover the cell. */
 export function cellSupported(name: string, tier: number, pool?: readonly Family[]): boolean {
-  return (pool ?? [...FAMILIES, ...FRONTIER_FAMILIES, ...AGENT_FAMILIES]).some((f) => f.name === name && f.tiers.includes(tier));
+  return (pool ?? [...FAMILIES, ...FRONTIER_FAMILIES, ...AGENT_FAMILIES, ...ALGAL_FAMILIES]).some((f) => f.name === name && f.tiers.includes(tier));
 }
 
 /** All (family, tier) cells in a suite, optionally filtered. */

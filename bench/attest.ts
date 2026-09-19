@@ -35,7 +35,7 @@ export { canonical };
 export const ATTEST_PROTOCOL = "clankdar-attest-v1";
 const COMMIT_DOMAIN = "clankdar/attest-seed/v1";
 const SUBJECT_DOMAIN = "clankdar/subject/v1";
-const SUITES: SuiteName[] = ["v2", "frontier", "agent"];
+const SUITES: SuiteName[] = ["v2", "frontier", "agent", "algal"];
 
 export interface Challenge {
   protocol: typeof ATTEST_PROTOCOL;
@@ -376,7 +376,7 @@ export function main(args = process.argv.slice(2)): void {
     },
     allowPositionals: true, strict: true,
   });
-  const usage = "usage: attest keygen --out KEY.json | issue --key KEY.json --suite v2|frontier|agent --family NAME --tier N [--seed N] [--ttl SEC] [--context TEXT] [--holdout POOL.json] [--out TICKET.json] | verify --key KEY.json --ticket TICKET.json --response-file FILE [--subject-key KEY.json] [--pool POOL.json] [--out RECEIPT.json] | check RECEIPT.json [--pool POOL.json]";
+  const usage = "usage: attest keygen --out KEY.json | issue --key KEY.json --suite v2|frontier|agent|algal --family NAME --tier N [--seed N] [--ttl SEC] [--context TEXT] [--holdout POOL.json] [--out TICKET.json] | verify --key KEY.json --ticket TICKET.json --response-file FILE [--subject-key KEY.json] [--pool POOL.json] [--out RECEIPT.json] | check RECEIPT.json [--pool POOL.json]";
   const loadPool = () => (values.pool !== undefined ? parsePool(loadJson(values.pool)) : undefined);
   if (values.help || !command) { console.log(usage); return; }
   if (command === "keygen") {

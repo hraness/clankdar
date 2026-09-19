@@ -29,7 +29,7 @@ describe("atomic HTTP example and offline verification", () => {
       if (calls === 1) {
         expect(url).toBe("https://clankdar.example/v1/checks");
         expect(options.headers.authorization).toBe("Bearer test-invitation");
-        expect(JSON.parse(options.body)).toEqual({ policyId: "v2-floor-v1", context });
+        expect(JSON.parse(options.body)).toEqual({ policyId: "algal-floor-v1", context });
         return Response.json({ ok: true, id, ticket: "opaque-ticket", expiresAt: fixture.issued.session.expiresAt, challenges: fixture.issued.challenges });
       }
       expect(options.headers.authorization).toBeUndefined();

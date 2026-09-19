@@ -78,7 +78,7 @@ async function create(req: Request, env: Env, clock: () => Date): Promise<Respon
   if (!await authorized(req, env)) return json({ ok: false, reason: "unauthorized" }, 401);
   const value = await body(req, 4096);
   if (Object.keys(value).some((key) => !["policyId", "context", "subjectPublicKey"].includes(key))) return reject(400, "unknown check option");
-  const policyId = value.policyId === undefined ? "v2-floor-v1" : value.policyId;
+  const policyId = value.policyId === undefined ? "algal-floor-v1" : value.policyId;
   if (typeof policyId !== "string" || !HOSTED_POLICIES[policyId]) return reject(400, "unknown policy");
   if (value.context !== undefined && (typeof value.context !== "string" || !value.context.trim() || value.context.length > 256)) return reject(400, "context must be a nonempty string up to 256 characters");
   if (value.subjectPublicKey !== undefined && !await canonicalPublicKey(value.subjectPublicKey)) return reject(400, "subjectPublicKey must be a canonical Ed25519 public key");

@@ -10,15 +10,16 @@
  */
 import { parseArgs } from "node:util";
 import { adapterByName, cli, openai, openaiAgent, oracle } from "./adapters.ts";
-import { FAMILIES, FRONTIER_FAMILIES, AGENT_FAMILIES, SUITE_VERSION, FRONTIER_SUITE_VERSION, AGENT_SUITE_VERSION } from "../ladder/mod.ts";
+import { FAMILIES, FRONTIER_FAMILIES, AGENT_FAMILIES, ALGAL_FAMILIES, ALGAL_SUITE_VERSION, SUITE_VERSION, FRONTIER_SUITE_VERSION, AGENT_SUITE_VERSION } from "../ladder/mod.ts";
 import { commonOptions, integer, requestBudget, selection } from "./options.ts";
 import { recordRun, runManifest, percent } from "./record.ts";
 
 const HELP = `usage: bun bench --adapter <oracle|echo|openai:model|agent:openai:model|cli:program:model> [options]
 
   --list               list suites, families, and tiers
-  --suite <name>       v2 (published), frontier (deeper unaided cells), or
-                       agent (bounded tool-agent protocol); default v2
+  --suite <name>       v2 (published), frontier (deeper unaided cells),
+                       agent (bounded tool-agent protocol), or
+                       algal (bounded expression evaluation); default v2
   --seeds <spec>       unique seeds, e.g. 1-20 or 1,2,3 (default 1-10)
   --tiers <spec>       restrict tiers, e.g. 0-3
   --families <list>    comma-separated family names
@@ -44,6 +45,8 @@ export async function main(args = process.argv.slice(2)): Promise<number> {
     for (const f of FRONTIER_FAMILIES) console.log(`  ${f.name}\ttiers ${f.tiers.join(",")}`);
     console.log(`${AGENT_SUITE_VERSION}:`);
     for (const f of AGENT_FAMILIES) console.log(`  ${f.name}\ttiers ${f.tiers.join(",")}`);
+    console.log(`${ALGAL_SUITE_VERSION}:`);
+    for (const f of ALGAL_FAMILIES) console.log(`  ${f.name}\ttiers ${f.tiers.join(",")}`);
     return 0;
   }
   if (!values.adapter) throw new Error("--adapter is required (use --help)");
