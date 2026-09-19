@@ -447,8 +447,9 @@ reimplement.
 
 Current coverage: the Rust crate independently checks attest-v1 receipts
 (including §7 subject proofs), gate-v1 admissions, tlog-v1 logs
-(`check_log`, `prove_session`, and the logged-admission test), and
-holdout-v1 pools, receipts, and admissions against TypeScript-generated
+(`check_log`, `prove_session`, and the logged-admission test, with optional
+pool disclosure via `check_logged_admission_with_pool`/`tlog admit --pool`),
+and holdout-v1 pools, receipts, and admissions against TypeScript-generated
 fixtures. Its rooms dogfood issues, submits, and decides gate admissions
 pinned to a room floor and verifier key; it fails closed on held-out scores
 unless they were replayed. badge-v1, head witnessing, fork comparison, and
