@@ -110,7 +110,11 @@ bun bench/gate.ts serve --key verifier.json --policy policy.json --dir gate-stat
 `serve` exposes `POST /sessions`, `POST /sessions/:id/responses`,
 `GET /receipts/:challengeId`, and `GET /policy`; sessions and decisions persist
 in an append-only ledger that consumes each session exactly once across
-restarts. `gate probe` points the same machinery at your own model endpoint
+restarts. Optional rate limits (`--open-total`, `--open-per-subject`,
+`--issue-window MAX:SECONDS`) bound live sessions and mint pacing — counted
+from the ledger, so they hold across restarts; subject claims are
+unauthenticated, so per-subject limits pace fairness rather than exclude
+abuse. `gate probe` points the same machinery at your own model endpoint
 and keeps the signed admissions as replayable score-band evidence. The wire
 format, checking procedure, and threat model are specified in
 [docs/clankdar-attest-v1.md](docs/clankdar-attest-v1.md).

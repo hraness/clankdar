@@ -347,3 +347,115 @@ describe("drift probe", () => {
     expect(result.admitted).toBe(0);
   });
 });
+
+describe("rate limits", () => {
+  const dir = () => mkdtempSync(join(tmpdir(), "clankdar-gate-"));
+
+  test("store queries count live sessions and issuance history", () => {
+    const d = dir();
+    const store = GateStore.open(d);
+    const live = session({ subject: "a", now });
+    const decided = session({ subject: "a", seedBase: 701_000 });
+    const stale = issueSession({ policy, verifierJwk: verifier.privateJwk, subject: "a", now: new Date(now.getTime() - 400_000), pick: () => 0, seedBase: 702_000 });
+    const anon = session({ seedBase: 703_000 });
+    store.issueSession(live.session);
+    store.issueSession(decided.session);
+    store.issueSession(stale.session);
+    store.issueSession(anon.session);
+    const { receipts, admission } = submitSession({ session: decided.session, responses: answers(decided), verifierJwk: verifier.privateJwk, now: later });
+    store.decide(decided.session.sessionId, admission, receipts);
+    const nowMs = Date.parse(live.session.issuedAt) + 60_000;
+    expect(store.openSessions(nowMs).map((s) => s.sessionId).sort()).toEqual([live.session.sessionId, anon.session.sessionId].sort());
+    expect(store.openSessions(nowMs, "a").map((s) => s.sessionId)).toEqual([live.session.sessionId]);
+    expect(store.openSessions(nowMs, "")).toEqual([anon.session]);
+    expect(store.issuedSince(Date.parse(live.session.issuedAt) - 1).length).toBe(3);
+    expect(store.issuedSince(Date.parse(stale.session.issuedAt) - 1).length).toBe(4);
+    expect(store.issuedSince(Date.parse(live.session.issuedAt) - 1, "a").length).toBe(2);
+    expect(store.issuedSince(Date.parse(stale.session.issuedAt) - 1, "a").length).toBe(3);
+    expect(store.issuedSince(nowMs + 3_600_000).length).toBe(0);
+    store.close();
+  });
+
+  test("openTotal caps live sessions and frees on decision or expiry", async () => {
+    const d = dir();
+    const store = GateStore.open(d);
+    const gate = serveGate({ policy, verifierJwk: verifier.privateJwk, store, port: 0, rateLimits: { openTotal: 1 } });
+    try {
+      const made = await fetch(`${gate.url}/sessions`, { method: "POST", body: "{}" });
+      expect(made.status).toBe(201);
+      const { sessionId } = await made.json();
+      const second = await fetch(`${gate.url}/sessions`, { method: "POST", body: "{}" });
+      expect(second.status).toBe(429);
+      const entry = store.session(sessionId)!;
+      const responses = Object.fromEntries(entry.session.tickets.map((t) => [t.challenge.challengeId, t.expected]));
+      const decided = await fetch(`${gate.url}/sessions/${sessionId}/responses`, { method: "POST", body: JSON.stringify({ responses }) });
+      expect(decided.status).toBe(200);
+      const third = await fetch(`${gate.url}/sessions`, { method: "POST", body: "{}" });
+      expect(third.status).toBe(201);
+    } finally {
+      gate.close();
+      store.close();
+    }
+  });
+
+  test("openPerSubject buckets by subject claim; anonymous shares a bucket", async () => {
+    const d = dir();
+    const store = GateStore.open(d);
+    const gate = serveGate({ policy, verifierJwk: verifier.privateJwk, store, port: 0, rateLimits: { openPerSubject: 1 } });
+    try {
+      expect((await fetch(`${gate.url}/sessions`, { method: "POST", body: JSON.stringify({ subject: "a" }) })).status).toBe(201);
+      expect((await fetch(`${gate.url}/sessions`, { method: "POST", body: JSON.stringify({ subject: "a" }) })).status).toBe(429);
+      expect((await fetch(`${gate.url}/sessions`, { method: "POST", body: JSON.stringify({ subject: "b" }) })).status).toBe(201);
+      expect((await fetch(`${gate.url}/sessions`, { method: "POST", body: "{}" })).status).toBe(201);
+      expect((await fetch(`${gate.url}/sessions`, { method: "POST", body: "{}" })).status).toBe(429);
+    } finally {
+      gate.close();
+      store.close();
+    }
+  });
+
+  test("issueWindow paces global issuance across restarts", async () => {
+    const d = dir();
+    const seeded = issueSession({ policy, verifierJwk: verifier.privateJwk, now: new Date(Date.now() - 30_000), pick: () => 0 });
+    const store = GateStore.open(d);
+    store.issueSession(seeded.session);
+    const gate = serveGate({ policy, verifierJwk: verifier.privateJwk, store, port: 0, rateLimits: { issueWindow: { max: 2, seconds: 3600 } } });
+    try {
+      expect((await fetch(`${gate.url}/sessions`, { method: "POST", body: "{}" })).status).toBe(201);
+      expect((await fetch(`${gate.url}/sessions`, { method: "POST", body: "{}" })).status).toBe(429);
+    } finally {
+      gate.close();
+      store.close();
+    }
+    const replayed = GateStore.open(d);
+    const gate2 = serveGate({ policy, verifierJwk: verifier.privateJwk, store: replayed, port: 0, rateLimits: { issueWindow: { max: 2, seconds: 3600 } } });
+    try {
+      expect((await fetch(`${gate2.url}/sessions`, { method: "POST", body: "{}" })).status).toBe(429);
+    } finally {
+      gate2.close();
+      replayed.close();
+    }
+  });
+
+  test("expired sessions stop counting against open limits", async () => {
+    const d = dir();
+    const stale = issueSession({ policy: { ...policy, ttlSeconds: 3600 }, verifierJwk: verifier.privateJwk, now: new Date(Date.now() - 7_200_000), pick: () => 0 });
+    const store = GateStore.open(d);
+    store.issueSession(stale.session);
+    const gate = serveGate({ policy, verifierJwk: verifier.privateJwk, store, port: 0, rateLimits: { openTotal: 1 } });
+    try {
+      expect((await fetch(`${gate.url}/sessions`, { method: "POST", body: "{}" })).status).toBe(201);
+    } finally {
+      gate.close();
+      store.close();
+    }
+  });
+
+  test("malformed limit config fails at serve time", () => {
+    const d = dir();
+    const store = GateStore.open(d);
+    expect(() => serveGate({ policy, verifierJwk: verifier.privateJwk, store, port: 0, rateLimits: { openTotal: 0 } })).toThrow("positive integer");
+    expect(() => serveGate({ policy, verifierJwk: verifier.privateJwk, store, port: 0, rateLimits: { issueWindow: { max: 0, seconds: 60 } } })).toThrow("positive integer");
+    store.close();
+  });
+});

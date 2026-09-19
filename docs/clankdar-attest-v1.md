@@ -6,9 +6,9 @@ TypeScript reference is `bench/attest.ts` + `bench/gate.ts` + `bench/tlog.ts`;
 an independent Rust implementation lives in
 [hraness/valhalla](https://github.com/hraness/valhalla/tree/main/prototypes/clankdar-attest).
 
-**Status: experimental reference.** No hosted service, rate limiting, held-out
-pools, or hardware binding is implemented. A receipt or admission is evidence
-about one bounded episode — never identity, liveness, personhood, or authority.
+**Status: experimental reference.** No hosted service, held-out pools, or
+hardware binding is implemented. A receipt or admission is evidence about one
+bounded episode — never identity, liveness, personhood, or authority.
 
 ## 1. Primitive
 
@@ -262,6 +262,7 @@ this same ledger.
 GET  /healthz                       → {ok:true}
 GET  /policy                        → {protocol, policy, verifier:{keyId,publicKey}}
 POST /sessions                      {subject?, context?} → 201 {sessionId, expiresAt, challenges[]}
+                                    429 over a configured rate limit
 POST /sessions/:id/responses        {responses:{challengeId:response}, subjectProof?} → 200 {admission, receipts}
                                     404 unknown · 409 decided · 410 expired
 GET  /receipts/:challengeId         → receipt | 404
@@ -269,6 +270,15 @@ GET  /receipts/:challengeId         → receipt | 404
 
 The check→decide critical section is synchronous, so concurrent submits
 cannot double-spend a session.
+
+`serve` accepts optional rate limits (`--open-total`, `--open-per-subject`,
+`--issue-window MAX:SECONDS`). `openTotal` bounds live sessions — issued,
+undecided, unexpired — across the gate; `openPerSubject` bounds them per
+subject claim (anonymous requests share one bucket); `issueWindow` paces
+global issuance per rolling window. All counts derive from the ledger, so
+limits hold across restarts. The hard bounds are global: subject claims are
+unauthenticated and can be rotated, so per-subject limits pace fairness and
+cannot exclude a sybil.
 
 ## 11. Issuance transparency (tlog-v1)
 
