@@ -1,5 +1,8 @@
 import { describe, expect, test } from "bun:test";
-import { openai } from "./adapters.ts";
+import { mkdtempSync, writeFileSync, readFileSync, chmodSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { adapterByName, cli, openai } from "./adapters.ts";
 import { requestBudget } from "./options.ts";
 import type { SolveResponse } from "./adapter.ts";
 
@@ -87,5 +90,70 @@ describe("model transport", () => {
     const adapter = openai({ model: "test", apiKey: "synthetic", beforeRequest: budget.beforeRequest, fetch: (() => Promise.resolve(Response.json({ error: "temperature unsupported" }, { status: 400 }))) });
     await expect(adapter.solve(puzzle)).rejects.toThrow("request_limit");
     expect(budget.used()).toBe(1);
+  });
+});
+
+describe("cli adapter", () => {
+  const dir = mkdtempSync(join(tmpdir(), "clankdar-cli-"));
+  const stubPath = join(dir, "claude-stub");
+  const argvLog = join(dir, "argv.txt");
+  const stub = (body: string, extra = "") => {
+    writeFileSync(stubPath, `#!/bin/sh\nprintf '%s\\n' "$@" > ${argvLog}\n${extra}printf '%s' '${body}'\n`);
+    chmodSync(stubPath, 0o755);
+  };
+  const claude = (over: Partial<Parameters<typeof cli>[1]> = {}) => cli("claude", { model: "opus", bin: stubPath, ...over });
+
+  const okJson = JSON.stringify({
+    result: "4", is_error: false, subtype: "success", total_cost_usd: 0.01,
+    modelUsage: {
+      "claude-haiku-4-5": { inputTokens: 5, outputTokens: 0, canonicalModel: "claude-haiku-4-5" },
+      "claude-opus-5[1m]": { inputTokens: 10, outputTokens: 2, thinkingTokens: 7, canonicalModel: "claude-opus-5", maxOutputTokens: 64000, costUSD: 0.01 },
+    },
+  });
+
+  test("spawns the program with the prompt and a zero-tool unaided turn", async () => {
+    stub(okJson);
+    const result = await claude().solve(puzzle) as SolveResponse;
+    expect(result.text).toBe("4");
+    expect(result.resolvedModel).toBe("claude-opus-5");
+    expect(result.usage).toEqual({ inputTokens: 10, outputTokens: 2, reasoningTokens: 7, costUsd: 0.01 });
+    expect(result.parameters).toEqual({ tokenField: "maxOutputTokens", maxTokens: 64000, temperature: null, requests: 1 });
+    const args = readFileSync(argvLog, "utf8").trim().split("\n");
+    expect(args).toContain(puzzle.prompt);
+    expect(args).toContain("--tools");
+    expect(args[args.indexOf("--tools") + 1]).toBe("");
+    expect(args).toContain("--strict-mcp-config");
+    expect(args[args.indexOf("--model") + 1]).toBe("opus");
+  });
+
+  test("nonzero exits, is_error, and malformed output fail closed", async () => {
+    stub("", "exit 3\n");
+    await expect(claude().solve(puzzle)).rejects.toThrow("http_error:3");
+    stub(JSON.stringify({ is_error: true, api_error_status: 503 }));
+    await expect(claude().solve(puzzle)).rejects.toThrow("http_error:503");
+    stub("not json");
+    await expect(claude().solve(puzzle)).rejects.toThrow("invalid_response");
+    stub(JSON.stringify({ is_error: false }));
+    await expect(claude().solve(puzzle)).rejects.toThrow("invalid_response");
+  });
+
+  test("oversized stdout fails closed", async () => {
+    stub("", `head -c 2000000 /dev/zero | tr '\\0' x\n`);
+    await expect(claude().solve(puzzle)).rejects.toThrow("response_too_large");
+  });
+
+  test("stderr never enters results and timeouts kill the process", async () => {
+    stub(okJson, "echo secret-provider-error 1>&2\n");
+    const result = await claude().solve(puzzle) as SolveResponse;
+    expect(JSON.stringify(result)).not.toContain("secret-provider-error");
+    stub(okJson, "sleep 5\n");
+    await expect(claude({ timeoutMs: 50 }).solve(puzzle)).rejects.toThrow();
+  });
+
+  test("adapterByName resolves cli specs and validates the shape", () => {
+    expect(adapterByName("cli:claude:opus").name).toBe("cli:claude:opus");
+    expect(() => adapterByName("cli:claude:")).toThrow();
+    expect(() => adapterByName("cli:nope:m")).toThrow('unknown cli program "nope"');
+    expect(() => cli("claude", { model: "bad model!" })).toThrow("invalid model ID");
   });
 });

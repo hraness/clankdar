@@ -38,6 +38,125 @@ async function boundedBody(response: Response): Promise<string> {
   return Buffer.concat(chunks).toString("utf8");
 }
 
+interface CliOpts {
+  model: string;
+  timeoutMs?: number;
+  /** Binary path override; defaults to resolving the program name on PATH. */
+  bin?: string;
+  /** Display name for results; defaults to `cli:<program>:<model>`. */
+  name?: string;
+  beforeRequest?: () => void;
+}
+
+interface CliProgram {
+  bin: string;
+  argv(prompt: string, model: string): string[];
+  parse(stdout: string): SolveResponse;
+}
+
+const cliObject = (value: unknown): Record<string, unknown> => value !== null && typeof value === "object" && !Array.isArray(value) ? value as Record<string, unknown> : {};
+const cliTokens = (value: unknown) => typeof value === "number" && Number.isSafeInteger(value) && value >= 0 ? value : 0;
+
+const CLI_PROGRAMS: Record<string, CliProgram> = {
+  // One text turn with every built-in and MCP tool disabled: the model sees the
+  // prompt and can only answer in text, which is what the unaided tracks claim.
+  claude: {
+    bin: "claude",
+    argv: (prompt, model) => ["-p", prompt, "--tools", "", "--strict-mcp-config", "--model", model, "--output-format", "json"],
+    parse(stdout) {
+      let decoded: unknown;
+      try { decoded = JSON.parse(stdout); } catch { throw new AdapterError("invalid_response"); }
+      const data = cliObject(decoded);
+      if (data.is_error === true) throw new AdapterError("http_error", typeof data.api_error_status === "number" ? data.api_error_status : undefined);
+      if (typeof data.result !== "string") throw new AdapterError("invalid_response");
+      const usage = cliObject(data.modelUsage);
+      // Several entries can appear (router/system overhead); the solving model
+      // is the one that produced the completion tokens.
+      let solver: Record<string, unknown> = {};
+      let best = -1;
+      for (const entry of Object.values(usage)) {
+        const u = cliObject(entry);
+        if (cliTokens(u.outputTokens) > best) { best = cliTokens(u.outputTokens); solver = u; }
+      }
+      return {
+        text: data.result,
+        finishReason: typeof data.subtype === "string" ? data.subtype.slice(0, 64) : undefined,
+        resolvedModel: typeof solver.canonicalModel === "string" ? solver.canonicalModel.slice(0, 200) : undefined,
+        usage: {
+          inputTokens: cliTokens(solver.inputTokens) + cliTokens(solver.cacheReadInputTokens) + cliTokens(solver.cacheCreationInputTokens) || undefined,
+          outputTokens: cliTokens(solver.outputTokens) || undefined,
+          reasoningTokens: cliTokens(solver.thinkingTokens) || undefined,
+          costUsd: typeof data.total_cost_usd === "number" && Number.isFinite(data.total_cost_usd) && data.total_cost_usd >= 0 ? data.total_cost_usd : undefined,
+        },
+        parameters: { tokenField: "maxOutputTokens", maxTokens: cliTokens(solver.maxOutputTokens), temperature: null, requests: 1 },
+      };
+    },
+  },
+};
+
+async function boundedProc(stream: ReadableStream<Uint8Array>, cap: number): Promise<string> {
+  const reader = stream.getReader();
+  const chunks: Uint8Array[] = [];
+  let size = 0;
+  try {
+    for (;;) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      size += value.length;
+      if (size > cap) {
+        await reader.cancel();
+        throw new AdapterError("response_too_large");
+      }
+      chunks.push(value);
+    }
+  } finally {
+    reader.releaseLock();
+  }
+  return Buffer.concat(chunks).toString("utf8");
+}
+
+/**
+ * Local model-CLI adapter. Spawns the pinned program as a direct child (no
+ * shell), one process per instance, with a bounded stdout and a timeout that
+ * kills the process. Stderr is drained and discarded: provider error text
+ * never enters recorded results.
+ */
+export function cli(program: string, opts: CliOpts): Adapter {
+  const entry = CLI_PROGRAMS[program];
+  if (!entry) throw new Error(`unknown cli program "${program}"`);
+  if (!/^[a-z0-9][a-z0-9._-]{0,63}$/i.test(opts.model)) throw new Error("invalid model ID");
+  const timeoutMs = opts.timeoutMs ?? 120_000;
+  if (!Number.isInteger(timeoutMs) || timeoutMs < 1 || timeoutMs > 600_000) throw new Error("timeoutMs must be an integer in 1..600000");
+  return {
+    name: opts.name ?? `cli:${program}:${opts.model}`,
+    config: { program, model: opts.model, tools: "none", timeoutMs },
+    validate() { if (!opts.bin && !Bun.which(entry.bin)) throw new Error(`cli program "${entry.bin}" not found on PATH`); },
+    async solve(puzzle, context): Promise<SolveResponse> {
+      const bin = opts.bin ?? Bun.which(entry.bin);
+      if (!bin) throw new Error(`cli program "${entry.bin}" not found on PATH`);
+      const signal = context ? AbortSignal.any([context.signal, AbortSignal.timeout(timeoutMs)]) : AbortSignal.timeout(timeoutMs);
+      const proc = Bun.spawn([bin, ...entry.argv(puzzle.prompt, opts.model)], { stdin: "ignore", stdout: "pipe", stderr: "pipe" });
+      const kill = () => { try { proc.kill(); } catch { /* already exited */ } };
+      try {
+        opts.beforeRequest?.();
+        // Orphaned grandchildren can hold the pipes after the child is killed,
+        // so the abort races the reads instead of waiting for pipe EOF.
+        const outcome = await Promise.race([
+          Promise.all([boundedProc(proc.stdout, 1_048_576), boundedProc(proc.stderr, 65_536).catch(() => "")]).then(([stdout]) => ({ stdout })),
+          new Promise<{ aborted: true }>((resolve) => signal.addEventListener("abort", () => { kill(); resolve({ aborted: true }); }, { once: true })),
+        ]);
+        kill();
+        if (!("stdout" in outcome)) signal.throwIfAborted();
+        const exitCode = await proc.exited;
+        if (exitCode !== 0) throw new AdapterError("http_error", exitCode);
+        return entry.parse((outcome as { stdout: string }).stdout);
+      } finally {
+        kill();
+      }
+    },
+  };
+}
+
 interface ChatOpts {
   model: string;
   baseUrl?: string;
@@ -203,5 +322,11 @@ export function adapterByName(spec: string): Adapter {
   if (spec === "echo") return echoAdapter;
   if (spec.startsWith("agent:openai:")) return openaiAgent({ model: spec.slice(13) });
   if (spec.startsWith("openai:")) return openai({ model: spec.slice(7) });
-  throw new Error(`unknown adapter "${spec}" (expected oracle | echo | openai:<model> | agent:openai:<model>)`);
+  if (spec.startsWith("cli:")) {
+    const rest = spec.slice(4);
+    const sep = rest.indexOf(":");
+    if (sep < 1) throw new Error(`cli adapters need a program and model (cli:<program>:<model>)`);
+    return cli(rest.slice(0, sep), { model: rest.slice(sep + 1) });
+  }
+  throw new Error(`unknown adapter "${spec}" (expected oracle | echo | openai:<model> | agent:openai:<model> | cli:<program>:<model>)`);
 }

@@ -39,7 +39,18 @@ selects an OpenAI-compatible endpoint; the `OPENAI_API_KEY` and
 are supported for local models; remote endpoints must use HTTPS. Environment
 files, credentials, and private run directories stay gitignored.
 
-`--max-requests` bounds HTTP calls, including rejected-parameter negotiation.
+Local model CLIs run through `cli:<program>:<model>` — currently `cli:claude`.
+The adapter spawns one pinned program per instance with every built-in and
+MCP tool disabled (`claude -p --tools "" --strict-mcp-config`), so the model
+gets a single unaided text turn; provider stderr never enters recorded
+results:
+
+```console
+bun bench --adapter cli:claude:opus --tiers 0-3 --seeds 101-110 \
+  --execute --max-requests 200 --out results/claude-first.jsonl
+```
+
+`--max-requests` bounds model calls, including rejected-parameter negotiation.
 `--max-tokens`, `--timeout-ms`, and `--concurrency` bound individual attempts.
 There are no automatic retries for provider failures. These controls are not a
 guaranteed dollar cap; review provider pricing before `--execute`.
