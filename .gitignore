@@ -6,3 +6,4 @@ site/dist/
 .env*
 results/
 .algal/
+.wrangler/

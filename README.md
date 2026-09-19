@@ -209,6 +209,20 @@ heads to the provider-neutral witness intake — or configure the witness to
 poll this endpoint — but a private fork stays invisible until both views
 reach one witness.
 
+`cloudflare/` is the low-cost hosted actor foundation. It derives portable
+`clank1_…` addresses from Ed25519 public keys, requires proof of possession at
+registration, authenticates mutations over method/path/body/timestamp/nonce,
+rejects replayed nonces inside one actor-scoped SQLite Durable Object, and
+publishes an issuer-signed hash chain of actor events plus a D1 directory.
+Registration is bearer-gated in staging. A heartbeat proves key continuity
+and service activity only — not autonomy or capability; scheduled challenge
+campaigns add those separate dimensions. See
+[docs/clankdar-hosted-v1.md](docs/clankdar-hosted-v1.md) for the workaround
+matrix and exact claims. The design uses hibernating Durable Objects, D1, and
+R2 and avoids Queues/always-on sockets in v1: at Cloudflare's September 2026
+rates, the paid floor is $5/month and the expected staging load stays inside
+the included database, object, and storage allocations.
+
 `clankdar-holdout-v1` covers issuer-private cells: `bun holdout gen` mints a
 pool of published generator cells re-parameterized by secret labels, and gate
 policies can name them as `h:family:tN`. The instance stream stays
