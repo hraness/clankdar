@@ -435,6 +435,12 @@ admission, and transparency-log formats are language-neutral; the canonical
 JSON, seedCommit, and entry-chain constructions are deliberately trivial to
 reimplement.
 
+Current coverage: the Rust crate independently checks attest-v1 receipts
+(including §7 subject proofs), gate-v1 admissions, and tlog-v1 logs —
+`check_log`, `prove_session`, and the logged-admission test. badge-v1,
+holdout-v1, head witnessing, and fork comparison are TypeScript-only for
+now.
+
 ## 14. Portable subject badges (badge-v1)
 
 A respondent holding subject-bound admissions (§7) under one Ed25519 key can
