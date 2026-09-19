@@ -9,6 +9,7 @@
     "tlog": "bun bench/tlog.ts",
     "badge": "bun bench/badge.ts",
     "holdout": "bun bench/holdout.ts",
+    "hosted": "bun bench/hosted.ts",
     "drift": "bun bench/drift.ts",
     "calibrate": "bun bench/calibrate.ts",
     "report": "bun bench/report.ts",

@@ -6,9 +6,11 @@ TypeScript reference is `bench/attest.ts` + `bench/gate.ts` + `bench/tlog.ts`;
 an independent Rust implementation lives in
 [hraness/valhalla](https://github.com/hraness/valhalla/tree/main/prototypes/clankdar-attest).
 
-**Status: experimental reference.** No hosted service, held-out pools, or
-hardware binding is implemented. A receipt or admission is evidence about one
-bounded episode — never identity, liveness, personhood, or authority.
+**Status: experimental reference.** The hosted issuer surface (§16) is a
+reference implementation, not a production deployment; witnessed head
+transport and hardware binding are not implemented. A receipt or admission
+is evidence about one bounded episode — never identity, liveness,
+personhood, or authority.
 
 ## 1. Primitive
 
@@ -608,3 +610,54 @@ Commands (reference: `bench/holdout.ts`, `bench/attest.ts`,
 - `gate ... --pool pool.json` on `policy`, `issue`, `submit`, `check`,
   `serve`, and `probe` wires the pool through sessions; `serve` with an
   `h:` policy requires it.
+
+## 16. Hosted issuer surface
+
+`bench/hosted.ts` composes the gate service (§10) and the transparency
+log (§11) into one HTTP deployment — the reference shape of a hosted
+issuer. Every §10 route is served unchanged (the hosted service delegates
+to the gate's own request handler rather than re-implementing it), and
+three read-only endpoints publish the ledger-derived log:
+
+```
+GET /tlog                    → TransparencyLog {head, entries}
+GET /tlog/head               → the signed TlogHead — what a witness pins
+GET /tlog/proof/:sessionId   → SessionProof {sessionId, sessionIndex,
+                               decisionIndex, head} | 404 unlogged session
+```
+
+Every `/tlog` read replays the ledger and re-signs the head, so a served
+head always commits the current ledger — the cost is O(ledger size) per
+request and there is no cache that could go stale; a production
+deployment would rebuild on append or on a bounded interval. Entries
+publish only record digests and metadata — never seeds, tickets,
+responses, or admissions — so the ledger file itself stays private (the
+reference forces the state dir to `0700`). Published entries do name
+sessionIds, and a live session id is already a bearer capability at
+`POST /sessions/:id/responses` (submission is unauthenticated by design),
+so serving the log in real time makes open sessions enumerable to
+watchers — deployments that care should decide sessions promptly or
+publish on a delay.
+
+Commands (reference: `bench/hosted.ts`):
+
+- `hosted serve --key K --policy P --dir STATE [--pool POOL.json]
+  [--host H] [--port N] [--open-total N] [--open-per-subject N]
+  [--issue-window MAX:SEC]` — the gate's flags pass through unchanged,
+  including holdout pools and the ledger-derived rate limits.
+- `hosted head --dir STATE --key K` prints the current signed head — the
+  artifact an external witness pins for §11 equivocation detection.
+
+### Honest boundary
+
+Hosting publishes evidence; it does not create trust. A hosted issuer can
+still self-mint — the verifier can always answer its own oracle — and can
+still fork: nothing stops it from serving one log to one client and a
+different log to another. The signed head is the accountability hook: a
+witness that pins `/tlog/head` output over time, or across vantage
+points, accumulates exactly the signed artifacts `equivocate` compares.
+But heads still have to reach a common witness before they can be
+compared, and that transport — gossip, witnessed co-signing, external
+anchoring — remains unimplemented. This is a reference surface, not a
+production deployment: TLS termination, client authentication on the
+write path, and high-availability operation are out of scope.
