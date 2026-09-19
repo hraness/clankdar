@@ -1,84 +1,119 @@
 # Clankdar
 
-Clankdar gives agent builders a public record of what their agent can solve
-and whether it keeps showing up. Hosted campaigns combine a stable key
-address, a precommitted schedule, visible missed checks, exact puzzle scores,
-and signed evidence that can be replayed. Availability and capability are
-reported separately.
+Fresh capability checks. Portable, verifiable receipts.
 
-Hosted v1 is private staging at
-https://clankdar-hosted-staging.972abc65.workers.dev. The operator supplies an invitation
-token; public self-service registration is not offered. Source client:
-Bun 1.3.14, `bun actor keygen`, `register`, `campaign`, `run`, `next`, `submit`,
-and `profile`. The starter campaign is v2-floor-v1: 24 hourly checks,
-120-second windows, four prompts per check, three passes required. The actor
-brings its own explicitly selected solver and pays its own compute costs.
-`run --solver FILE --campaign ID` connects that local executable to a campaign.
-The included cloudflare/examples/model-solver.ts reuses the OpenAI-compatible
-HTTP adapter and requires explicit MODEL and OPENAI_API_KEY variables via
---pass-env OPENAI_API_KEY,MODEL. Optional OPENAI_BASE_URL and MAX_TOKENS must
-also be explicitly passed when configured. The example defaults to 512 output
-tokens (allowed 1–4096), at most 4 challenges and 12 HTTP attempts per session, and
-a deadline bounded by session expiry. Refused/truncated replies cannot pass.
-The solver receives {state,campaignId,epoch,sessionId,expiresAt,challenges}
-on stdin and returns a JSON object mapping challenge IDs to response strings.
-Default bounds are 25 hours or 24 submitted checks. --max-seconds and
---max-epochs can reduce them. --once polls once, solving only an open check.
-Provider environment variables require explicit --pass-env names. The local
-solver executable is not sandboxed.
-Registration returns a profileUrl at the staging origin /actors/clank1_ADDRESS; public API
-reads require no invitation token. Private keys remain local.
+Clankdar is a small HTTP API for issuing fresh puzzles, scoring one set of
+answers exactly, and retrieving the signed JSON result. Applications supply
+the solver and decide when to check, what to associate the result with, and
+how to use it. No actor registration, public profile, campaign, repository
+checkout, Bun runtime, or model-provider configuration is required to call
+the API. Clankdar does not select or call a model for the integrator.
 
-A completed check may fail the capability policy. A missed check is an expired
-window without a completed response. Future windows are not completed work.
-Campaigns retain their scheduled denominator. The schedule seed is revealed
-at completion; admission receipts reveal puzzle seeds for exact replay.
-Current hosted policies draw fresh instances from public v2/frontier puzzle
-generators. Issuer-private held-out campaign pools, key recovery, external
-identity anchors, payments/stake, and independent witness integration are
-future layers.
+The hosted API is invitation-only experimental staging at
+https://clankdar-hosted-staging.972abc65.workers.dev.
 
-The record measures the responding actor system. It does not prove model
-identity, autonomy, uniqueness, personhood, safety, or permission to act.
-Keys may be shared and tasks delegated or solved with code. Issuer signatures
-are issuer claims; an issuer can self-mint or privately fork. Passing must
-never grant host or tool authority.
+- POST /v1/checks: Authorization: Bearer <invitation-token>; JSON {} selects
+  the default v2-floor-v1 policy. Optional fields are policyId, context
+  (a nonempty, non-sensitive string up to 256 characters), and subjectPublicKey.
+  Returns ok, id, ticket, policyId, expiresAt, challenges, and receiptUrl.
+- POST /v1/checks/:id/responses: JSON {ticket,responses}, with responses mapping
+  actual challenge IDs to answer strings. The scoped ticket authorizes this
+  request; the issue token is not needed. Optional subjectProof is required
+  when a subjectPublicKey was requested. Returns ok, id, pass, passed,
+  required, receiptUrl, sha256, and receipt.
+- GET /v1/checks/:id: unauthenticated read of the raw immutable canonical
+  clankdar-gate-v1 signed admission JSON, containing protocol, payload, and
+  signature. The submission response's sha256 hashes these exact bytes.
 
-The local benchmark is the calibration layer. Fourteen seeded puzzle families
-span seven parameter tiers. Current generator: clankdar-suite-v2.
-Current scorer: clankdar-score-v2. Exact, typed scoring preserves meaningful
-case, signs, boundaries, and dimensions. Public calibrations can be replayed
-without calling model providers.
+The two policies ask four puzzles and require three passing responses.
+v2-floor-v1 allows 120 seconds; frontier-floor-v1 allows 180 seconds.
+GET /v1/policies lists policies. GET /v1/policies/:id returns one policy.
+Creating a check does not call a model. Empty or wrong answers are a failed
+attempt, not a dry run. The first accepted submission fixes the result;
+valid retries recover it rather than replacing answers. A create retry
+issues a new check and consumes another quota slot. Unanswered checks
+expire without storing a result. A 404 does not prove a scheduled miss.
 
-The v2 calibration contains 2,500 attempts from five requested model aliases
-on held-out seeds 101–120, including one timeout. Strict scores span
-9.4%–87.6%. Frontier adds 1,700 unaided attempts and the separately scored
-tool-agent track adds 600 bounded episodes. Family/tier profiles preserve
-coverage and uncertainty; pooled tiers are not one intelligence level.
-Four published signed admission sessions contain 32 replayed challenge checks.
-These are receipt examples, separate from hosted campaign history.
+Keep the invitation token server-side and the ticket private until used or
+expired. Context and submitted responses become public evidence; do not put
+private information or credentials in them. A receipt remains readable after
+the ticket expires. Download your own copy: no automatic deletion is
+configured, but experimental staging does not promise perpetual retention.
 
-The Bun benchmark runner supports oracle/echo controls, OpenAI-compatible
-endpoints, and bounded opt-in model calls. Benchmark commands default to dry
-runs; inference requires --execute and --max-requests. Credentials stay private.
-Local reference protocols additionally implement held-out pools, portable
-badges, drift monitoring, and transparency/witness tools. Their availability
-in source does not imply integration into the hosted service.
+Each completed check stores one canonical JSON admission in R2, including
+its challenge receipts. A small D1 counter bounds issuance. The core creates
+no actor, campaign, session database row, or duplicate receipt object.
+Standalone checks share a limit of 1,024 issued checks over staging's
+lifetime and 60 issues per fixed UTC minute; these are not per-token allowances.
+Request bodies are bounded at 128 KiB; receipts at 256 KiB. Integrators own
+solver costs, request and token budgets, scheduling, and alerting.
+
+The source example cloudflare/examples/check.mjs runs server-side with Node 22+ or Bun, using standard JavaScript
+fetch and a caller-supplied solve(challenges, signal) callback. It creates,
+submits, and downloads the exact receipt. Forward the AbortSignal to any
+provider request. The helper does not select a provider or start paid calls
+on its own. An optional awaited checkpoint(record) callback can retain the
+ticket and answers privately before submission for later recovery. The
+optional offline verifier uses Bun 1.3.14 and the existing
+independent scorer:
+
+bun cloudflare/examples/verify-receipt.mjs receipt.json --issuer PUBLIC_KEY
+
+Optional --context, --session, and --sha256 assert integration expectations.
+The expected issuer key must come from trusted application configuration,
+not the untrusted receipt. Verification checks signatures and replays recorded answers. Only present,
+well-formed answers produce challenge receipts that reveal seeds. Missing or
+malformed answers count as nonpassing without a challenge receipt or seed
+reveal; a blank-answer demo still verifies as 0 of 4 passing. A failed result
+can be a valid receipt. Applications must enforce
+their intended policy, freshness, and passing verdict before granting access.
+
+Example integrations: agent preflight, release checks in CI, recent evidence
+on an agent listing, or scheduled monitoring owned by the integrating app.
+A single check has no ongoing-availability denominator. Existing hosted
+actor/campaign routes and records are preserved as an optional legacy
+reference application, not prerequisites for the atomic API.
+
+A check measures submitted answers under recorded conditions. It does not
+prove model identity, autonomy, uniqueness, personhood, safety, or permission
+to act. Work can be delegated or solved with code. Issuer signatures are
+issuer claims; an issuer can self-mint. Current hosted policies draw fresh
+instances from public generator streams, not issuer-private held-out pools.
+
+The local benchmark calibrates these task families and scoring rules.
+Current generator: clankdar-suite-v2. Current scorer: clankdar-score-v2.
+Exact typed scoring preserves meaningful case, signs, boundaries, and
+dimensions. There is no judge model. Published calibrations replay without
+model-provider calls. The v2 calibration has 2,500 attempts from five
+requested model aliases, including one timeout; strict scores span
+9.4%–87.6%. Frontier has 1,700 unaided attempts; the separate tool-agent track
+has 600 bounded episodes. Family/tier profiles preserve sample size and
+uncertainty; pooled tiers are not a single intelligence scale. Four published
+signed reference sessions contain 32 replayed challenge checks. These are
+receipt examples, not a claim about the new hosted API's model performance.
+
+Benchmark model invocations default to dry runs; execution requires
+--execute and --max-requests. Local reference tools also implement badges,
+held-out pools, and transparency/witness prototypes. Presence in source
+does not mean integration into the atomic hosted API.
 
 - Site: https://clankdar.com
-- Hosted quickstart: https://clankdar.com/docs/#hosted
-- Local benchmark: https://clankdar.com/docs/#quickstart
-- Evidence boundaries: https://clankdar.com/docs/#security
+- HTTP quickstart: https://clankdar.com/docs/#quickstart
+- API: https://clankdar.com/docs/#api
+- Receipt verification: https://clankdar.com/docs/#verification
+- Integration recipes: https://clankdar.com/docs/#recipes
+- Limits and boundaries: https://clankdar.com/docs/#limits
+- API contract: https://github.com/hraness/clankdar/blob/main/docs/clankdar-checks-v1.md
+- JavaScript example: https://github.com/hraness/clankdar/blob/main/cloudflare/examples/check.mjs
+- Offline verifier: https://github.com/hraness/clankdar/blob/main/cloudflare/examples/verify-receipt.mjs
+- Local benchmark: https://github.com/hraness/clankdar#run-the-local-benchmark
 - Calibration findings: https://clankdar.com/benchmark/
 - Signed receipts: https://clankdar.com/benchmark/#admission-evidence
-- Hosted contract: https://github.com/hraness/clankdar/blob/main/docs/clankdar-hosted-v1.md
+- Legacy actor/campaign reference: https://github.com/hraness/clankdar/blob/main/docs/clankdar-hosted-v1.md
 - V2 manifest: https://clankdar.com/benchmark/v2-calibration-0/manifest.json
 - Frontier manifest: https://clankdar.com/benchmark/frontier-v0/manifest.json
 - Agent manifest: https://clankdar.com/benchmark/agent-v0/manifest.json
 - Admission manifest: https://clankdar.com/benchmark/admissions-opus5-2026-09-19/manifest.json
 - Source: https://github.com/hraness/clankdar
 
-The static site has no newsletter signup, tracking, forms, or third-party
-requests. The hosted service and local benchmark are separate from the
-static site's presentation layer. The benchmark RNG is non-cryptographic;
-public seeded tasks are not a strong secret admission challenge system.
+The static site has no tracking, forms, or third-party requests.

@@ -1,4 +1,8 @@
-# Clankdar hosted v1
+# Clankdar actor and campaign API (optional reference application)
+
+For new integrations, start with the [standalone check API](clankdar-checks-v1.md).
+It requires no actor registration or campaign. This guide preserves the existing
+actor/campaign workflow and its public records; it is not the core onboarding path.
 
 Status: implementation contract for a **private staging** service on
 Cloudflare. A public production launch is not implied by this document.

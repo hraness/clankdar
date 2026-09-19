@@ -1,39 +1,23 @@
-# Hosted Clankdar completion plan — 2026-09-19
+# Hosted Clankdar delivery plan — atomic checks
 
 ## Outcome
 
-A public record of what an agent system can solve and whether it keeps responding. A user registers a local signing key, commits to a bounded campaign, connects their own solver, and shares a readable profile backed by signed, replayable results. Availability and capability stay separate; all scheduled misses count.
+Fresh capability checks with portable, verifiable receipts. An integrator issues one check, supplies its own solver, submits one response set, and retains a signed JSON result. No actor registration, campaign, profile, or schedule is required. Scheduling, aggregation, identity, and application acceptance policy remain with the integrator.
 
-## Recovered state and audit
+The user revised the earlier campaign-first direction after PRs #36 and #37. Those changes established durable evidence and a reference workflow; existing records remain intact. This plan supersedes the earlier product framing. The [check API contract](clankdar-checks-v1.md) defines the new core; the [actor/campaign guide](clankdar-hosted-v1.md) remains an optional reference.
 
-The authoritative continuation is the `miniature-caraway` main chain in Devin's local session database. Its JSON transcript was an older export. PRs #34 and #35 delivered the Cloudflare actor foundation and free-plan staging. The `feat/hosted-campaigns` branch contains the unfinished campaign/client implementation. Its final edits had not been tested. The previous local secrets directory was deleted after upload; issuer and wrapping secrets must remain unchanged.
+## Implementation and acceptance
 
-Staging is `https://clankdar-hosted-staging.972abc65.workers.dev`. The public marketing site remains the existing Hraness Vercel `clankdar` project. No new paid resource or custom-domain migration is required for this delivery.
+1. **Atomic check API and storage.** Reuse the existing challenge/scoring/signature primitives and `clankdar-gate-v1` receipt format. Issue encrypted, authenticated tickets. Store one canonical admission at `checks/<id>.json` in the existing R2 bucket with a conditional create. The storage commit accepts the result; races and uncertain retries recover the stored winner. Authenticate a ticket before recovering its result, and recover committed results before enforcing expiry. A small atomic D1 counter limits issuance independently of receipt storage. No new per-agent or per-session database is introduced.
+2. **Portable integration and verification.** HTTP is sufficient for issuance, submission, and retrieval. Provide small opt-in examples, with no built-in model provider or unbounded process. Offline verification must distinguish valid embedded signatures from an application-pinned issuer, expected context/session, policy, and freshness.
+3. **Simple public product.** Lead the homepage and docs with issue → answer → receipt. Show a complete curl quickstart and practical recipes for preflight, release regression checks, listing evidence, and integrator-owned monitoring. Keep existing identity/campaign concepts out of core onboarding and retain benchmark calibration as supporting evidence. Preserve the pinned visual system, accessibility, and static-site constraints.
+4. **Independent review and validation.** Cover optional key binding, ticket tampering, expiry, contradictory concurrent submissions, uncertain/failed R2 writes, quota races, canonical byte hashes, protocol replay, and legacy preservation. Review source independently, run the required aggregate after convergence, and inspect desktop/mobile/light/dark browser output in bounded passes.
+5. **Delivery and live evidence.** Publish a current-head PR; merge after required checks. Inspect exact provider identities and the additive D1 migration; preserve a recovery export. Apply migration, deploy existing Worker/site, confirm unchanged issuer, exercise bounded scripted live controls, retrieve exact R2 bytes, replay independently, and verify old evidence plus new receipts survive redeployment. Record final branch, checks, PR, versions, and live evidence in the task delivery report.
 
-Release blockers found:
+## Release boundaries
 
-- Concurrent and interrupted mutations can split state from signed event history or issue conflicting evidence.
-- Lazy catch-up omits elapsed misses from availability denominators; historical scans grow with campaign length.
-- Body limits apply after reading, and staging needs explicit actor and lifetime campaign/epoch capacity bounds.
-- The CLI leaves operators to coordinate every poll and response; there is no readable public profile.
-- Marketing and documentation describe the benchmark while denying or misdescribing the implemented hosted API. Future held-out pools/anchors are mixed with present claims.
+The existing invitation-only staging service and resources are reused. No paid upgrade or new database/bucket/account is needed. Default standalone checks use the published `v2-floor-v1` policy; frontier checks use the existing published frontier policy. The core creates no hosted availability denominator. Receipt content is public, and integrations should retain their own copies rather than assume permanent staging retention.
 
-## Execution and acceptance
+The issuer and session-wrapping secrets remain unchanged. Existing actor/anchor rows, Durable Objects, signed histories, campaigns, and `sha256/*` objects remain intact. The quota migration is additive, and a code rollback can leave its table and new receipt objects untouched. No counter reset or data deletion is part of delivery.
 
-1. **Backend correctness and capacity** — serialize actor transitions, atomically commit outcomes and events, retain a frozen evidence outbox for retry, count all elapsed misses, bound per-request catch-up and staging capacity. Regressions cover concurrent requests, duplicate submission, R2 interruption/retry, elapsed schedules and malformed requests.
-2. **Simple operator loop** — sensible campaign defaults; explicit bounded `run --solver FILE --campaign ID`; stdin/stdout JSON; no implicit model calls; deadline/output/process cleanup; fresh request nonces on recoverable retries. Key material stays local and is never given to the solver.
-3. **Public product** — readable actor/campaign records, signed-evidence links, clear no-data states, same-origin pinned presentation. Homepage leads with the hosted journey, docs offer a complete start-to-finish example, benchmark remains supporting calibration.
-4. **Independent review and integration** — review changed behavior, run the required aggregate once after convergence, run Worker deploy dry-run and desktop/mobile/light/dark browser checks, fix any observed failures.
-5. **Delivery and live qualification** — current-head PR with passing required checks, merge, deploy to the existing targets; verify issuer identity unchanged, staged resources/config, one bounded campaign including pass/fail/miss evidence, persistence across redeploy, independently replayed admission and public HTML/assets.
-
-## Deliberate v1 boundaries
-
-This is an invitation-only, capacity-limited experimental staging service. It measures the responding system, including tools or relays. It does not identify a base model, prove independent operation, measure dollar spend, establish uniqueness, or grant authority. The shipped puzzles use fresh secret seeds over public generators; issuer-private held-out pools, external anchors, key rotation/recovery and payment receipts are future work. These add different claims and should not delay an honest, usable initial product. Lost actor keys require a new address.
-
-No AI provider is called by default. A solver is explicitly selected by the operator and pays its own compute costs. The runner stops at an explicit local budget; it does not run indefinitely or create campaigns automatically. Campaign misses remain public when the operator stops.
-
-## Validation and deployment record
-
-Implementation and independent source review are complete. The initial aggregate passed 308 Bun tests, 9 Cloudflare runtime tests, both typechecks, archived evidence replay and both asset builds. The browser gate exercised 30 page/viewport/theme combinations at 1280, 390 and 320 pixels in light and dark modes, plus no-script access. Visual inspection found missing shared theme attributes on the new profiles; the correction and explicit theme/font assertion are included before final validation.
-
-Delivery requires fresh current-head CI, merge, Worker dry run/deployment, unchanged issuer identity, a live qualification actor with passed/failed/missed checks, independent admission replay, and persistence after redeployment. The live qualification control solves public prompts algorithmically and is not a model-capability benchmark. The final delivery record is supplied with the task closeout.
+No AI provider is called implicitly. Qualification uses a scripted public-prompt solver and an empty-answer failure control, not a model benchmark. Model identity, uniqueness, independent operation, spend, and authority are not claims of a check receipt. Held-out hosted pools, external anchors, key recovery, public self-service onboarding, and load-tested production capacity are outside this change.

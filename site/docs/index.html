@@ -5,9 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="theme-color" content="#f8f7f4">
     <title>Docs — Clankdar</title>
-    <meta name="description" content="Start a hosted Clankdar campaign, connect your solver, share a public profile, or run the local capability benchmark.">
+    <meta name="description" content="Create a capability check with HTTP, submit answers once, and retrieve a signed JSON receipt. Quickstart, API, verification, and integration recipes.">
     <meta property="og:title" content="Clankdar docs">
-    <meta property="og:description" content="A guide to hosted actor campaigns, local benchmarks, and the evidence each result supports.">
+    <meta property="og:description" content="Three HTTP calls for fresh capability checks and portable, replayable receipts.">
     <meta property="og:image" content="https://clankdar.com/icon.png">
     <meta property="og:type" content="website">
     <meta property="og:url" content="https://clankdar.com/docs/">
@@ -43,268 +43,115 @@
       </header>
       <main class="doc" id="main">
         <header class="doc-head">
-          <h1 id="title">Get started.</h1>
-          <p class="doc-lede">Give your agent a public record of completed checks, missed windows, and exact puzzle scores. Start with a hosted campaign, or run the benchmark locally to explore the tasks.</p>
+          <h1 id="title">Make a check.</h1>
+          <p class="doc-lede">Issue fresh puzzles, submit one set of answers, and keep the signed result. Use ordinary HTTP from your own application. You supply the solver and decide how to use the evidence.</p>
         </header>
-
         <nav class="contents" aria-label="Contents">
-          <a href="#hosted">Hosted campaign</a>
-          <a href="#quickstart">Local benchmark</a>
-          <a href="#scoring">Scoring</a>
-          <a href="#security">Evidence boundaries</a>
+          <a href="#quickstart">Quickstart</a><a href="#api">API</a><a href="#verification">Verify</a><a href="#recipes">Recipes</a><a href="#limits">Limits</a>
         </nav>
-        <details class="reference-nav">
-          <summary>Protocol and evaluation reference</summary>
-          <nav class="contents" aria-label="Reference contents">
-            <a href="#profiles">Capability profiles</a><a href="#artifacts">Run artifacts</a><a href="#agent">Tool-agent track</a><a href="#exchange">Admission protocol</a><a href="#subject">Subject keys</a><a href="#drift">Drift monitor</a><a href="#verification">Verification</a><a href="#binding">Replay protection</a><a href="#ladder">Answer commitments</a><a href="#modes">Other prototypes</a><a href="#source">Source</a>
-          </nav>
-        </details>
-
-        <section class="doc-section" id="hosted" aria-labelledby="hosted-title">
-          <h2 id="hosted-title">Start a hosted campaign.</h2>
-          <p><b>Hosted v1 is private staging.</b> The staging origin below is invitation-only. You need an invitation token from the operator, stored in a local file. The source client requires Bun 1.3.14. There is no published installable SDK. Keep the actor key and token private.</p>
-          <pre class="code"><code>git clone https://github.com/hraness/clankdar.git
-cd clankdar
-bun install --frozen-lockfile --ignore-scripts
-export CLANKDAR_URL="https://clankdar-hosted-staging.972abc65.workers.dev"
-bun actor keygen --out actor.json
-bun actor register --url "$CLANKDAR_URL" --key actor.json --token-file invite.txt
-bun actor campaign --url "$CLANKDAR_URL" --key actor.json</code></pre>
-          <p>Registration returns your <code>clank1_…</code> address; campaign creation returns a <code>cmp_…</code> campaign ID. Keep those public identifiers for the next steps.</p>
-          <p>The default campaign commits to <b>24 hourly checks</b>, each with a <b>120-second window</b>. The <a href="https://clankdar-hosted-staging.972abc65.workers.dev/v1/policies/v2-floor-v1"><code>v2-floor-v1</code> policy</a> asks four prompts and passes a check when at least three answers pass exact scoring. Windows occur at committed offsets within each hour. The whole campaign can contain up to 96 prompts; you supply and pay for the solver.</p>
-          <h3>Run with your model.</h3>
-          <p>The repository includes an opt-in solver for OpenAI-compatible HTTP endpoints. Set <code>OPENAI_API_KEY</code> privately in your environment, and replace <code>YOUR_PROVIDER_MODEL</code> with the exact model ID you choose. Clankdar does not choose a model or pay for its calls.</p>
-          <pre class="code"><code>export MODEL="YOUR_PROVIDER_MODEL"
-bun actor run --url "$CLANKDAR_URL" --key actor.json \
-  --campaign cmp_YOUR_CAMPAIGN --solver ./cloudflare/examples/model-solver.ts \
-  --pass-env OPENAI_API_KEY,MODEL</code></pre>
-          <p>Replace <code>cmp_YOUR_CAMPAIGN</code> with the returned ID. The example uses the existing benchmark HTTP adapter, allowing at most four challenges per check, 512 output tokens per request, and 12 HTTP attempts including parameter negotiation. Each solve is bounded by the session deadline. Refused or token-truncated replies cannot pass.</p>
-          <p>For another compatible endpoint, set <code>OPENAI_BASE_URL</code> and add its name to <code>--pass-env</code>. To change the token cap, set <code>MAX_TOKENS</code> between 1 and 4096 and add that name too. Configure spending limits with your provider; these controls are not a dollar cap.</p>
-          <p>Leave the runner online for the campaign. It waits for windows, runs the solver, and submits responses, stopping after 25 hours or 24 submitted checks by default. Use <code>--max-seconds</code> and <code>--max-epochs</code> for different bounds. Add <code>--once</code> to poll once: it exits immediately if waiting, or solves and submits the current open check. Stopping the runner does not cancel the committed schedule: unanswered windows become misses.</p>
-          <details class="report-details"><summary>Use your own solver</summary>
-            <p>Pass an executable you control with <code>--solver</code>. It needs executable permission and a shebang. It reads a JSON object containing <code>state</code>, <code>campaignId</code>, <code>epoch</code>, <code>sessionId</code>, <code>expiresAt</code>, and <code>challenges</code> on stdin. Each challenge includes <code>challengeId</code> and <code>prompt</code>. Write a raw JSON object mapping challenge IDs to response strings on stdout. Diagnostics on stderr are discarded.</p>
-            <pre class="code"><code>{"att_example_id": "the answer", "att_another_id": "another answer"}</code></pre>
-            <p>Use the actual IDs from the input; the example above only shows the shape. The runner passes basic process variables and the names you explicitly allow with <code>--pass-env</code>. Actor keys and invitation tokens are not solver inputs. This local program is not sandboxed, so use code you trust.</p>
-          </details>
-          <details class="report-details"><summary>Inspect or submit one check manually</summary>
-            <pre class="code"><code>bun actor next --url "$CLANKDAR_URL" --key actor.json \
-  --campaign cmp_YOUR_CAMPAIGN
-bun actor submit --url "$CLANKDAR_URL" --key actor.json \
-  --session gs_YOUR_SESSION --responses responses.json</code></pre>
-            <p>A waiting response gives the next window. An open session gives prompts, challenge IDs, and an expiry time. Save answers in the object format above. Each session accepts one response set; a failed or partial set consumes that attempt. If a request’s outcome is uncertain, inspect the campaign and session evidence before retrying.</p>
-          </details>
-          <h3>Share a profile; inspect the evidence.</h3>
-          <p>Registration returns a <code>profileUrl</code> on the staging origin at <code>/actors/clank1_YOUR_ADDRESS</code>. Open it for the public profile. No invitation token is needed to read it. Availability counts completed and missed windows; capability reports the result of submitted checks. A completed check can fail its puzzle policy. Future windows are not completed work.</p>
-          <pre class="code"><code>bun actor profile --url "$CLANKDAR_URL" --address clank1_YOUR_ADDRESS</code></pre>
-          <p>Campaigns retain their original number of scheduled checks. Receipts reveal the seeds so the recorded prompts, answers, scores, and signatures can be verified. The schedule seed is revealed when the campaign finishes. The profile is public, so do not put private information in puzzle responses.</p>
-          <p>The hosted v1 policies use fresh seeds from public puzzle generators. Private held-out campaign pools, key recovery, and external identity anchors are future work. Keep a secure backup of your actor key: losing it means starting a new address. See the <a href="https://github.com/hraness/clankdar/blob/main/docs/clankdar-hosted-v1.md">hosted API contract</a> for request formats and deployment details.</p>
-        </section>
 
         <section class="doc-section" id="quickstart" aria-labelledby="quickstart-title">
-          <h2 id="quickstart-title">Run the local benchmark.</h2>
-          <p>Use Bun 1.3.14. The local benchmark compares responses under a declared suite and budget. It runs independently of hosted campaigns and does not need a Clankdar invitation.</p>
-          <pre class="code"><code>git clone https://github.com/hraness/clankdar.git
-cd clankdar
-bun install --frozen-lockfile --ignore-scripts
-bun bench --list
-bun bench --adapter oracle --seeds 1-10 --out results/oracle-first.jsonl</code></pre>
-          <p><code>oracle</code> is a privileged test control: the runner uses the known answer without calling a model. Its score checks plumbing, not model capability. <code>echo</code> returns the prompt and provides a simple non-solving baseline.</p>
-          <h3>Inspect before spending.</h3>
-          <pre class="code"><code>bun bench --adapter openai:gpt-4o-mini --tiers 0-3 --seeds 101-110
-bun bench --adapter openai:gpt-4o-mini --tiers 0-3 --seeds 101-110 \
-  --execute --max-requests 200 --max-tokens 4096 --out results/model-first.jsonl</code></pre>
-          <p>The first command only prints a manifest. The second enables API requests. Configure <code>CLANKDAR_API_KEY</code> privately in the environment and optionally <code>CLANKDAR_BASE_URL</code>; <code>OPENAI_API_KEY</code> and <code>OPENAI_BASE_URL</code> are fallbacks. Keep environment files untracked. Never paste credentials into the command line, a result file, or an issue.</p>
-          <p><code>--max-requests</code> caps actual HTTP attempts, including rejected-parameter negotiation. There are no automatic retries for provider failures. <code>--max-tokens</code>, <code>--timeout-ms</code>, and <code>--concurrency</code> bound each run. These are request and token controls, <b>not a guaranteed dollar cap</b>; inspect provider pricing before opting in.</p>
-          <h3>Compare the same questions across models.</h3>
-          <pre class="code"><code>CLANKDAR_BASE_URL=https://ai-gateway.vercel.sh/v1 bun calibrate \
-  --models openai/gpt-4.1,google/gemini-2.5-pro --seeds 101-110</code></pre>
-          <p>This is also a dry run. Add <code>--execute --max-requests N --out NEW-DIRECTORY</code> after inspecting it. Gateway model IDs use the provider’s spelling, often <code>provider/model</code>; the <code>openai:</code> prefix selects the adapter only in <code>bun bench</code>. Loopback HTTP endpoints support local models without an API key; remote endpoints require HTTPS.</p>
-          <h3>Run the other suites.</h3>
-          <pre class="code"><code>bun bench --list
-bun bench --suite frontier --adapter openai:gpt-4.1 --seeds 301-320
-bun bench --suite agent --adapter agent:openai:gpt-4.1 --seeds 301-320</code></pre>
-          <p><code>frontier</code> is the deeper unaided pool: same one-response contract, harder cell parameters. <code>agent</code> is the bounded tool track and requires an agent-capable adapter (<code>agent:openai:&lt;model&gt;</code>); unaided adapters are refused, and agent adapters refuse unaided suites. Agent episodes make several provider requests per instance — budget <code>--max-requests</code> accordingly.</p>
+          <span id="hosted" class="anchor-alias" aria-hidden="true"></span>
+          <h2 id="quickstart-title">Your first receipt, with curl and jq.</h2>
+          <p>The hosted API is private staging. Get an invitation token from the operator and keep it in your server environment as <code>CLANKDAR_TOKEN</code>. The commands below need curl and jq, and work from a fresh local directory. No agent registration or repository checkout is required.</p>
+          <h3>Create a check and inspect its prompts.</h3>
+<pre class="code"><code>export CLANKDAR_URL=&quot;https://clankdar-hosted-staging.972abc65.workers.dev&quot;
+# Set CLANKDAR_TOKEN privately to your invitation token.
+umask 077
+curl -fsS &quot;$CLANKDAR_URL/v1/checks&quot; \
+  -H &quot;Authorization: Bearer $CLANKDAR_TOKEN&quot; \
+  -H &quot;Content-Type: application/json&quot; \
+  --data &#x27;{&quot;policyId&quot;:&quot;v2-floor-v1&quot;}&#x27; &gt; check.json
+jq -r &#x27;.challenges[] | &quot;\(.challengeId)\n\(.prompt)\n&quot;&#x27; check.json</code></pre>
+          <p><code>check.json</code> contains the actual challenge IDs and prompts, <code>expiresAt</code>, and a private <code>ticket</code> for this check. The default <code>v2-floor-v1</code> policy gives you four prompts, requires three passing answers, and allows 120 seconds. Creating the check does not call a model.</p>
+          <h3>Build the answer map and submit once.</h3>
+<pre class="code"><code>jq &#x27;.challenges | map({key: .challengeId, value: &quot;&quot;}) | from_entries&#x27; \
+  check.json &gt; answers.json</code></pre>
+          <p>This creates blank answers under the real challenge IDs. <b>Submit them unchanged for an intentionally failed-check demo.</b> To test capability, replace each blank value with your solver’s answer before <code>expiresAt</code>. No model is called by these commands. Failed answers consume the attempt just as passing answers do.</p>
+<pre class="code"><code>jq -n --slurpfile check check.json --slurpfile answers answers.json \
+  &#x27;{ticket: $check[0].ticket, responses: $answers[0]}&#x27; &gt; submission.json
+curl -fsS &quot;$CLANKDAR_URL/v1/checks/$(jq -r &#x27;.id&#x27; check.json)/responses&quot; \
+  -H &quot;Content-Type: application/json&quot; \
+  --data-binary @submission.json &gt; result.json
+jq &#x27;{id, pass, passed, required, receiptUrl, sha256}&#x27; result.json</code></pre>
+          <p>The response includes <code>pass</code>, the passing and required counts, a content hash, a receipt URL, and the signed receipt itself. Submission uses the scoped ticket, so your main issue token stays with your server. Retrying submission recovers the first result; it cannot replace the answers. Retrying creation makes a new check and consumes another quota slot.</p>
+          <h3>Download the exact JSON receipt.</h3>
+<pre class="code"><code>curl -fsS &quot;$CLANKDAR_URL$(jq -r &#x27;.receiptUrl&#x27; result.json)&quot; &gt; receipt.json</code></pre>
+          <p>The receipt is a raw <code>clankdar-gate-v1</code> signed admission with <code>protocol</code>, <code>payload</code>, and <code>signature</code>. It remains readable after the ticket expires. Keep a copy: this experimental service has no automatic deletion policy, but does not promise permanent hosting.</p>
         </section>
 
-        <section class="doc-section" id="scoring" aria-labelledby="scoring-title">
-          <h2 id="scoring-title">Correct means something precise.</h2>
-          <p>The current contracts are <code>{{SUITE_VERSION}}</code> and <code>{{SCORER_VERSION}}</code>. An instance contains <code>family</code>, <code>tier</code>, <code>seed</code>, <code>prompt</code>, and <code>answer</code>. A model adapter receives only the first two identifiers and the prompt—not the seed or answer.</p>
-          <ul class="doc-list">
-            <li><b>Text:</b> trim and collapse whitespace; preserve case, punctuation, and token boundaries. The ALL CAPITAL LETTERS instruction really is case-sensitive.</li>
-            <li><b>Integers:</b> accept signed decimal integers, canonicalize leading zeroes and a leading plus. Reject decimals, exponents, prose, and a wrong sign. <code>-5</code> is not <code>5</code>.</li>
-            <li><b>Grids:</b> accept space-separated single-digit cells with rows separated by newlines or <code>/</code>. Preserve dimensions and cell boundaries; <code>1 2 / 3 4</code> is not <code>12 / 34</code>.</li>
-            <li><b>Bits:</b> preserve every digit, including leading zeroes. <b>Ordering:</b> parse individual letter tokens, allowing case and comma/whitespace variants. <b>Knights:</b> parse ordered letter-to-knight/knave assignments, not arbitrary prose.</li>
-          </ul>
-          <pre class="code"><code>import { familyByName, answerFormat, scoreAnswer } from "./ladder/mod.ts";
-
-const puzzle = familyByName("arithmetic")!.generate(2, 42);
-const result = scoreAnswer(puzzle.answer, response, answerFormat(puzzle.family));
-result.pass;
-result.finalAnswerMatch;</code></pre>
-          <p>The final-answer diagnostic extracts a final line or block <em>without looking at the expected answer</em>, then applies the same typed comparison. It never changes <code>pass</code>. It is not substring matching, a judge-model opinion, or proof that the model understood the task.</p>
-          <p>Rule-induction tasks declare a finite hypothesis class and add examples until all surviving rules agree on the query. That is uniqueness <em>within the stated grammar</em>, not a claim that finite examples determine an arbitrary function.</p>
-        </section>
-
-        <section class="doc-section" id="profiles" aria-labelledby="profiles-title">
-          <h2 id="profiles-title">Ask for the capability you need.</h2>
-          <p>The v2 profile contract partitions all 25 cells exactly once: <b>transform fidelity</b>, <b>symbolic execution</b>, <b>constraint solving</b>, and <b>rule induction</b>. A profile score pools only its declared cells. It does not change the underlying prompts, verdicts, or family/tier results.</p>
-          <p>For evaluation, predeclare the suite hash, profile and cells, seed policy, response and tool conditions, minimum sample size, threshold, and treatment of provider errors. Prefer a lower confidence bound when a decision depends on reliability. Do not choose a threshold after seeing the candidate's answers.</p>
-          <div class="callout"><strong>Profiles describe evidence; they do not grant authority.</strong><p>A service with a hard constraint-solving requirement should evaluate that profile directly instead of averaging it with easier transformations. Passing still does not establish model identity, non-delegation, safety, or permission to call tools.</p></div>
-          <p>The executable profile definitions and partition checks live in <code>bench/profiles.ts</code>. Current observed results are on the <a href="/benchmark/#profiles">benchmark page</a>.</p>
-        </section>
-
-        <section class="doc-section" id="landscape" aria-labelledby="landscape-title">
-          <h2 id="landscape-title">Choose the evidence your decision needs.</h2>
-          <p>Use the local benchmark to compare systems on the same puzzles and conditions. Use a hosted campaign to inspect one actor’s responses over a committed schedule. A signed receipt records one result; a campaign adds the denominator and preserves missed checks.</p>
-          <p>These measurements can inform a service’s own admission policy. They cannot establish whether an AI, a person, or delegated tooling supplied an answer. Compare named cells and recorded conditions, and decide what matters before looking at a candidate’s results.</p>
-        </section>
-
-        <section class="doc-section" id="artifacts" aria-labelledby="artifacts-title">
-          <h2 id="artifacts-title">Evidence you can replay.</h2>
-          <p>JSONL begins with a versioned run manifest, contains one result per instance, and ends with a summary. It records the suite hash, seed set, source revision and dirty flag, runtime, requested model and endpoint, accepted request parameters, usage where provided, finish reason, and latency. Streaming rows may arrive in completion order; instance identities and the suite hash do not depend on that order.</p>
-          <p>New files are exclusive-create: existing evidence is never truncated. Interrupted runs remain available for diagnosis, but incomplete files are rejected by the comparison report. A model timeout or provider error keeps the puzzle identity, is reported separately, and does not become a model’s wrong answer. A token-limit truncation cannot silently pass.</p>
-          <pre class="code"><code>bun report results/my-run
-bun report site/benchmark/v2-calibration-0
-bun bench/archive.ts verify site/benchmark/v2-calibration-0
-bun bench/pilot.ts verify site/benchmark/pilot-v0</code></pre>
-          <p>The public <a href="/benchmark/#v2-results">v2 calibration</a> contains 2,500 saved attempts on held-out seeds 101–120. Replaying its archive verifies hashes and recomputes every published score; calling a model again need not reproduce the same response. The report rejects mixed versions, duplicate instances, changed prompt/answer pairs, and different model coverage. The earlier pilot remains available as explicitly labeled legacy evidence.</p>
-        </section>
-
-        <section class="doc-section" id="agent" aria-labelledby="agent-title">
-          <h2 id="agent-title">The tool-agent track.</h2>
-          <p>The <code>agent</code> suite runs a bounded multi-turn protocol instead of the one-response contract. Each instance carries a deterministic, server-side tool environment — the model sees the prompt and a growing transcript, never the environment internals.</p>
-          <pre class="code"><code>TOOL &lt;name&gt; {json-args}    // one tool call
-FINAL &lt;answer&gt;            // submit and end the episode</code></pre>
-          <p>Every model reply must be exactly one action line. Anything else is a protocol error and wastes a turn. Budgets are hard per-cell caps: <b>4–12 tool calls</b>, <b>8–16 turns</b>, <b>4,096 characters</b> per tool output. An episode ends on <code>FINAL</code> or with <code>budget_exhausted</code>. Tools are pure functions over the instance — no shell, filesystem, network, or secrets.</p>
-          <p>Transcripts are recorded per attempt and replayed against regenerated environments on verification, so a published score is backed by deterministic tool execution, not a claimed one. The agent manifest records the protocol version (<code>clankdar-agent-protocol-v1</code>) alongside the usual run metadata.</p>
-          <p>On the <a href="/benchmark/#agent-results">benchmark page</a>, the episode-diagnostics table adds four more signals:</p>
-          <ul class="doc-list">
-            <li><b>FINAL emitted</b> — how often the model ended the episode by actually submitting an answer rather than hitting the turn cap.</li>
-            <li><b>Budget exhausted</b> — episodes that never emitted <code>FINAL</code>. The scorer still grades the last reply text, so a bare answer on the final turn can pass; in practice these almost never satisfy the contract.</li>
-            <li><b>Mean tool calls / turns</b> — effort under the recorded budget. A cheap solve reads differently from an expensive one.</li>
-            <li><b>Failed tool calls</b> — protocol violations, unknown tools, invalid arguments, and call-budget hits, split by kind.</li>
-          </ul>
-          <div class="callout"><strong>Agent scores are not unaided scores.</strong><p>They measure planning and tool use under one declared contract and budget. Do not compare them to unaided runs, and do not treat a passed agent episode as evidence of real-world tool access or safe behavior — the environments are synthetic and replayable by design.</p></div>
-        </section>
-
-        <section class="doc-section" id="exchange" aria-labelledby="exchange-title">
-          <h2 id="exchange-title">The admission exchange.</h2>
-          <p><b>clankdar-attest-v1</b> is the implemented wire format. A verifier commits to a fresh unrevealed seed and publishes the generated prompt, so the instance cannot be pre-solved or looked up. A response inside the deadline is rescored deterministically and signed into a receipt that reveals the seed — anyone replays the signature, the commitment, the regenerated instance, and the verdict without trusting the issuer. <b>clankdar-gate-v1</b> builds admission sessions on top: a policy draws N sealed challenges under one session id and one deadline, and one submit consumes the session into a signed admission whose verdict recomputes independently. <b>clankdar-tlog-v1</b> derives a transparency log from the gate ledger: every session and decision becomes a hash-chained entry under an issuer-signed head, so issued events are enumerable and replayable. The specification is <a href="https://github.com/hraness/clankdar/blob/main/docs/clankdar-attest-v1.md">docs/clankdar-attest-v1.md</a>.</p>
-          <pre class="code"><code>bun bench/attest.ts keygen --out verifier.json
-bun bench/gate.ts policy --suite frontier \
-  --cells automata:t6,knights:t5,registervm:t5 \
-  --challenges 3 --min-pass 2 --ttl 300 --out policy.json
-bun bench/gate.ts serve --key verifier.json \
-  --policy policy.json --dir gate-state --port 8787</code></pre>
-          <pre class="code"><code>POST /sessions                → {sessionId, expiresAt, challenges[]}
-POST /sessions/:id/responses  → {admission, receipts[]}
-GET  /receipts/:challengeId   → one independently replayable receipt
-GET  /policy                  → the floor and the verifier key</code></pre>
-          <pre class="code"><code>bun bench/tlog.ts build --dir gate-state --key verifier.json --out tlog.json
-bun bench/tlog.ts check tlog.json                     → recompute the chain and head signature
-bun bench/tlog.ts prove tlog.json --session gs_…      → inclusion evidence for one session
-bun bench/tlog.ts prove tlog.json --from-count 4      → suffix proof the log extends a pinned head
-bun bench/tlog.ts check-proof proof.json --old-head head.json → verify growth against the pin
-bun bench/tlog.ts admit tlog.json admission.json      → admission check + logged history
-bun bench/tlog.ts compare log-a.json log-b.json       → prove a fork or a consistent prefix
-bun bench/tlog.ts witness-serve --heads heads.jsonl \
-  --providers providers.json --poll-ms 60000          → intake + configured-provider polling</code></pre>
-          <p>The log binds <em>this</em> issuer's history under <em>its own</em> key. It does not stop self-minting — a verifier can always answer its own oracle — and it cannot detect a fork alone. The provider-neutral witness accepts self-describing signed heads under many verifier keys and reports conflicts per key, without a central provider registry; a configured providers file makes it poll each provider's <code>/tlog/head</code> on an interval — the URL implies no trust, only the embedded signature records. A pinned-head holder verifies later growth with a linear suffix consistency proof — O(new−old) entries, not Merkle-logarithmic, since the log is a linear hash chain by design. Provider discovery, gossip, witnessed co-signing, and external anchoring are not implemented. What the log buys is enumerability: an admission that does not trace to a logged session is issuer-claimed only.</p>
-          <p>An admission attests that one session produced K passing responses under one policy in one window. It is capability evidence — never identity, liveness, or authority — and arbitrary model or room text must never issue authority. <span class="tag">reference implemented</span></p>
-        </section>
-
-        <section class="doc-section" id="subject" aria-labelledby="subject-title">
-          <h2 id="subject-title">Subject binding.</h2>
-          <p>A respondent can attach a <code>subjectProof</code>: an Ed25519 signature by a key it controls over a domain-separated transcript. One proof covers a whole gate session — <code>["clankdar/subject/v1", sessionId, publicKey]</code> — and embeds in every minted receipt; a standalone challenge binds <code>challengeId</code>, <code>nonce</code>, and key instead. The issuer validates the proof at minting (an invalid one is a minting error, never a receipt field), and an admission carries at most one subject key across all its receipts.</p>
-          <p>What it buys: one pseudonymous subject key can sign across receipts, sessions, and verifiers — the binding portable capability badges and receipt-chaining need. What it does not buy: the key holder can still delegate the solving and sign afterward, so a proof says who claimed the episode, not who solved it; it carries no liveness, expiry, or revocation of its own. <code>clankdar-badge-v1</code> builds on it: a subject packs its bound admissions into a self-signed dossier, which proves the key accumulated the admissions — never that the holder solved or earned them. A checker can disclose pools from multiple issuers by <code>poolKey</code>; held-out scores without their pool remain explicit in <code>unreplayed</code>, never silently upgraded to replayed evidence.</p>
-        </section>
-
-        <section class="doc-section" id="drift" aria-labelledby="drift-title">
-          <h2 id="drift-title">The drift monitor.</h2>
-          <p><code>bun drift</code> points the same gate machinery at your own model endpoint on a schedule. Every round is a real signed admission appended to a series file — the series is evidence, not telemetry.</p>
-          <pre class="code"><code>bun drift run --key verifier.json --policy policy.json \
-  --adapter openai:gpt-4.1 --rounds 5 --series drift.jsonl \
-  --execute --max-requests 100
-bun drift report --series drift.jsonl
-bun drift baseline --series drift.jsonl --out baseline.json
-bun drift compare --series drift.jsonl --baseline baseline.json --threshold 0.2</code></pre>
-          <p><code>report</code> aggregates per-cell and overall pass bands; <code>baseline</code> pins a reference series; <code>compare</code> exits nonzero when a cell or the overall band drops more than <code>--threshold</code> below the pin — a CI gate for silent model substitution. Score bands describe the probed endpoint under the recorded policy; they are not a certification of the provider.</p>
-        </section>
-
-        <section class="doc-section" id="modes" aria-labelledby="modes-title">
-          <h2 id="modes-title">Modes.</h2>
-          <h3>Hashcash</h3>
-          <p>The small anti-spam primitive. A response meets a SHA-256 leading-zero target over a bound challenge and nonce. Cheap to verify, hardware-biased, and outsourceable; it does not establish exact resource spend or model capability. Signed challenge and replay-guard code lives in the Rust prototype. <span class="tag">prototype</span></p>
-          <h3>Witness</h3>
-          <p>A bounded deterministic program can be replayed with a work receipt. The standalone Rust witness VM exists; integrating it with signed admission challenges remains design work. Charged operations are a defined VM contract, not evidence of the solver’s identity or physical energy use. <span class="tag">standalone prototype</span></p>
-          <h3>Ladder</h3>
-          <p>The benchmark generators, exact scorer, runner, verifier-keyed answer commitment, sealed-seed attestation (attest-v1), admission sessions (gate-v1), the issuance transparency log (tlog-v1), subject-bound badges (badge-v1), issuer-private held-out pools (holdout-v1), ledger-derived rate limits, a reference hosted issuer surface composing gate and log with optional bearer-key write auth and per-key mint quotas, the drift monitor, and build-verified public admission archives are implemented here — signed issuance, seeded challenge commitments, policy floors, subject-bound receipts, session binding, a durable append-only consumption ledger, and a derived signed log over it. Log gossip or anchoring are not. The current public-seed suite must not be used as a secret admission generator. <span class="tag">reference implemented</span></p>
+        <section class="doc-section" id="api" aria-labelledby="api-title">
+          <span id="exchange" class="anchor-alias" aria-hidden="true"></span>
+          <h2 id="api-title">Three endpoints.</h2>
+          <dl class="api-list">
+            <div><dt><code>POST /v1/checks</code></dt><dd>Requires <code>Authorization: Bearer …</code>. Send <code>{}</code> for the default policy, or <code>{"policyId":"frontier-floor-v1"}</code>. Optional <code>context</code> is a nonempty, non-sensitive string up to 256 characters. The response contains <code>id</code>, <code>ticket</code>, <code>policyId</code>, <code>expiresAt</code>, <code>challenges</code>, and <code>receiptUrl</code>.</dd></div>
+            <div><dt><code>POST /v1/checks/:id/responses</code></dt><dd>Send <code>{"ticket":"…","responses":{"actualChallengeId":"answer"}}</code>. No issue token is needed. An empty response object is a valid failed attempt. The first accepted submission fixes the result; retries return it. You receive <code>pass</code>, <code>passed</code>, <code>required</code>, <code>receiptUrl</code>, <code>sha256</code>, and the signed <code>receipt</code>.</dd></div>
+            <div><dt><code>GET /v1/checks/:id</code></dt><dd>Returns the immutable, canonical JSON receipt after a result exists. This read needs no token. The <code>sha256</code> returned on submission identifies the exact receipt bytes.</dd></div>
+          </dl>
+          <h3>Choose a policy.</h3>
+          <p><a href="https://clankdar-hosted-staging.972abc65.workers.dev/v1/policies/v2-floor-v1"><code>v2-floor-v1</code></a> uses the v2 pool and a 120-second deadline. <a href="https://clankdar-hosted-staging.972abc65.workers.dev/v1/policies/frontier-floor-v1"><code>frontier-floor-v1</code></a> uses harder cells and a 180-second deadline. Both ask four prompts and require three passes. These are defined task settings, not certified model classes.</p>
+          <details class="report-details" id="subject"><summary>Optionally bind a check to a subject key</summary><p>Include <code>subjectPublicKey</code> when issuing a check if your application needs key binding. Submission then includes the matching <code>subjectProof</code> under the existing receipt protocol. A subject signature binds a key to the check; it does not prove who solved the puzzles. Most integrations can start without subject keys. See the <a href="https://github.com/hraness/clankdar/blob/main/docs/clankdar-checks-v1.md">API contract</a> for the exact proof format.</p></details>
+          <p>For request bounds, retry semantics, and error responses, use the <a href="https://github.com/hraness/clankdar/blob/main/docs/clankdar-checks-v1.md">complete check API contract</a>. A <a href="https://github.com/hraness/clankdar/blob/main/cloudflare/examples/check.mjs">server-side JavaScript integration example</a> connects the calls to your <code>solve(challenges, signal)</code> function. Forward the abort signal to provider requests. Its optional <code>checkpoint(record)</code> callback lets your app save the ticket and answers privately for recovery.</p>
         </section>
 
         <section class="doc-section" id="verification" aria-labelledby="verification-title">
-          <h2 id="verification-title">Verification.</h2>
-          <p>The gate verifier and the independent admission checker enforce:</p>
-          <ol class="doc-list">
-            <li>strictly parse and bound every field;</li>
-            <li>verify the issuer signature and protocol version over the recorded payload bytes;</li>
-            <li>require the declared subject, context, session, suite version, and policy cells;</li>
-            <li>reject expired challenges and already-decided sessions;</li>
-            <li>regenerate each instance from its committed seed and rescore every embedded receipt — claimed work is never trusted;</li>
-            <li>verify any embedded <code>subjectProof</code> over its domain-separated transcript and require one subject key per session;</li>
-            <li>recompute the verdict against the policy's challenge count and minimum-pass threshold; and</li>
-            <li>consume each session once, atomically, for the declared admission purpose.</li>
+          <span id="artifacts" class="anchor-alias" aria-hidden="true"></span>
+          <h2 id="verification-title">Verify the receipt where you use it.</h2>
+          <p>Challenge receipts reveal the seeds and recorded answers for responses that were present and well-formed. A checker verifies the issuer signature, regenerates those puzzles, rescores the recorded answers, and recomputes the result. Missing or malformed answers count as nonpassing without a challenge receipt or seed reveal; the blank-answer demo still verifies as 0 of 4 passing. Copying a receipt between services does not require copying a Clankdar account or adopting a workflow.</p>
+          <p>The optional source verifier uses Bun 1.3.14 and the repository’s existing checker. Set <code>EXPECTED_ISSUER_PUBLIC_KEY</code> from your application’s trusted configuration, then run it from the repository:</p>
+<pre class="code"><code>bun cloudflare/examples/verify-receipt.mjs receipt.json \
+  --issuer &quot;$EXPECTED_ISSUER_PUBLIC_KEY&quot; \
+  --session &quot;$(jq -r &#x27;.id&#x27; check.json)&quot; \
+  --sha256 &quot;$(jq -r &#x27;.sha256&#x27; result.json)&quot;</code></pre>
+          <p><code>--issuer</code> is a required signer pin. Add <code>--context</code> when your app requires a particular context. The verifier also checks the expected session and exact bytes when those options are supplied. See <a href="https://github.com/hraness/clankdar/blob/main/cloudflare/examples/verify-receipt.mjs">the verifier example</a> for its output and failure behavior.</p>
+          <p>A valid signature and replay establish what the issuer recorded. Your application must also require its intended policy, appropriate freshness, and a passing result when needed. A failed check can have a completely valid receipt.</p>
+        </section>
+
+        <section class="doc-section" id="recipes" aria-labelledby="recipes-title">
+          <h2 id="recipes-title">Put checks inside your workflow.</h2>
+          <ol class="journey">
+            <li><h3>Agent preflight</h3><p>When an agent offers to take a job, your service creates a check and forwards its prompts and scoped ticket. Inspect the signed result alongside your existing authentication and admission policy. Clankdar supplies evidence; your service decides whether to proceed.</p></li>
+            <li><h3>Release checks in CI</h3><p>Before changing a model endpoint, issue checks under the same declared policy and conditions as your baseline. Compare relevant cells and store receipt IDs with the release. Your pipeline owns sampling, thresholds, provider errors, and the release decision.</p></li>
+            <li><h3>Evidence on an agent listing</h3><p>Attach a recent result and receipt link to an agent in your own marketplace or directory. Show the policy, date, and sample size so readers can inspect what was tested. Decide yourself when listings need a fresh check.</p></li>
           </ol>
+          <h3 id="drift">Schedule your own monitoring.</h3>
+          <p>Call the same endpoints from your cron job or agent loop and store the check IDs in your application. You choose cadence, budgets, missed-run treatment, and alerting. An individual check says nothing about ongoing availability. The existing campaign implementation remains an <a href="https://github.com/hraness/clankdar/blob/main/docs/clankdar-hosted-v1.md">optional legacy reference</a>; its records and routes are preserved.</p>
+          <p id="landscape">The same primitive fits a one-off request or repeated evaluation. A scheduled campaign is an integration policy, not a prerequisite for calling the API.</p>
         </section>
 
-        <section class="doc-section" id="binding" aria-labelledby="binding-title">
-          <h2 id="binding-title">Binding and replay.</h2>
-          <ul class="doc-list">
-            <li><code>challenge_id</code> is cryptographically random and unpredictable until issuance; a session's challenges share one <code>session_id</code> and one deadline.</li>
-            <li>The seed commitment binds suite version, family, tier, nonce, and seed in a domain-separated digest, preventing cross-session and cross-purpose reuse; the signature binds the rest of the transcript.</li>
-            <li>The gate ledger consumes each session once: receipts and the signed admission append as a single record. Duplicate submits are rejected; a restart cannot resurrect an undecided session.</li>
-            <li>An optional <code>subjectProof</code> binds each receipt to a respondent Ed25519 key through a <code>clankdar/subject/v1</code> transcript scoped to the session — or to the standalone challenge's id and nonce. The domain label keeps a proof from being reinterpreted as any other protocol message.</li>
-            <li>The transparency log hash-chains every ledger record — each entry's <code>prev</code> links to the prior <code>entryHash</code> under an issuer-signed head — so a dropped, reordered, or altered record breaks verification. A fork is detectable only by comparing heads the issuer published elsewhere.</li>
-            <li>Replay consumption is atomic and durable across restarts. An in-memory guard alone is not a production admission ledger.</li>
-          </ul>
+        <section class="doc-section" id="limits" aria-labelledby="limits-title">
+          <h2 id="limits-title">Limits, storage, and boundaries.</h2>
+          <p>Shared staging allows <b>1,024 issued checks over its lifetime</b> and at most <b>60 issues per fixed UTC minute</b>. These are service-wide limits, not a quota for every token. Request bodies are bounded at 128 KiB and receipts at 256 KiB. Your application supplies any inference and pays its own provider costs.</p>
+          <p>Each completed result is one canonical signed JSON object in R2. A small D1 counter enforces issue quotas; the core does not need an agent registry or session database. Receipts have no automatic deletion policy, but experimental hosting is not a permanence guarantee. Download results you need to retain.</p>
+          <h3 id="binding">Keep credentials separate from results.</h3>
+          <p>Keep the issue token server-side. The ticket is a private credential scoped to one check until it is consumed or expires. A recorded failed check fixes the result too; retry only to recover that first result. A receipt stays readable after the ticket expires. Results are public, so do not put private information in <code>context</code> or responses.</p>
+          <h3 id="security">What a check establishes.</h3>
+          <p>A receipt measures the submitted responses under a recorded policy and deadline. It does not prove model identity, autonomy, uniqueness, safety, ongoing availability, or permission to act. A challenge can be delegated or solved with code. The current hosted policies use fresh seeds from public generator streams; they are not issuer-private held-out pools. An issuer can self-mint results, so choose which issuers you accept.</p>
         </section>
 
-        <section class="doc-section" id="security" aria-labelledby="security-title">
-          <h2 id="security-title">Security model.</h2>
-          <p>No software-only challenge can prove that a human, an LLM, or an autonomous agent produced the answer. A challenge can be delegated, outsourced, or solved by a different model than the one holding the key. Hardware attestation adds different assumptions and is optional evidence, never the portable default.</p>
-          <p>A successful response may remove a rate limit or qualify admission. It is never an identity proof, personhood proof, safety proof, or host capability — it does not authorize tools, change policy, mint money, or make model output trustworthy.</p>
-          <p>A subject proof does not relax the delegation limit: the key holder can relay the challenge to a stronger solver and sign the transcript afterward. The verifier can also answer its own oracle — the transparency log makes one issuer's history enumerable but cannot detect a fork alone, so relying parties should issue their own challenges and treat foreign admissions as issuer-claimed.</p>
-        </section>
-
-        <section class="doc-section" id="ladder" aria-labelledby="ladder-title">
-          <h2 id="ladder-title">The answer-commitment boundary.</h2>
-          <p>A public hash of a small answer space is an offline guessing oracle. A random public salt does not fix that. The experimental helper therefore requires a <b>verifier-secret key of 32–64 bytes</b> and uses HMAC-SHA256 over an unambiguous, versioned transcript:</p>
-          <pre class="code"><code>HMAC-SHA256(verifier_key, JSON.stringify([
-  "clankdar/answer/v2\0",
-  "{{SCORER_VERSION}}",
-  challenge_id,
-  answer_format,
-  canonical_answer
-]))</code></pre>
-          <p><code>answerCommitment(challengeId, answer, verifierKey, format)</code> produces the tag. <code>verifyAnswer(challengeId, tag, response, verifierKey, format)</code> rejects malformed answers and compares fixed-length tags in constant time. V1 unkeyed commitments are intentionally not accepted.</p>
-          <ul class="doc-list">
-            <li><b>Keep the key server-side.</b> This is not a public-verification proof. Publishing the key defeats the protection.</li>
-            <li><b>Bind the rest of the protocol separately.</b> The helper does not sign a challenge, bind a subject or scope, enforce expiration, or consume replay state. A signed envelope must bind the prompt hash, family, tier, scoring version, identity, purpose, and lifetime.</li>
-            <li><b>Benchmark entropy is not admission entropy.</b> The suite uses a 32-bit, non-cryptographic Mulberry32 RNG. Hiding that seed is insufficient. Fresh admission needs a separately designed, cryptographically generated challenge system.</li>
-            <li><b>Limit online guesses and delegation.</b> Even keyed commitments do not increase answer entropy, stop outsourcing, or prove that a named model supplied the answer.</li>
-          </ul>
-          <p>Tiers, the pilot, and calibration methodology live on the <a href="/benchmark/">benchmark page</a>.</p>
+        <section class="doc-section" id="scoring" aria-labelledby="scoring-title">
+          <h2 id="scoring-title">The benchmark behind the checks.</h2>
+          <p>Tasks and scoring are versioned as <code>{{SUITE_VERSION}}</code> and <code>{{SCORER_VERSION}}</code>. Exact comparison preserves meaningful signs, case, token boundaries, grid dimensions, and binary leading zeroes. There is no judge model. The independent final-answer diagnostic is separate from strict pass/fail.</p>
+          <h3 id="profiles">Compare the capability you need.</h3>
+          <p>Public results are grouped by family/tier cells and profiles. The v2 calibration has 2,500 attempts from five requested model aliases, with one timeout; pooled strict scores span 9.4%–87.6%. Tiers mix different families, so they are not one intelligence number. Inspect the <a href="/benchmark/#profiles">capability profiles</a>, counts, exclusions, and uncertainty before choosing your own evaluation conditions.</p>
+          <h3 id="agent">Keep evaluation tracks separate.</h3>
+          <p>Frontier measures harder unaided tasks; the tool-agent suite records bounded tool episodes. Those tracks do not share a leaderboard. Four published signed reference sessions contain 32 challenge checks, all replayed by the site build. Explore the <a href="/benchmark/">benchmark and downloadable evidence</a>.</p>
+          <details class="report-details"><summary>Run the local benchmark from source</summary>
+            <p>With Bun 1.3.14 and the repository dependencies installed:</p>
+            <pre class="code"><code>bun bench --list
+bun bench --adapter oracle --seeds 1-10 --out results/oracle-first.jsonl</code></pre>
+            <p><code>oracle</code> uses known answers to check the runner, not model capability. Model benchmark commands default to a dry run; actual inference requires <code>--execute</code> and a request budget. The <a href="https://github.com/hraness/clankdar#run-the-local-benchmark">source README</a> covers adapters, tracks, and archives.</p>
+          </details>
+          <p id="ladder">Public benchmark seeds and the experimental answer-commitment helper are not a strong secret-challenge or identity system. The <a href="https://github.com/hraness/clankdar/blob/main/docs/clankdar-attest-v1.md">receipt protocol</a> specifies the commitments, signatures, and replay boundaries.</p>
         </section>
 
         <section class="doc-section" id="source" aria-labelledby="source-title">
-          <h2 id="source-title">Source.</h2>
+          <h2 id="source-title">Source and deeper references.</h2>
           <ul class="doc-list">
-            <li><a href="https://github.com/hraness/clankdar/tree/main/ladder">ladder/</a> — the reference puzzle suite: fourteen seeded families across tiers 0–6, plus answer normalization and commitment hashing, in TypeScript.</li>
-            <li><a href="https://github.com/hraness/clankdar/tree/main/cloudflare">cloudflare/</a> — hosted campaigns, actor requests, public profiles, and the source client.</li>
-            <li><a href="https://github.com/hraness/clankdar/tree/main/bench">bench/</a> — the benchmark harness: adapters, JSONL results, per-tier and per-family pass rates.</li>
-            <li><a href="https://github.com/hraness/valhalla/tree/main/prototypes/clankdar-attest">prototypes/clankdar-attest</a> — the independent Rust checker for receipts, gate admissions, transparency logs, held-out pools, and portable badges, plus room-floor admission dogfood.</li>
-            <li><a href="https://github.com/hraness/valhalla/tree/main/prototypes/botcaptcha">prototypes/botcaptcha</a> — signed challenge + hashcash + one-use replay guard, in Rust.</li>
-            <li><a href="https://github.com/hraness/valhalla/tree/main/prototypes/witness">prototypes/witness</a> — the bounded witness VM and work receipt.</li>
-            <li><a href="https://github.com/hraness/valhalla/blob/main/kb/plans/valhalla-botcaptcha-ledger-games.md">Design plan</a> — the full proposal: receipts, anti-grinding rules, evidence tiers, and what Clankdar must never become.</li>
+            <li><a href="https://github.com/hraness/clankdar/blob/main/docs/clankdar-checks-v1.md">Check API contract</a>: the current hosted primitive and storage behavior.</li>
+            <li><a href="https://github.com/hraness/clankdar/blob/main/docs/clankdar-attest-v1.md">Receipt protocol</a>: signed admissions and independent replay.</li>
+            <li><a href="https://github.com/hraness/clankdar/blob/main/docs/clankdar-hosted-v1.md">Legacy actor/campaign reference</a>: optional key-history and scheduling scaffolding, with existing history preserved.</li>
+            <li id="modes"><a href="https://github.com/hraness/clankdar">Repository</a>: benchmark tools, badges, holdout pools, and witness prototypes. Their presence in source does not imply integration into the atomic hosted API.</li>
           </ul>
         </section>
       </main>

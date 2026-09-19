@@ -5,6 +5,7 @@ import { issuerIdentity } from "./issuer.ts";
 import { HOSTED_POLICIES } from "./challenges.ts";
 import type { Env } from "./types.ts";
 import { readBody } from "./http.ts";
+import { handleCheckRequest } from "./checks.ts";
 
 export { ActorState };
 
@@ -96,6 +97,7 @@ async function actorRoute(req: Request, url: URL, env: Env): Promise<Response> {
 
 async function workerFetch(req: Request, env: Env): Promise<Response> {
   const url = new URL(req.url);
+  if (url.pathname === "/v1/checks" || url.pathname.startsWith("/v1/checks/")) return handleCheckRequest(req, env);
   const profile = /^\/actors\/(clank1_[A-Za-z0-9_-]{27})(?:\/campaigns\/(cmp_[A-Za-z0-9_-]{16}))?$/.exec(url.pathname);
   if (req.method === "GET" && profile) {
     const apiUrl = new URL(`/v1${url.pathname}`, url.origin);
