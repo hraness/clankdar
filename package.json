@@ -11,6 +11,7 @@
     "holdout": "bun bench/holdout.ts",
     "hosted": "bun bench/hosted.ts",
     "drift": "bun bench/drift.ts",
+    "admission-archive": "bun bench/admission-archive.ts",
     "calibrate": "bun bench/calibrate.ts",
     "report": "bun bench/report.ts",
     "check": "bun run typecheck && bun test && bun run build:site",

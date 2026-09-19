@@ -5,6 +5,7 @@ import { createHash } from "node:crypto";
 import { escapeHtml, renderChallenge, renderPilot, renderProfiles, renderTiers, renderV2 } from "./content.ts";
 import { verifyPilot } from "../bench/pilot.ts";
 import { verifyCalibration } from "../bench/archive.ts";
+import { verifyAdmissionArchive } from "../bench/admission-archive.ts";
 import { FAMILIES, SCORER_VERSION, SUITE_VERSION } from "../ladder/mod.ts";
 
 const root = import.meta.dir;
@@ -37,6 +38,18 @@ describe("public site contract", () => {
     malicious.models[0].model = '<script>alert("no")</script>';
     expect(renderPilot(malicious)).not.toContain("<script>");
     expect(escapeHtml('<a href="x">&')).toBe("&lt;a href=&quot;x&quot;&gt;&amp;");
+  });
+
+  test("published admission evidence replays every signature, commitment, score, and verdict", () => {
+    expect(verifyAdmissionArchive(resolve(root, "benchmark/admissions-opus5-2026-09-19"))).toEqual({
+      id: "opus5-admissions-2026-09-19",
+      verifier: { keyId: "da0d70eae14cf7df", publicKey: "MMP-mO0IcwK9gE43NeBPeZ7xsFtol0lXYtiQWZcHFf8" },
+      sessions: 4, challenges: 32, passed: 24, admitted: 3,
+      tracks: {
+        v2: { sessions: 2, challenges: 16, passed: 15, admitted: 2 },
+        frontier: { sessions: 2, challenges: 16, passed: 9, admitted: 1 },
+      },
+    });
   });
 
   test("all pages keep canonical branding, static controls, and one shared footer", () => {

@@ -1,0 +1,16 @@
+{
+  "suite": "v2",
+  "cells": [
+    "arithmetic:t2",
+    "strings:t2",
+    "sequence:t2",
+    "cipher:t2",
+    "ordering:t3",
+    "gridpath:t3",
+    "knights:t3",
+    "registervm:t3"
+  ],
+  "challenges": 8,
+  "minPass": 5,
+  "ttlSeconds": 3600
+}

@@ -461,12 +461,13 @@ Current coverage: the Rust crate independently checks attest-v1 receipts
 (including §7 subject proofs), gate-v1 admissions, tlog-v1 logs
 (`check_log`, `prove_session`, and the logged-admission test, with optional
 pool disclosure via `check_logged_admission_with_pool`/`tlog admit --pool`),
-and holdout-v1 pools, receipts, and admissions against TypeScript-generated
-fixtures. Its rooms dogfood issues, submits, and decides gate admissions
-pinned to a room floor and verifier key; it fails closed on held-out scores
-unless they were replayed. badge-v1, head witnessing, fork comparison,
-consistency proofs, and the hosted HTTP surfaces are TypeScript-only for
-now.
+holdout-v1 pools, receipts, and admissions, and badge-v1 portable dossiers
+(including multi-issuer pools and optional tlog proofs) against
+TypeScript-generated fixtures. Its rooms dogfood issues, submits, and decides
+gate admissions pinned to a room floor and verifier key; it fails closed on
+held-out scores unless they were replayed. Head witnessing, fork comparison,
+consistency proofs, admission archives, and the hosted HTTP surfaces are
+TypeScript-only for now.
 
 ## 14. Portable subject badges (badge-v1)
 
@@ -918,3 +919,32 @@ or Merkle-logarithmic; the log is a linear hash chain by design.
 Finally, suffix entries are hash-checked but NOT replayed for ledger
 semantics — a decision may legitimately name a session issued before the
 boundary — so `checkLog` on the full log remains the semantic check.
+
+## 20. Public admission archives (admission-archive-v1)
+
+`clankdar-admission-archive-v1` packages one issuer's signed gate
+admissions into a static, independently replayable directory. It is a
+publication envelope, not a new receipt or trust primitive:
+
+- `manifest.json` records the archive id, collection time, producer-reported
+  adapter/model provenance, runner source state, verifier public key, tracks,
+  artifact hashes, session ids, and expected summary counts;
+- `policies/*.json` contains each track's exact gate policy;
+- `admissions/*.json` contains the unchanged `clankdar-gate-v1` artifacts.
+
+`bun admission-archive verify DIR` MUST reject unsafe member paths,
+duplicate tracks or sessions, artifact-hash drift, invalid policies, mixed
+verifier keys, policy mismatches, malformed or invalid admissions, and any
+summary count that differs from full §8 replay. A successful check reports
+sessions, challenges, passes, and admitted sessions per track and overall.
+The site build verifies the published archive before copying it to the
+static output, so changed evidence breaks publication rather than silently
+changing a claim.
+
+The `producerClaim` is provenance supplied by the run operator. In
+particular, an adapter name or provider-reported resolved model is NOT
+cryptographic model identity and does not prove exclusive authorship. The
+admission signatures prove the recorded work transcript, deterministic
+score, policy, and verdict under the issuer key; they do not prove which
+model or person produced the response, prevent delegation, or make four
+sessions a calibrated capability estimate.

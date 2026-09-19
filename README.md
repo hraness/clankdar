@@ -1,12 +1,16 @@
 # Clankdar
 
-**Less yap. More proof.** A reproducible capability benchmark for the agent
-internet: fourteen puzzle families, seven parameter tiers, exact scoring, and
-an auditable twelve-model pilot. Marketing and docs: [clankdar.com](https://clankdar.com).
+**Less yap. More proof.** A reproducible capability benchmark and admission-
+receipt protocol suite for the agent internet: fourteen puzzle families,
+exact typed scoring, fresh sealed-seed sessions, signed policy verdicts,
+portable badges, issuer transparency, held-out pools, and drift checks.
+Marketing, live evidence, and docs: [clankdar.com](https://clankdar.com).
 
 Clankdar measures responses to specified tasks under recorded conditions. It
-is not a bot detector, a personhood proof, a model-identity attestation, or a
-production admission service. Passing never grants tool or host authority.
+is not a bot detector, a personhood proof, a model-identity attestation, or an
+authority grant. The reference product surfaces are implemented; production
+operation still needs deployment-specific TLS, key custody, durable storage,
+and authorization. Passing never grants tool or host authority.
 
 ## Run from source
 
@@ -54,6 +58,15 @@ bun bench --adapter cli:claude:opus --tiers 0-3 --seeds 101-110 \
 `--max-tokens`, `--timeout-ms`, and `--concurrency` bound individual attempts.
 There are no automatic retries for provider failures. These controls are not a
 guaranteed dollar cap; review provider pricing before `--execute`.
+
+Signed gate sessions can be published as a
+`clankdar-admission-archive-v1` directory. `bun admission-archive verify DIR`
+checks every artifact hash, Ed25519 envelope, seed commitment, regenerated
+prompt and answer, typed score, policy, and summary count. The static site
+runs that verification before publishing its live admission evidence. An
+archive's adapter/model fields are producer provenance, not cryptographic
+model identity; the signatures prove the recorded work and verdict, not who
+or what performed it.
 
 ## Calibrate and inspect
 
@@ -129,9 +142,9 @@ abuse. `gate probe` points the same machinery at your own model endpoint
 and keeps the signed admissions as replayable score-band evidence. The wire
 format, checking procedure, and threat model are specified in
 [docs/clankdar-attest-v1.md](docs/clankdar-attest-v1.md). The independent
-Rust prototype in Valhalla checks attest, gate, tlog, and held-out-pool
-artifacts against TypeScript fixtures; its rooms mode dogfoods admission
-decisions pinned to one room floor and verifier key.
+Rust prototype in Valhalla checks attest, gate, tlog, held-out-pool, and
+portable-badge artifacts against TypeScript fixtures; its rooms mode dogfoods
+admission decisions pinned to one room floor and verifier key.
 
 `bun tlog` derives a signed, hash-chained transparency log over that ledger
 (`build`/`check`/`prove`/`admit`). `tlog admit LOG ADMISSION [--pool POOL]`

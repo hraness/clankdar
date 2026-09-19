@@ -1,6 +1,7 @@
 import { FAMILIES, familyByName, SUITE_VERSION } from "../ladder/mod.ts";
 import type { AgentDiagnostics, CalibrationReport } from "../bench/report.ts";
 import { CAPABILITY_PROFILES, profileReport } from "../bench/profiles.ts";
+import type { AdmissionArchiveManifest, AdmissionArchiveReport } from "../bench/admission-archive.ts";
 
 export const escapeHtml = (value: string | number): string => String(value).replace(/[&<>"']/g, (char) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[char]!);
 const pct = (value: number | null) => value === null ? "—" : `${(value * 100).toFixed(1)}%`;
@@ -47,6 +48,13 @@ export function renderAgent(report: CalibrationReport, diagnostics: AgentDiagnos
   return renderResults(report, "/benchmark/agent-v0", "Held-out bounded tool-agent calibration: 120 episodes per model. Per-cell budgets of 4-12 tool calls and 8-16 turns, 4,096 characters per tool output. Transcripts are replayable.", [5, 6, 7], "Tool-agent") + `
 <details class="report-details"><summary>Show episode diagnostics</summary><div class="table-scroll" role="region" aria-label="Episode diagnostics" tabindex="0"><table class="ladder-table results-table"><caption>Protocol and effort metrics from recorded episodes. FINAL emitted and budget exhaustion describe protocol adherence, not correctness.</caption><thead><tr><th scope="col">Requested model</th><th scope="col">FINAL emitted</th><th scope="col">Budget exhausted</th><th scope="col">Mean tool calls</th><th scope="col">Mean turns</th><th scope="col">Failed tool calls</th></tr></thead><tbody>${diagRows}</tbody></table></div></details>
 <p class="note">This is a separate track. Scores do not estimate base-model capability and are not comparable to unaided runs.</p>`;
+}
+
+export function renderAdmissionEvidence(report: AdmissionArchiveReport, manifest: AdmissionArchiveManifest): string {
+  const rows = Object.entries(report.tracks).map(([track, score]) => `<tr><th scope="row">${escapeHtml(track)}</th><td class="score">${score.passed}/${score.challenges}</td><td>${score.admitted}/${score.sessions}</td></tr>`).join("\n");
+  return `<div class="table-scroll" role="region" aria-label="Signed admission evidence" tabindex="0"><table class="ladder-table results-table"><caption>Four live, zero-tool sessions. Every admission signature, seed commitment, regenerated instance, typed score, and verdict is checked during the site build.</caption><thead><tr><th scope="col">Track</th><th scope="col">Challenges passed</th><th scope="col">Sessions admitted</th></tr></thead><tbody>${rows}</tbody></table></div>
+<p><a href="/benchmark/admissions-opus5-2026-09-19/manifest.json">Inspect the signed admission manifest</a> or replay it with <code>bun bench/admission-archive.ts verify</code>. Requested adapter: <code>${escapeHtml(manifest.producerClaim.adapter)}</code>; provider-reported resolved model: <code>${escapeHtml(manifest.producerClaim.resolvedModel)}</code>; tools: <code>${escapeHtml(manifest.producerClaim.tools)}</code>.</p>
+<p class="note">${escapeHtml(manifest.producerClaim.caveat)} The runner worktree was recorded as ${manifest.runner.sourceDirty ? "dirty" : "clean"}; inspect the pinned source revision and archive manifest. Four sessions are product evidence, not a calibrated capability estimate; the larger published calibrations remain the statistical evidence.</p>`;
 }
 
 export function renderProfiles(report: CalibrationReport): string {

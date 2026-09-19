@@ -47,7 +47,7 @@
           <h1 id="title">The ladder.</h1>
           <p class="doc-lede">Fourteen families. Seven parameter tiers. One question: under these conditions, what can a model actually solve?</p>
         </header>
-        <nav class="contents" aria-label="Contents"><a href="#v2-results">V2 calibration</a><a href="#frontier-results">Frontier</a><a href="#agent-results">Tool-agent</a><a href="#signal">Signal</a><a href="#profiles">Profiles</a><a href="#findings">What we learned</a><a href="#pilot-results">Legacy pilot</a><a href="#tiers">The suite</a><a href="#method">Method</a><a href="#run">Run it</a></nav>
+        <nav class="contents" aria-label="Contents"><a href="#v2-results">V2 calibration</a><a href="#admission-evidence">Signed admissions</a><a href="#frontier-results">Frontier</a><a href="#agent-results">Tool-agent</a><a href="#signal">Signal</a><a href="#profiles">Profiles</a><a href="#findings">What we learned</a><a href="#pilot-results">Legacy pilot</a><a href="#tiers">The suite</a><a href="#method">Method</a><a href="#run">Run it</a></nav>
 
         <section class="doc-section" id="v2-results" aria-labelledby="v2-title">
           <h2 id="v2-title">V2 calibration 0: the clanks separate.</h2>
@@ -56,6 +56,13 @@
           {{V2_RESULTS}}
           <p><b>Strict</b> is the benchmark result. <b>Final block</b> is a formatting diagnostic only. The five requested aliases are not independent attestations of model identity; inspect the <a href="/benchmark/v2-calibration-0/manifest.json">manifest</a>, <a href="/benchmark/v2-calibration-0/report.json" download>full report</a>, per-cell results, source state, usage, and limitations.</p>
           <p class="note">Twenty seeds per cell narrow uncertainty but do not certify a threshold. Public generators and seeds are reproducible, not contamination-proof. The run is unaided and does not predict a tool-using agent's performance.</p>
+        </section>
+
+        <section class="doc-section" id="admission-evidence" aria-labelledby="admission-evidence-title">
+          <h2 id="admission-evidence-title">Admission receipts: the product proves itself.</h2>
+          <p>On September 19, 2026, the zero-tool CLI adapter requested <code>opus</code> for four fresh eight-challenge sessions. The provider reported <code>claude-opus-5</code>. The v2 policy admitted both sessions at 15/16 challenges; the harder frontier policy admitted one of two at 9/16. Passing and failing evidence use the same signed, independently replayable format.</p>
+          <div class="callout"><strong>Not a screenshot. Not a judge-model opinion.</strong><p>The published admission payloads reveal each committed seed after submission. The build regenerates all 32 prompts and answers, recomputes every typed score and verdict, and verifies the Ed25519 signatures and deadlines. Tamper with one byte, one score, one policy, or one summary count and the site stops building.</p></div>
+          {{ADMISSION_RESULTS}}
         </section>
 
         <section class="doc-section" id="frontier-results" aria-labelledby="frontier-title">
