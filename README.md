@@ -119,6 +119,13 @@ and keeps the signed admissions as replayable score-band evidence. The wire
 format, checking procedure, and threat model are specified in
 [docs/clankdar-attest-v1.md](docs/clankdar-attest-v1.md).
 
+`bun tlog` derives a signed, hash-chained transparency log over that ledger
+(`build`/`check`/`prove`/`admit`). `tlog witness --heads heads.jsonl` records
+each checked log's signed head in a local append-only registry, and
+`tlog equivocate --heads heads.jsonl` proves a fork from two heads under one
+issuer key — same count with different tips, or one tip at two counts — and
+warns on counts that regress in issue order.
+
 `bun drift` turns probes into monitoring: `drift run` appends each signed
 admission to a series file, `drift report` aggregates per-cell pass bands,
 `drift baseline` pins a reference, and `drift compare` exits nonzero when a

@@ -6,6 +6,8 @@
  *   bun bench/tlog.ts check tlog.json
  *   bun bench/tlog.ts prove tlog.json --session gs_xxx
  *   bun bench/tlog.ts admit tlog.json admission.json
+ *   bun bench/tlog.ts witness --heads heads.jsonl tlog.json
+ *   bun bench/tlog.ts equivocate --heads heads.jsonl
  *
  * A derived view over the gate ledger (bench/store.ts appends one JSONL
  * record per session issuance and per decision). Every record becomes a
@@ -17,14 +19,21 @@
  *
  * Scope: the log binds this issuer's history under its own key. It does not
  * prevent self-minting — a verifier can always answer its own oracle — and
- * it cannot detect a fork by itself: equivocation is visible only by
- * comparing heads the issuer published elsewhere (gossip or external
- * anchoring is future work).
+ * a single log cannot detect a fork by itself. Witnessed heads can:
+ * `witness` records every signed head an operator sees in an append-only
+ * heads.jsonl registry, and `equivocate` compares heads under each issuer
+ * key. Two heads at the same count with different tips — or one tip signed
+ * at two counts — are certain forks; a count that regresses in issue order
+ * is only a warning, since issue timestamps are issuer-controlled. Heads
+ * still have to reach a common witness to be compared: gossip, witnessed
+ * co-signing, and external anchoring remain future work, and forks between
+ * different-length logs need the underlying entries, which the registry
+ * does not store.
  */
 import { parseArgs } from "node:util";
 import { createHash } from "node:crypto";
-import { readFileSync, writeFileSync } from "node:fs";
-import { join } from "node:path";
+import { closeSync, fsyncSync, mkdirSync, openSync, readFileSync, writeFileSync, writeSync } from "node:fs";
+import { dirname, join } from "node:path";
 import {
   canonical, keyIdOf, publicKeyOf, signBody, verifyBodySignature,
   type Receipt, type VerifierJwk,
@@ -282,6 +291,179 @@ export function checkLoggedAdmission(log: TransparencyLog, admission: Admission)
   return { ok: true, verdict: result.verdict, passed: result.passed };
 }
 
+/** Maximum lines a heads registry may hold — a corrupt registry is fatal, not unbounded. */
+export const HEADS_MAX_LINES = 1_000_000;
+
+/**
+ * Shape-and-signature check for a witnessed head: a standalone head has no
+ * entries to match against, so this is the head half of `checkLog` —
+ * protocol, count, tip, timestamp, verifier keyId, and the signature over
+ * the head body.
+ */
+export function isSignedHead(value: unknown): value is TlogHead {
+  const head = value as TlogHead;
+  if (!head || typeof head !== "object" || Array.isArray(head)) return false;
+  if (head.protocol !== TLOG_PROTOCOL || head.kind !== "head") return false;
+  if (!Number.isSafeInteger(head.count) || head.count < 0) return false;
+  if (typeof head.head !== "string" || !HEX64.test(head.head)) return false;
+  if (typeof head.issuedAt !== "string" || !Number.isFinite(Date.parse(head.issuedAt))) return false;
+  const publicKey = head.verifier?.publicKey;
+  if (typeof publicKey !== "string" || keyIdOf(publicKey) !== head.verifier?.keyId) return false;
+  return typeof head.signature === "string" && verifyBodySignature(headBody(head), head.signature, publicKey);
+}
+
+/**
+ * Read and validate a heads registry: one verbatim signed `TlogHead` per
+ * JSONL line, indexed by `verifier.keyId`. Same replay rules as
+ * `readLedger` — a torn final line is dropped, while mid-file corruption
+ * or a line that parses but fails `isSignedHead` is fatal (a recorded
+ * head is evidence; an unverifiable one is corruption). A missing file is
+ * an empty registry.
+ */
+export function readHeads(path: string, maxLines = HEADS_MAX_LINES): TlogHead[] {
+  let text: string;
+  try {
+    text = readFileSync(path, "utf8");
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === "ENOENT") return [];
+    throw new Error(`cannot read ${path}: ${message(error)}`);
+  }
+  const lines = text.split("\n").filter((line) => line.length > 0);
+  if (lines.length > maxLines) throw new Error(`heads registry exceeds ${maxLines} lines`);
+  const heads: TlogHead[] = [];
+  lines.forEach((line, index) => {
+    let head: TlogHead;
+    try {
+      head = JSON.parse(line) as TlogHead;
+    } catch {
+      if (index === lines.length - 1) return; // torn tail from a crashed append
+      throw new Error(`heads registry is corrupt at line ${index + 1}`);
+    }
+    if (!isSignedHead(head)) throw new Error(`heads registry has an invalid head at line ${index + 1}`);
+    heads.push(head);
+  });
+  return heads;
+}
+
+export interface WitnessResult {
+  ok: boolean;
+  /** False when the identical head was already in the registry. */
+  recorded: boolean;
+  keyId?: string;
+  count?: number;
+  head?: string;
+  /** Total heads in the registry after the call. */
+  witnessed?: number;
+  reason?: string;
+}
+
+/**
+ * Witness a log's signed head into a heads registry. The log must pass
+ * `checkLog` first — only a verified head is worth recording. The registry
+ * is append-only evidence (created 0644 like a public-adjacent store);
+ * re-witnessing an identical head is a no-op, not an error.
+ */
+export function witnessHead(headsPath: string, log: unknown): WitnessResult {
+  const check = checkLog(log);
+  if (!check.ok) return { ok: false, recorded: false, reason: `transparency log failed check: ${check.reason}` };
+  const head = (log as TransparencyLog).head;
+  mkdirSync(dirname(headsPath), { recursive: true });
+  const heads = readHeads(headsPath);
+  const body = canonical(head);
+  if (heads.some((recorded) => canonical(recorded) === body)) {
+    return { ok: true, recorded: false, keyId: head.verifier.keyId, count: head.count, head: head.head, witnessed: heads.length };
+  }
+  const fd = openSync(headsPath, "a", 0o644);
+  try {
+    writeSync(fd, JSON.stringify(head) + "\n");
+    fsyncSync(fd);
+  } finally {
+    closeSync(fd);
+  }
+  return { ok: true, recorded: true, keyId: head.verifier.keyId, count: head.count, head: head.head, witnessed: heads.length + 1 };
+}
+
+/** A pair of recorded heads that conflict (a fork) or merely warn (a regression). */
+export interface HeadPair {
+  keyId: string;
+  conflict: [TlogHead, TlogHead];
+  reason: string;
+}
+
+export interface EquivocationReport {
+  ok: boolean;
+  /** Heads examined across every keyId in the registry. */
+  checked: number;
+  /** On a proven fork: the issuer keyId, the two conflicting signed heads, and why. */
+  keyId?: string;
+  conflict?: [TlogHead, TlogHead];
+  reason?: string;
+  /** Soft findings — issuer-timestamped, never an exit-2 finding on their own. */
+  warnings?: HeadPair[];
+}
+
+/**
+ * Compare witnessed heads for equivocation. Two findings are certain —
+ * the issuer's own signatures contradict each other:
+ *
+ * - **same count, different tip**: two equal-length chains cannot end at
+ *   different `entryHash` values, so the heads cannot both describe real
+ *   logs;
+ * - **same tip, different count**: an `entryHash` commits to its index,
+ *   so one tip cannot close both a count-4 and a count-6 chain.
+ *
+ * A `count` that decreases in `issuedAt` order is only a warning
+ * (`"head counts regress"`): issue timestamps are issuer-controlled, so a
+ * regression is soft evidence. Whether a shorter head is an ancestor of a
+ * longer one cannot be decided here — the registry stores heads, not
+ * entries — so different-count pairs with different tips are undecidable
+ * and unreported.
+ */
+export function findEquivocation(heads: TlogHead[]): EquivocationReport {
+  const byKey = new Map<string, TlogHead[]>();
+  for (const head of heads) {
+    const keyId = head.verifier.keyId;
+    const list = byKey.get(keyId);
+    if (list) list.push(head);
+    else byKey.set(keyId, [head]);
+  }
+  const warnings: HeadPair[] = [];
+  let found: HeadPair | null = null;
+  for (const [keyId, list] of byKey) {
+    for (let i = 0; i < list.length; i++) {
+      for (let j = i + 1; j < list.length; j++) {
+        const [a, b] = [list[i], list[j]];
+        if (a.count === b.count && a.head === b.head) continue; // same claim, possibly reissued — consistent
+        if (found) continue; // the first certain conflict is the report
+        if (a.count === b.count) {
+          found = { keyId, conflict: [a, b], reason: `two signed heads at count ${a.count} commit different tips` };
+        } else if (a.head === b.head) {
+          found = { keyId, conflict: [a, b], reason: `tip ${a.head.slice(0, 16)}… is signed at counts ${a.count} and ${b.count}` };
+        }
+      }
+    }
+    // Issuer-timestamped monotonicity: counts should not regress in issue order.
+    const byIssue = [...list].sort((x, y) => x.issuedAt.localeCompare(y.issuedAt));
+    let maxCount = -1;
+    let maxHead: TlogHead | null = null;
+    for (const head of byIssue) {
+      if (maxHead && head.count < maxCount) warnings.push({ keyId, conflict: [maxHead, head], reason: "head counts regress" });
+      if (head.count > maxCount) {
+        maxCount = head.count;
+        maxHead = head;
+      }
+    }
+  }
+  const report: EquivocationReport = { ok: !found, checked: heads.length };
+  if (found) {
+    report.keyId = found.keyId;
+    report.conflict = found.conflict;
+    report.reason = found.reason;
+  }
+  if (warnings.length) report.warnings = warnings;
+  return report;
+}
+
 function loadJson(path: string): unknown {
   try {
     return JSON.parse(readFileSync(path, "utf8"));
@@ -294,7 +476,9 @@ const USAGE = `usage: tlog <command>
   build --dir GATE_STATE_DIR --key VERIFIER.json [--out tlog.json]
   check TLOG.json
   prove TLOG.json --session gs_xxx
-  admit TLOG.json ADMISSION.json`;
+  admit TLOG.json ADMISSION.json
+  witness --heads HEADS.jsonl TLOG.json
+  equivocate --heads HEADS.jsonl`;
 
 export function main(args = process.argv.slice(2)): void {
   const [command, ...rest] = args;
@@ -302,7 +486,7 @@ export function main(args = process.argv.slice(2)): void {
     args: rest,
     options: {
       dir: { type: "string" }, key: { type: "string" }, out: { type: "string" },
-      session: { type: "string" }, help: { type: "boolean", short: "h" },
+      session: { type: "string" }, heads: { type: "string" }, help: { type: "boolean", short: "h" },
     },
     allowPositionals: true, strict: true,
   });
@@ -346,6 +530,20 @@ export function main(args = process.argv.slice(2)): void {
     );
     console.log(JSON.stringify(result));
     if (!result.ok) process.exitCode = 2;
+    return;
+  }
+  if (command === "witness") {
+    need(positionals[0], values.heads);
+    const result = witnessHead(values.heads!, loadJson(positionals[0]!));
+    console.log(JSON.stringify(result));
+    if (!result.ok) process.exitCode = 2;
+    return;
+  }
+  if (command === "equivocate") {
+    need(values.heads);
+    const report = findEquivocation(readHeads(values.heads!));
+    console.log(JSON.stringify(report, null, 2));
+    if (!report.ok) process.exitCode = 2;
     return;
   }
   throw new Error(`unknown command: ${command}.\n${USAGE}`);
