@@ -124,6 +124,9 @@ try {
           await page.locator(".room .answer-reveal summary").click();
           await expect(page.locator(".room .answer-reveal code")).toHaveText("34");
           await page.locator(".room .answer-reveal summary").click();
+          // Disclosure clicks scroll into view; capture sticky chrome from the page top.
+          await page.evaluate(() => scrollTo(0, 0));
+          await expect.poll(() => page.evaluate(() => scrollY)).toBe(0);
         }
         const slug = path === "/" ? "home" : profilePaths.includes(path) ? (path === profilePaths[0] ? "actor" : "campaign") : path.replaceAll("/", "");
         await page.screenshot({ path: resolve(screenshots, `${slug}-${width}-${theme}.png`), fullPage: path === "/" });
