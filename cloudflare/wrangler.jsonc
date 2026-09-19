@@ -1,0 +1,40 @@
+{
+  "$schema": "../node_modules/wrangler/config-schema.json",
+  "name": "clankdar-hosted-staging",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-08-22",
+  "compatibility_flags": ["nodejs_compat"],
+  "workers_dev": true,
+  "preview_urls": true,
+  "minify": true,
+  "limits": { "cpu_ms": 50 },
+  "observability": {
+    "enabled": true,
+    "head_sampling_rate": 0.1,
+    "logs": { "enabled": true, "invocation_logs": true }
+  },
+  "vars": {
+    "ENVIRONMENT": "staging",
+    "MAX_BODY_BYTES": "131072",
+    "HEARTBEAT_MIN_SECONDS": "30"
+  },
+  "durable_objects": {
+    "bindings": [
+      { "name": "ACTORS", "class_name": "ActorState" }
+    ]
+  },
+  "migrations": [
+    { "tag": "v1", "new_sqlite_classes": ["ActorState"] }
+  ],
+  "d1_databases": [
+    {
+      "binding": "REGISTRY",
+      "database_name": "clankdar-hosted-staging",
+      "database_id": "f77789cf-114a-4da5-8ab6-cd91132ff583",
+      "migrations_dir": "migrations"
+    }
+  ],
+  "r2_buckets": [
+    { "binding": "EVIDENCE", "bucket_name": "clankdar-evidence-staging" }
+  ]
+}

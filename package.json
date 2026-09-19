@@ -14,8 +14,13 @@
     "admission-archive": "bun bench/admission-archive.ts",
     "calibrate": "bun bench/calibrate.ts",
     "report": "bun bench/report.ts",
-    "check": "bun run typecheck && bun test && bun run build:site",
+    "check": "bun run typecheck && bun run typecheck:cloudflare && bun test && bun run test:cloudflare && bun run build:site",
     "typecheck": "tsc --noEmit",
+    "typecheck:cloudflare": "tsc -p cloudflare/tsconfig.json",
+    "test:cloudflare": "vitest run --config cloudflare/vitest.config.ts",
+    "cloudflare:dev": "wrangler dev --config cloudflare/wrangler.jsonc",
+    "cloudflare:types": "wrangler types --config cloudflare/wrangler.jsonc --path cloudflare/src/worker-configuration.d.ts",
+    "cloudflare:dry-run": "wrangler deploy --dry-run --config cloudflare/wrangler.jsonc",
     "check:site": "bun test site && bun run build:site",
     "check:browser": "bun site/verify.ts",
     "build:site": "bun run site/build.ts"
@@ -25,8 +30,11 @@
     "@hraness/site-footer": "github:hraness/site-footer#v0.12.1"
   },
   "devDependencies": {
+    "@cloudflare/vitest-pool-workers": "0.22.0",
     "@playwright/test": "1.58.2",
     "@types/bun": "1.3.14",
-    "typescript": "5.9.3"
+    "typescript": "5.9.3",
+    "vitest": "4.1.0",
+    "wrangler": "4.131.1"
   }
 }
