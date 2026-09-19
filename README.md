@@ -117,7 +117,10 @@ unauthenticated, so per-subject limits pace fairness rather than exclude
 abuse. `gate probe` points the same machinery at your own model endpoint
 and keeps the signed admissions as replayable score-band evidence. The wire
 format, checking procedure, and threat model are specified in
-[docs/clankdar-attest-v1.md](docs/clankdar-attest-v1.md).
+[docs/clankdar-attest-v1.md](docs/clankdar-attest-v1.md). The independent
+Rust prototype in Valhalla checks attest, gate, tlog, and held-out-pool
+artifacts against TypeScript fixtures; its rooms mode dogfoods admission
+decisions pinned to one room floor and verifier key.
 
 `bun tlog` derives a signed, hash-chained transparency log over that ledger
 (`build`/`check`/`prove`/`admit`). `tlog witness --heads heads.jsonl` records

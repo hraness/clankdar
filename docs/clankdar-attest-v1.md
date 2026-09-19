@@ -444,10 +444,13 @@ JSON, seedCommit, and entry-chain constructions are deliberately trivial to
 reimplement.
 
 Current coverage: the Rust crate independently checks attest-v1 receipts
-(including §7 subject proofs), gate-v1 admissions, and tlog-v1 logs —
-`check_log`, `prove_session`, and the logged-admission test. badge-v1,
-holdout-v1, head witnessing, and fork comparison are TypeScript-only for
-now.
+(including §7 subject proofs), gate-v1 admissions, tlog-v1 logs
+(`check_log`, `prove_session`, and the logged-admission test), and
+holdout-v1 pools, receipts, and admissions against TypeScript-generated
+fixtures. Its rooms dogfood issues, submits, and decides gate admissions
+pinned to a room floor and verifier key; it fails closed on held-out scores
+unless they were replayed. badge-v1, head witnessing, fork comparison, and
+the hosted HTTP surfaces are TypeScript-only for now.
 
 ## 14. Portable subject badges (badge-v1)
 
