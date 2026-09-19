@@ -661,3 +661,36 @@ compared, and that transport — gossip, witnessed co-signing, external
 anchoring — remains unimplemented. This is a reference surface, not a
 production deployment: TLS termination, client authentication on the
 write path, and high-availability operation are out of scope.
+
+## 17. Fork comparison over published logs
+
+`findEquivocation` (§11) decides equivocation from witnessed heads alone
+only when two signed heads are directly contradictory: same count with
+different tips, or one tip signed at two counts. A different-count pair
+with different tips is undecidable there — the registry stores heads, not
+entries — so growth and a fork look alike.
+
+`tlog compare LOG_A.json LOG_B.json` decides that case when a verifier
+holds both published logs. Each log must pass §11 `checkLog` in full —
+chain recompute, index/type/session rules, and a signed head matching the
+entries — and both heads must share one verifier keyId. Then the chains
+are walked to the first index whose `entryHash` differs:
+
+- a divergence is a **proven fork**: two internally valid chains, each
+  closing under the issuer's own signature, committing different content
+  at a shared index. `ok:false`, `equivocation:true`, `forkIndex`, and
+  both counts are reported; the CLI exits 2.
+- no divergence over the shared prefix is **consistent**: identical
+  chains, or a strict prefix in either direction — ordinary growth or a
+  stale copy, reported as `relation` with `ok:true`.
+
+### Honest limits
+
+The evidence is the two published logs themselves; there is no compact
+suffix proof yet. Comparison detects a fork only between two logs a
+verifier actually holds — an issuer can still fork privately, serving
+different logs to different parties, and nothing is detected until both
+views reach one verifier. Logs signed by different verifier keys are not
+comparable (they are not one issuer's histories). A strict-prefix result
+does not prove the shorter log was issued first — head timestamps are
+issuer-chosen.

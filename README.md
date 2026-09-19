@@ -124,7 +124,10 @@ format, checking procedure, and threat model are specified in
 each checked log's signed head in a local append-only registry, and
 `tlog equivocate --heads heads.jsonl` proves a fork from two heads under one
 issuer key — same count with different tips, or one tip at two counts — and
-warns on counts that regress in issue order.
+warns on counts that regress in issue order. `tlog compare A.json B.json`
+decides the case heads cannot: two published logs under one key are walked
+to the first divergent index — a proven fork — or reported as a consistent
+prefix.
 
 `bun drift` turns probes into monitoring: `drift run` appends each signed
 admission to a series file, `drift report` aggregates per-cell pass bands,
