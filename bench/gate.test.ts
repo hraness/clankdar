@@ -2,8 +2,8 @@ import { describe, expect, test } from "bun:test";
 import { mkdtempSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { generateVerifier, checkReceipt, signBody } from "./attest.ts";
-import { checkAdmission, issueSession, parsePolicy, probe, serveGate, submitSession, GATE_PROTOCOL, type Admission, type GatePolicy, type GateSession } from "./gate.ts";
+import { canonical, checkReceipt, checkSubjectProof, generateVerifier, signBody, subjectProofFor, verifyResponse, type ReceiptBody } from "./attest.ts";
+import { checkAdmission, issueSession, parsePolicy, probe, serveGate, submitSession, GATE_PROTOCOL, type Admission, type AdmissionBody, type GatePolicy, type GateSession } from "./gate.ts";
 import { GateStore } from "./store.ts";
 
 const verifier = generateVerifier();
@@ -141,6 +141,110 @@ describe("admission checking", () => {
     const body = JSON.parse(admission.payload);
     const foreignSig = signBody(body, other.privateJwk);
     expect(checkAdmission({ ...admission, signature: foreignSig }).ok).toBe(false);
+  });
+});
+
+describe("subject-bound sessions", () => {
+  const respondent = generateVerifier();
+  const proofBody = (receipt: { payload: string }) => JSON.parse(receipt.payload) as ReceiptBody;
+
+  test("one session-scoped proof embeds in every minted receipt and replays", () => {
+    const issued = session();
+    const subjectProof = subjectProofFor(issued.session.tickets[0].challenge, respondent.privateJwk);
+    const { receipts, admission } = submitSession({ session: issued.session, responses: answers(issued), subjectProof, verifierJwk: verifier.privateJwk, now: later });
+    expect(receipts).toHaveLength(2);
+    for (const receipt of receipts) {
+      expect(proofBody(receipt).subjectProof).toEqual(subjectProof);
+      expect(checkReceipt(receipt)).toEqual({ ok: true, verdict: true });
+    }
+    expect(checkAdmission(admission)).toEqual({ ok: true, verdict: true, passed: 2 });
+  });
+
+  test("a proof minted for one challenge serves the whole session", () => {
+    const issued = session();
+    const [a, b] = issued.session.tickets;
+    const subjectProof = subjectProofFor(a.challenge, respondent.privateJwk);
+    // The transcript is session-scoped, so the same proof verifies for a sibling challenge.
+    expect(checkSubjectProof(b.challenge, subjectProof)).toBe(true);
+    expect(checkSubjectProof(a.challenge, subjectProof)).toBe(true);
+  });
+
+  test("an invalid or misplaced proof rejects the submit outright", () => {
+    const issued = session();
+    const tampered = { ...subjectProofFor(issued.session.tickets[0].challenge, respondent.privateJwk), signature: "AAAA" };
+    expect(() => submitSession({ session: issued.session, responses: answers(issued), subjectProof: tampered, verifierJwk: verifier.privateJwk, now: later })).toThrow("subject proof");
+    const other = session({ seedBase: 900_000 });
+    const misplaced = subjectProofFor(other.session.tickets[0].challenge, respondent.privateJwk);
+    expect(() => submitSession({ session: issued.session, responses: answers(issued), subjectProof: misplaced, verifierJwk: verifier.privateJwk, now: later })).toThrow("subject proof");
+  });
+
+  test("admissions without proofs remain valid", () => {
+    const issued = session();
+    const { receipts, admission } = submitSession({ session: issued.session, responses: answers(issued), verifierJwk: verifier.privateJwk, now: later });
+    for (const receipt of receipts) expect(proofBody(receipt).subjectProof).toBeUndefined();
+    expect(checkAdmission(admission)).toEqual({ ok: true, verdict: true, passed: 2 });
+  });
+
+  test("receipts mixing subject keys fail the admission check", () => {
+    const issued = session();
+    const [t0, t1] = issued.session.tickets;
+    const r0 = verifyResponse({ ticket: t0, response: t0.expected, subjectProof: subjectProofFor(t0.challenge, generateVerifier().privateJwk), verifierJwk: verifier.privateJwk, now: later });
+    const r1 = verifyResponse({ ticket: t1, response: t1.expected, subjectProof: subjectProofFor(t1.challenge, generateVerifier().privateJwk), verifierJwk: verifier.privateJwk, now: later });
+    const body: AdmissionBody = {
+      kind: "admission", sessionId: issued.session.sessionId, policy,
+      challenges: [t0.challenge, t1.challenge], receipts: [r0, r1],
+      verdict: { pass: true, passed: 2, required: policy.minPass, decidedAt: later.toISOString() },
+    };
+    const admission: Admission = { protocol: GATE_PROTOCOL, payload: canonical(body), signature: signBody(body, verifier.privateJwk) };
+    const result = checkAdmission(admission);
+    expect(result.ok).toBe(false);
+    expect(result.reason).toContain("subject");
+  });
+
+  test("HTTP submit accepts a session-scoped subjectProof end-to-end", async () => {
+    const d = mkdtempSync(join(tmpdir(), "clankdar-gate-"));
+    const store = GateStore.open(d);
+    const gate = serveGate({ policy, verifierJwk: verifier.privateJwk, store, port: 0 });
+    try {
+      const made = await fetch(`${gate.url}/sessions`, { method: "POST", body: "{}" });
+      expect(made.status).toBe(201);
+      const { sessionId, challenges } = await made.json();
+      const entry = store.session(sessionId)!;
+      const responses = Object.fromEntries(entry.session.tickets.map((t) => [t.challenge.challengeId, t.expected]));
+      const subjectProof = subjectProofFor(challenges[0], respondent.privateJwk);
+      const decided = await fetch(`${gate.url}/sessions/${sessionId}/responses`, { method: "POST", body: JSON.stringify({ responses, subjectProof }) });
+      expect(decided.status).toBe(200);
+      const { admission, receipts } = await decided.json();
+      expect(checkAdmission(admission)).toEqual({ ok: true, verdict: true, passed: 2 });
+      for (const receipt of receipts as { payload: string }[]) expect(proofBody(receipt).subjectProof).toEqual(subjectProof);
+      const served = await fetch(`${gate.url}/receipts/${challenges[0].challengeId}`);
+      expect(proofBody(await served.json()).subjectProof).toEqual(subjectProof);
+    } finally {
+      gate.close();
+      store.close();
+    }
+  });
+
+  test("HTTP submit rejects bad proofs without consuming the session", async () => {
+    const d = mkdtempSync(join(tmpdir(), "clankdar-gate-"));
+    const store = GateStore.open(d);
+    const gate = serveGate({ policy, verifierJwk: verifier.privateJwk, store, port: 0 });
+    try {
+      const made = await fetch(`${gate.url}/sessions`, { method: "POST", body: "{}" });
+      const { sessionId } = await made.json();
+      const entry = store.session(sessionId)!;
+      const responses = Object.fromEntries(entry.session.tickets.map((t) => [t.challenge.challengeId, t.expected]));
+      const url = `${gate.url}/sessions/${sessionId}/responses`;
+      const malformed = await fetch(url, { method: "POST", body: JSON.stringify({ responses, subjectProof: { publicKey: 7 } }) });
+      expect(malformed.status).toBe(400);
+      const unverifiable = await fetch(url, { method: "POST", body: JSON.stringify({ responses, subjectProof: { publicKey: respondent.publicKey, signature: "AAAA" } }) });
+      expect(unverifiable.status).toBe(400);
+      const ok = await fetch(url, { method: "POST", body: JSON.stringify({ responses, subjectProof: subjectProofFor(entry.session.tickets[0].challenge, respondent.privateJwk) }) });
+      expect(ok.status).toBe(200);
+    } finally {
+      gate.close();
+      store.close();
+    }
   });
 });
 
