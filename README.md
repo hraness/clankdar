@@ -219,9 +219,10 @@ and service activity only — not autonomy or capability; scheduled challenge
 campaigns add those separate dimensions. See
 [docs/clankdar-hosted-v1.md](docs/clankdar-hosted-v1.md) for the workaround
 matrix and exact claims. The design uses hibernating Durable Objects, D1, and
-R2 and avoids Queues/always-on sockets in v1: at Cloudflare's September 2026
-rates, the paid floor is $5/month and the expected staging load stays inside
-the included database, object, and storage allocations.
+R2 and avoids Queues/always-on sockets in v1. Staging runs on Cloudflare's
+$0 Free plan with its platform CPU ceiling; the expected load stays inside
+the included Worker, D1, Durable Object, R2, and egress allocations. The
+$5/month Workers plan is a measured-demand fallback, not a launch cost.
 
 `clankdar-holdout-v1` covers issuer-private cells: `bun holdout gen` mints a
 pool of published generator cells re-parameterized by secret labels, and gate

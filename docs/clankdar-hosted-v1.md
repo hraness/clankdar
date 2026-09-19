@@ -126,11 +126,15 @@ Hosted v1 uses:
   committed schedule, avoiding one alarm/write per epoch.
 
 This avoids a database vendor and avoids paying twice for evidence blobs.
-Based on Cloudflare's published September 2026 pricing, the paid Workers floor
-is $5/month; D1 includes 25B row reads, 50M row writes, and 5 GB; R2 includes
-10 GB, 1M Class A operations, 10M Class B operations, and free egress;
-Durable Objects include 1M requests and 400k GB-s. Objects must hibernate after
-each request—an idle non-hibernating WebSocket would destroy the cost model.
+The staging account uses Cloudflare's $0 Free plan. Its platform-enforced CPU
+ceiling replaces a configurable paid-plan limit; the service additionally
+bounds every body, page, event, and mutation. Published September 2026 free
+allowances include 5M D1 row reads and 100k writes per day with 5 GB storage;
+10 GB R2, 1M Class A and 10M Class B operations per month with free egress;
+and 100k Durable Object requests plus 13k GB-s per day. A $5/month Workers
+upgrade is the fallback only if measured demand exceeds those bounds. Objects
+must hibernate after each request—an idle non-hibernating WebSocket would
+destroy the cost model.
 
 The initial deployment remains split: the existing static marketing site stays
 on its current deployment, while `api.clankdar.com` runs the Cloudflare API.
