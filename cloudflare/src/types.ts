@@ -1,6 +1,7 @@
 import type { ActorState } from "./actor.ts";
 
 export interface Env {
+  ASSETS?: Fetcher;
   ACTORS: DurableObjectNamespace<ActorState>;
   REGISTRY: D1Database;
   EVIDENCE: R2Bucket;

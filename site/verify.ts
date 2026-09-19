@@ -1,3 +1,4 @@
+import { renderActorProfile, renderCampaignProfile } from "../cloudflare/src/public.ts";
 import { chromium, expect, type Browser, type Page } from "@playwright/test";
 import { mkdirSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
@@ -11,10 +12,18 @@ const files = new Set(new Bun.Glob("**/*").scanSync({ cwd: root, onlyFiles: true
 if (!files.has("index.html")) throw new Error("build the site before browser verification");
 const config = JSON.parse(readFileSync(resolve(import.meta.dir, "../vercel.json"), "utf8"));
 const headers = Object.fromEntries(config.headers[0].headers.map((header: { key: string; value: string }) => [header.key, header.value]));
+const fixtureAddress = `clank1_${"a".repeat(27)}`;
+const fixtureCampaign = { campaignId: `cmp_${"b".repeat(16)}`, policyId: "v2-floor-v1", epochs: 24, cadenceSeconds: 3600, windowSeconds: 120, startsAt: "2026-09-19T00:00:00Z", scheduleCommit: "c".repeat(64), evidence: { scheduled: 24, completed: 5, missed: 2, admitted: 4, challengesPassed: 17 } };
+const fixtureActor = { address: fixtureAddress, publicKey: "d".repeat(43), createdAt: "2026-09-18T00:00:00Z", evidence: { campaigns: 1, heartbeats: 0 }, campaigns: [fixtureCampaign], claims: { automatedAvailability: { completed: 5, missed: 2 }, capability: { admitted: 4, epochs: 5 } }, head: { seq: 16, eventHash: "e".repeat(64) } };
+const profilePaths = [`/actors/${fixtureAddress}`, `/actors/${fixtureAddress}/campaigns/${fixtureCampaign.campaignId}`];
 const server = Bun.serve({
   hostname: "127.0.0.1", port: 0,
   fetch(request) {
-    let path = new URL(request.url).pathname.slice(1);
+    const pathname = new URL(request.url).pathname;
+    if (pathname === profilePaths[0]) return renderActorProfile(fixtureActor);
+    if (pathname === profilePaths[1]) return renderCampaignProfile(fixtureCampaign, fixtureAddress, [{ epoch: 0, status: "decided", verdict: true, evidenceHash: "f".repeat(64) }, { epoch: 1, status: "missed" }]);
+    if (pathname === "/profile.css") return new Response(Bun.file(resolve(import.meta.dir, "../cloudflare/profile.css")), { headers: { ...headers, "content-type": "text/css" } });
+    let path = pathname.slice(1);
     if (!path || path.endsWith("/")) path += "index.html";
     else if (!path.includes(".")) path += "/index.html";
     if (!files.has(path)) return new Response("Not found", { status: 404, headers });
@@ -42,16 +51,19 @@ try {
       page.on("pageerror", (error) => errors.push(error.message));
       page.on("console", (message) => { if (message.type() === "error") errors.push(message.text()); });
       page.on("response", (response) => { if (response.status() >= 400) errors.push(`HTTP ${response.status()} ${new URL(response.url()).pathname}`); });
-      for (const path of ["/", "/docs/", "/benchmark/"]) {
+      for (const path of ["/", "/docs/", "/benchmark/", ...profilePaths]) {
         await page.goto(origin + path, { waitUntil: "networkidle" });
         await page.evaluate(async () => { await document.fonts.ready; });
         await expect(page).toHaveTitle(/Clankdar/);
+        await expect(page.locator("html")).toHaveAttribute("data-hraness-theme", "paper");
+        expect(await page.locator("body").evaluate((body) => getComputedStyle(body).fontFamily)).toContain("Nebula Sans");
         await expect(page.locator("h1")).toHaveCount(1);
         await expect(page.locator("#hraness-site-footer")).toHaveCount(1);
-        await expect(page.locator('link[rel="canonical"]')).toHaveAttribute("href", `https://clankdar.com${path}`);
+        if (!profilePaths.includes(path)) await expect(page.locator('link[rel="canonical"]')).toHaveAttribute("href", `https://clankdar.com${path}`);
+        else await expect(page.locator(".record-facts")).toContainText("5 responded · 2 missed");
         expect(await page.locator("form, iframe").count()).toBe(0);
         expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1)).toBe(true);
-        if (width === 1280 && theme === "light") {
+        if (width === 1280 && theme === "light" && !profilePaths.includes(path)) {
           const anchors = await page.locator('a[href^="#"]').evaluateAll((links) => links.map((link) => link.getAttribute("href")!.slice(1)));
           for (const id of anchors) expect(await page.locator(`[id="${id}"]`).count()).toBe(1);
           const paths = await page.locator('a[href^="/"]').evaluateAll((links) => [...new Set(links.map((link) => link.getAttribute("href")!.split("#")[0]))]);
@@ -62,7 +74,7 @@ try {
           await expect(page.locator(".answer-reveal code")).toHaveText("rednoy");
           await page.locator(".answer-reveal summary").click();
         }
-        const slug = path === "/" ? "home" : path.replaceAll("/", "");
+        const slug = path === "/" ? "home" : profilePaths.includes(path) ? (path === profilePaths[0] ? "actor" : "campaign") : path.replaceAll("/", "");
         await page.screenshot({ path: resolve(screenshots, `${slug}-${width}-${theme}.png`), fullPage: path === "/" });
         if (path === "/benchmark/") {
           const v2 = page.locator("#v2-results .results-table").first();

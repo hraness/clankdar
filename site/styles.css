@@ -33,7 +33,7 @@ main { flex: 1; min-width: 0; }
 .eyebrow { font: 500 11px/1.6 var(--font-mono); color: var(--muted); letter-spacing: 0.045em; text-transform: uppercase; }
 .opening > .eyebrow, .doc-head > .eyebrow { margin-bottom: 22px; }
 .brand-icon { display: block; width: 88px; height: 88px; object-fit: contain; margin-bottom: 24px; }
-.release-note { margin-top: 23px; font: 11px/1.7 var(--font-mono); color: var(--muted); }
+.release-note { margin-top: 23px; font: 13px/1.7 var(--font-text); color: var(--muted); }
 .sample-body { padding: 26px; }
 .sample-prompt { margin-top: 20px; font: 18px/1.6 var(--font-mono); }
 .sample-note { margin-top: 25px; font-size: 12px; line-height: 1.75; color: var(--muted); }
@@ -44,7 +44,7 @@ summary:focus-visible { outline: 2px solid var(--focus); outline-offset: 5px; }
 .signal-strip { display: grid; grid-template-columns: repeat(4, 1fr); gap: 24px; padding: 30px 0 36px; border-top: 1px solid var(--line); }
 .signal-strip > div { display: flex; flex-direction: column; gap: 7px; }
 .signal-strip strong { font: 400 35px/1.2 "Instrument Serif", Georgia, serif; }
-.signal-strip span { font: 11px/1.6 var(--font-mono); color: var(--muted); }
+.signal-strip span { font: 13px/1.6 var(--font-text); color: var(--muted); }
 .texture-grain { position: relative; }
 .texture-grain::before { content: ""; position: absolute; inset: 0; background: url('/design/marketing-assets/grain.svg') repeat; opacity: .03; pointer-events: none; }
 .texture-cells { position: relative; }
@@ -59,7 +59,7 @@ summary:focus-visible { outline: 2px solid var(--focus); outline-offset: 5px; }
 .results-table td.score, .profile-table td .score { color: var(--focus); font-weight: 600; }
 .profile-table td small, .cell-table td small { display: block; color: var(--muted); font: 10px/1.5 var(--font-mono); }
 .model-name { display: inline-block; max-width: 260px; overflow-wrap: anywhere; }
-.callout { margin-top: 22px; border: 1px solid var(--line); border-left: 3px solid var(--focus); border-radius: 8px; padding: 18px 20px; background: var(--surface); font-size: 14px; line-height: 1.6; }
+.callout { margin-top: 22px; border: 1px solid var(--line); border-radius: 8px; padding: 18px 20px; background: var(--surface); font-size: 14px; line-height: 1.6; }
 .callout > p { margin-top: 8px; }
 .report-details { margin-top: 20px; padding: 16px 0; border-bottom: 1px solid var(--line); }
 .report-details summary { color: var(--focus); }
@@ -90,14 +90,15 @@ dt.owner { color: var(--focus); }
 .triad { display: grid; grid-template-columns: repeat(3, 1fr); gap: 40px; }
 .duet { display: grid; grid-template-columns: repeat(2, 1fr); gap: 40px; }
 .cell { border-top: 1px solid var(--line); padding-top: 18px; }
-.cell h3 { font-size: 15px; font-weight: 600; letter-spacing: -0.01em; }
+.cell h3 { font-size: 17px; font-weight: 600; letter-spacing: -0.01em; }
 .cell p { margin-top: 10px; color: var(--muted); font-size: 14px; line-height: 1.75; }
 .plain-list { margin-top: 10px; padding-left: 18px; color: var(--muted); font-size: 14px; line-height: 1.75; }
 .plain-list li { margin-top: 7px; }
 .plain-list li::marker { color: var(--line); }
 
 .status { display: grid; grid-template-columns: 1fr 1.65fr; gap: 48px; padding: 34px 0 40px; margin-top: 32px; border-top: 1px solid var(--line); }
-h2 { font-size: 17px; line-height: 1.55; font-weight: 550; }
+h2 { font-size: 24px; line-height: 1.55; font-weight: 550; }
+.status p + p { margin-top: 14px; }
 .status p { max-width: 65ch; color: var(--muted); font-size: 14px; line-height: 1.75; }
 .project-footer { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 20px; padding: 24px 0 30px; border-top: 1px solid var(--line); color: var(--muted); font-size: 12px; line-height: 1.5; }
 .project-footer a { text-decoration: none; }
@@ -159,7 +160,7 @@ code { font-family: var(--font-mono, ui-monospace, "SFMono-Regular", Consolas, m
   .description { font-size: 18px; margin-top: 24px; }
   .signal-strip { grid-template-columns: repeat(2, 1fr); gap: 25px 20px; }
   .sample-body { padding: 22px; }
-  .release-note { font-size: 10px; }
+  .release-note { font-size: 12px; }
   .callout { padding: 16px; }
   .context { font-size: 15px; }
   .desktop-break { display: none; }
@@ -186,3 +187,27 @@ code { font-family: var(--font-mono, ui-monospace, "SFMono-Regular", Consolas, m
 .header-actions .hraness-design-theme-toggle__popover { box-shadow: var(--hraness-material-lift); }
 @media (max-width: 640px) { .introduction { padding-inline: 18px; margin-inline: -18px; } .header-actions { gap: 12px; } }
 @media (forced-colors: active) { .room, .hraness-design-theme-toggle__trigger, .hraness-design-theme-toggle__popover { border: 1px solid CanvasText; } }
+
+/* Hosted journey: a readable sequence and explicit evidence dimensions. */
+.site-nav a, .source-link { display: inline-flex; align-items: center; min-height: 44px; }
+.actions a { display: inline-flex; align-items: center; min-height: 44px; }
+.journey { list-style: decimal; padding-left: 24px; }
+.journey li { padding: 22px 0 24px 14px; border-top: 1px solid var(--line); }
+.journey li::marker { color: var(--muted); font-variant-numeric: tabular-nums; }
+.journey h3 { font-size: 19px; line-height: 1.4; }
+.journey p { max-width: 68ch; margin-top: 8px; color: var(--muted); font-size: 16px; line-height: 1.7; }
+.evidence-section { display: grid; grid-template-columns: 1fr 1fr; gap: 48px; }
+.evidence-list > div { padding: 18px 0; border-top: 1px solid var(--line); }
+.evidence-list dt { font: 600 16px/1.5 var(--font-text); color: var(--ink); }
+.evidence-list dd { margin-top: 6px; color: var(--muted); font-size: 15px; line-height: 1.65; }
+.reference-nav { padding: 14px 0; }
+.reference-nav summary { min-height: 32px; padding-block: 6px; color: var(--muted); }
+.reference-nav .contents { margin-top: 10px; border: 0; }
+.contents a { display: inline-flex; align-items: center; min-height: 36px; }
+.ladder-table td, .ladder-table th { font-variant-numeric: tabular-nums; }
+@media (max-width: 640px) {
+  .evidence-section { grid-template-columns: 1fr; gap: 28px; }
+  .section-title { font-size: 23px; }
+  .journey li { padding-left: 8px; }
+  .contents { column-gap: 18px; }
+}
