@@ -684,11 +684,40 @@ publish on a delay.
 Commands (reference: `bench/hosted.ts`):
 
 - `hosted serve --key K --policy P --dir STATE [--pool POOL.json]
-  [--host H] [--port N] [--open-total N] [--open-per-subject N]
-  [--issue-window MAX:SEC]` — the gate's flags pass through unchanged,
-  including holdout pools and the ledger-derived rate limits.
+  [--auth-keys KEYS.jsonl] [--host H] [--port N] [--open-total N]
+  [--open-per-subject N] [--issue-window MAX:SEC]` — the gate's flags pass
+  through unchanged, including holdout pools and the ledger-derived rate
+  limits.
 - `hosted head --dir STATE --key K` prints the current signed head — the
   artifact an external witness pins for §11 equivocation detection.
+- `hosted keys issue --keys KEYS.jsonl [--name X] [--quota-mints N
+  --quota-window DUR] [--quota-open N]` mints a client key and prints the
+  raw `clk_…` bearer token once — the file stores only its SHA-256.
+  `hosted keys list` and `hosted keys revoke --key-id K` inspect and
+  revoke; revocations are appended records, so effective state is the
+  fold, matching the ledger's append-only rules.
+
+### Client authentication (optional)
+
+`--auth-keys` opts the write path into issuer-side bearer keys
+(`bench/keys.ts`). When set, `POST /sessions` requires `Authorization:
+Bearer clk_…`; missing, malformed, unknown, and revoked tokens all get
+one identical static `401 {ok:false,reason:"unauthorized"}`, so a probing
+client cannot tell whether a keyId ever existed. Each key may carry
+quotas — `openSessions` (live sessions the key minted, joined against the
+ledger's live set) and `mintsPerWindow` (a rolling mint cap) — enforced
+in addition to the §10 ledger-derived rate limits; a quota failure is a
+static `429 {ok:false,reason:"quota"}`. Accepted mints append `mint`
+records to the same JSONL file, so quotas hold across restarts.
+
+Client keyIds are authorization bookkeeping only: they never enter
+`gate-state.jsonl` or the transparency log, so published entries cannot
+reveal which key minted a session. `POST /sessions/:id/responses` stays
+unauthenticated by design — a live session id is already the unguessable
+capability that submit consumes, and per-key auth on mint is the control
+that bounds ledger spam. A client key authorizes ledger writes for this
+issuer; it is not identity, personhood, or authority. Without
+`--auth-keys` every route behaves exactly as before.
 
 ### Honest boundary
 
@@ -703,8 +732,9 @@ The explicit intake in §18 accepts them and can poll configured
 providers' `/tlog/head` endpoints automatically; provider discovery,
 gossip, witnessed co-signing, and external anchoring remain
 unimplemented. This is a reference surface, not a production deployment:
-TLS termination, client authentication on the write path, and
-high-availability operation are out of scope.
+TLS termination and high-availability operation are out of scope, and
+the optional bearer keys are write authorization for the ledger — never
+client identity.
 
 ## 17. Fork comparison over published logs
 

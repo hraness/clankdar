@@ -38,6 +38,7 @@ import { answerFormat, canonicalAnswer, MAX_ANSWER_LENGTH } from "../ladder/fami
 import { holdoutCell, parsePool, type HoldoutPool } from "./holdout.ts";
 import { adapterByName, cli, openai } from "./adapters.ts";
 import type { Adapter } from "./adapter.ts";
+import type { KeyStore } from "./keys.ts";
 import { integer, requestBudget } from "./options.ts";
 import { GateStore } from "./store.ts";
 
@@ -377,6 +378,16 @@ export interface GateHandlerOptions {
   verifierJwk: VerifierJwk;
   store: GateStore;
   rateLimits?: GateRateLimits;
+  /**
+   * Issuer-side client keys (bench/keys.ts). When set, `POST /sessions`
+   * requires `Authorization: Bearer clk_…`: missing, malformed, unknown,
+   * and revoked tokens all get one identical static 401, and the key's
+   * own quota applies on top of `rateLimits`. The submit and read routes
+   * stay unauthenticated — a live session id is already the unguessable
+   * capability the submit path consumes; per-key auth on mint is what
+   * bounds ledger spam.
+   */
+  keys?: KeyStore;
   /** Pool supplying the policy's `h:` cells; required when the policy names any. */
   pool?: HoldoutPool;
 }
@@ -392,8 +403,8 @@ export function gateHandler(opts: GateHandlerOptions): (req: Request) => Promise
   const policy = parsePolicy(opts.policy, { pool: opts.pool });
   const rateLimits = parseRateLimits(opts.rateLimits);
   const publicKey = publicKeyOf(opts.verifierJwk);
-  const json = (data: unknown, status = 200) =>
-    new Response(JSON.stringify(data), { status, headers: { "content-type": "application/json" } });
+  const json = (data: unknown, status = 200, headers?: Record<string, string>) =>
+    new Response(JSON.stringify(data), { status, headers: { "content-type": "application/json", ...headers } });
   const err = (status: number, message: string) => json({ error: message }, status);
   return async (req) => {
     const { pathname } = new URL(req.url);
@@ -405,10 +416,21 @@ export function gateHandler(opts: GateHandlerOptions): (req: Request) => Promise
       return receipt ? json(receipt) : err(404, "no receipt for that challenge");
     }
     if (req.method === "POST" && pathname === "/sessions") {
+      let clientKeyId: string | null = null;
+      if (opts.keys !== undefined) {
+        // One static 401 for missing, malformed, unknown, and revoked
+        // tokens — the response must not reveal which case it was.
+        const header = /^Bearer (\S+)$/.exec(req.headers.get("authorization") ?? "");
+        clientKeyId = header === null ? null : opts.keys.authenticate(header[1]);
+        if (clientKeyId === null) return json({ ok: false, reason: "unauthorized" }, 401, { "www-authenticate": "Bearer" });
+      }
       const body = await boundedJson(req);
       if (body === null) return err(400, "request body must be a JSON object up to 128 KiB");
+      const nowMs = Date.now();
+      if (clientKeyId !== null && !opts.keys!.withinQuota(clientKeyId, opts.store, nowMs)) {
+        return json({ ok: false, reason: "quota" }, 429);
+      }
       if (rateLimits !== undefined) {
-        const nowMs = Date.now();
         const subject = body.subject === undefined ? "" : String(body.subject);
         if (rateLimits.openTotal !== undefined && opts.store.openSessions(nowMs).length >= rateLimits.openTotal) {
           return err(429, "gate at capacity; retry when open sessions drain");
@@ -428,6 +450,9 @@ export function gateHandler(opts: GateHandlerOptions): (req: Request) => Promise
           context: body.context === undefined ? undefined : String(body.context),
         });
         opts.store.issueSession(session);
+        // Durable per-key quota bookkeeping — appended to the key file,
+        // never the ledger, so keyIds stay out of the transparency log.
+        if (clientKeyId !== null) opts.keys!.recordMint(clientKeyId, session.sessionId);
         return json({ sessionId: session.sessionId, expiresAt: session.expiresAt, challenges }, 201);
       } catch {
         return err(400, "session request rejected");
