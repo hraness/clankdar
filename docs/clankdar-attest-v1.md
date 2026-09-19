@@ -1,4 +1,4 @@
-# clankdar-attest-v1 + clankdar-gate-v1 + clankdar-tlog-v1
+# clankdar-attest-v1 + clankdar-gate-v1 + clankdar-tlog-v1 + clankdar-badge-v1
 
 Sealed-seed capability attestation, the admission-session profile built on
 it, and the issuance transparency log derived from the gate ledger. The
@@ -429,3 +429,87 @@ generator oracle: `--suite`/`--suite-version --family --tier --seed` →
 admission, and transparency-log formats are language-neutral; the canonical
 JSON, seedCommit, and entry-chain constructions are deliberately trivial to
 reimplement.
+
+## 14. Portable subject badges (badge-v1)
+
+A respondent holding subject-bound admissions (§7) under one Ed25519 key can
+pack them into a **badge** — a self-signed, portable dossier a third party
+replays without contacting anyone. The subject signs, never an issuer: a
+badge is a curated claim "these signed episodes are bound to my key", not an
+issuer attestation. Admissions from different verifier keys mix freely —
+cross-issuer aggregation is the point.
+
+`BadgeBody` (inside the signed payload):
+
+```json
+{
+  "kind": "badge",
+  "subjectKey": "<base64url Ed25519 JWK x>",
+  "admissions": [ "<Admission>", "..." ],
+  "proofs": [ { "log": "<TransparencyLog>", "proof": "<SessionProof>" } ],
+  "issuedAt": "2026-09-18T00:02:00.000Z"
+}
+```
+
+`admissions` holds 1–64 entries; `proofs` is optional. The envelope mirrors
+the receipt and admission envelopes:
+
+```json
+{
+  "protocol": "clankdar-badge-v1",
+  "payload": "<canonical JSON of BadgeBody>",
+  "signature": "<base64url Ed25519 by subjectKey over the payload bytes>"
+}
+```
+
+### Badge check
+
+A checker MUST:
+
+1. parse the envelope and payload; require `kind:"badge"`, the
+   `clankdar-badge-v1` protocol, and a `subjectKey` that decodes as an
+   Ed25519 JWK `x` member;
+2. require `admissions` to hold 1–64 entries, each passing the §8 admission
+   check, with distinct `sessionId`s — one decision per session (§9);
+3. require every admission to be subject-bound: every embedded receipt that
+   carries a `subjectProof` MUST use `publicKey === subjectKey`, and at
+   least one receipt MUST carry a proof — the session-scoped transcript
+   binds the whole session, so one proof covers its admission. An admission
+   with no `subjectProof` at all is not subject-bound and cannot be
+   included;
+4. when `proofs` is present, require it to be an array of at most 64
+   `{log, proof}` entries and replay each under the §11 rules: the log
+   passes `checkLog`, `proof.sessionId` names a session the badge carries,
+   the claimed `sessionIndex`/`decisionIndex`/`head` equal a fresh
+   `proveSession` result over that log, and `decisionIndex` is non-null —
+   a badge proof asserts the admission's *decision* is logged, not merely
+   its session;
+5. require `issuedAt` to parse as RFC 3339;
+6. verify the badge signature over the payload bytes verbatim under
+   `subjectKey`.
+
+Domain separation is implicit in the shape: the badge signature covers the
+badge payload under the subject key, so it can never be a §7 subjectProof
+transcript (a different message with a different layout), and a receipt or
+admission signature can never be a badge signature — those verify under
+issuer keys, not the subject's. No `BADGE_DOMAIN` label is needed.
+
+### Honest limits
+
+A badge proves exactly that the subject key accumulated these signed
+admissions. It does **not** prove the key holder solved anything — §7
+delegation survives aggregation — and it does **not** prove the admissions
+were earned: an issuer can always self-mint for a colluding subject, which
+is why `tlog` inclusion proofs are optional but recommended (an admission
+whose session has no logged decision is issuer-claimed only). A badge is a
+dossier, not an identity: it carries no liveness or revocation of its own,
+verdicts inside it may be passes or fails, and it grants no authority.
+
+Commands (reference: `bench/badge.ts`):
+
+- `pack --subject-key KEY.json --admissions a.json,b.json [--proofs
+  proofs.json] [--out badge.json]` packs a badge and replays it through the
+  checker before emitting — `proofs.json` is `[{log, proof}]` assembled by
+  the caller (`tlog build` + `tlog prove`).
+- `check badge.json` → `{ok, subject, admissions, verdicts:{pass},
+  logged}`; exit 2 on failure.

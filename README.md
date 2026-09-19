@@ -132,6 +132,14 @@ admission to a series file, `drift report` aggregates per-cell pass bands,
 cell or the overall band drops past `--threshold` — a CI gate for silent model
 substitutions and regressions at a probed endpoint.
 
+`clankdar-badge-v1` is the portable-credential layer on top: a respondent
+binds each gate session to its own Ed25519 key, then packs subject-bound
+admissions — from any issuer — into a badge it signs itself. `bun badge pack`
+and `bun badge check` emit and replay the dossier; optional `tlog` inclusion
+proofs upgrade issuer-claimed sessions to logged ones. A badge proves the
+subject key accumulated these admissions — never that the key holder solved
+them, and it is not an identity.
+
 An admission attests that one session produced K passing responses under one
 policy in one window. It is not identity, liveness, or authority: challenges
 can be delegated, and a verifier can always answer its own oracle, so relying
