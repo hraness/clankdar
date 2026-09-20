@@ -73,7 +73,7 @@ async function verifyChrome(page: Page, width: number): Promise<void> {
   expect(scrolled.header.top).toBeCloseTo(0, 0);
   expect(scrolled.footer.bottom).toBeCloseTo(scrolled.viewportHeight, 0);
 
-  const anchor = page.locator("#main h2[id]").first();
+  const anchor = page.locator("#main h2[id], #main section[id]").first();
   const anchorId = await anchor.getAttribute("id");
   expect(anchorId).toBeTruthy();
   await page.evaluate((id) => document.getElementById(id!)!.scrollIntoView({ block: "start" }), anchorId);
