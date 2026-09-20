@@ -28,23 +28,23 @@ export function renderChallenge(): string {
 /** A frozen published instance; changes to the current frontier pool cannot change this example. */
 export function renderHarderChallenge(): string {
   const puzzle = poolForVersion("clankdar-frontier-v0").find((family) => family.name === "bitmatrix")!.generate(4, 302);
-  return `<p class="eyebrow">Public practice · frontier-v0 · ${escapeHtml(puzzle.family)}:t${puzzle.tier} · seed ${puzzle.seed}</p>
+  return `<p>Public practice · a harder logic puzzle</p>
 <pre class="code"><code>${escapeHtml(puzzle.prompt)}</code></pre>
 <details class="answer-reveal"><summary>Reveal the reference answer</summary><code>${escapeHtml(puzzle.answer)}</code><p>Subtracting XOR equations gives x5 = 0 and x4 = 0. Then x1 = 1, x3 = 0, x2 = 1, and x0 = 1.</p></details>
-<p class="sample-note">A public example from the recorded frontier suite. This practice puzzle does not issue a receipt.</p>`;
+<p class="sample-note">This practice puzzle does not issue a receipt. <a href="/benchmark/frontier-v0/manifest.json">Recorded source and conditions</a>.</p>`;
 }
 
-/** A compact view of the two archived unaided suites; never an Algal calibration. */
-export function renderBenchmarkSnapshot(v2: CalibrationReport, frontier: CalibrationReport): string {
-  const frontierModels = new Map(frontier.models.map((model) => [model.model, model]));
-  const rows = v2.models.map((model) => {
-    const counterpart = frontierModels.get(model.model);
-    if (!counterpart) throw new Error(`missing frontier snapshot model: ${model.model}`);
-    const scores = [model.eligible, counterpart.eligible].map((score) => `<td>${pct(score.strict)}<small>${score.passed}/${score.n}</small></td>`).join("");
-    return `<tr><th scope="row">${escapeHtml(model.model)}</th>${scores}</tr>`;
+/** One recorded comparison; other suites remain separate downloadable evidence. */
+export function renderModelBenchmark(report: CalibrationReport): string {
+  const rows = report.models.map((model) => {
+    const score = model.eligible;
+    return `<tr><th scope="row">${escapeHtml(model.model)}</th><td>${pct(score.strict)}<small>${score.passed}/${score.n} correct</small></td></tr>`;
   }).join("\n");
-  return `<div class="table-scroll" role="region" aria-label="Recorded model benchmark snapshot" tabindex="0"><table class="ladder-table benchmark-snapshot"><caption>Strict pass rate · passes / valid responses</caption><thead><tr><th scope="col">Requested model</th><th scope="col">v2</th><th scope="col">Frontier v0</th></tr></thead><tbody>${rows}</tbody></table></div>
-<p class="note">Recorded September 17, 2026. One response per puzzle, no tools; provider errors excluded. These recorded suites predate the new Algal suite, which has no model calibration yet. Different suites have different tasks. <a href="/benchmark/">Counts, provenance, and replayable records</a>.</p>`;
+  return `<div class="table-scroll" role="region" aria-label="Model benchmark results" tabindex="0"><table class="ladder-table benchmark-snapshot"><caption>Exact pass rate · correct answers / completed responses</caption><thead><tr><th scope="col">Requested model</th><th scope="col">Correct</th></tr></thead><tbody>${rows}</tbody></table></div>`;
+}
+
+export function renderBenchmarkDownloads(report: CalibrationReport): string {
+  return `<ul class="doc-list dataset-links">${report.sources.map(source => `<li><a href="/benchmark/v2-calibration-0/${escapeHtml(source.file)}" download>${escapeHtml(source.file)}</a></li>`).join("\n")}</ul>`;
 }
 
 export function renderTiers(): string {

@@ -73,7 +73,7 @@ async function verifyChrome(page: Page, width: number): Promise<void> {
   expect(scrolled.header.top).toBeCloseTo(0, 0);
   expect(scrolled.footer.bottom).toBeCloseTo(scrolled.viewportHeight, 0);
 
-  const anchor = page.locator("#main h2[id]").first();
+  const anchor = page.locator("#main h2[id], #main section[id]").first();
   const anchorId = await anchor.getAttribute("id");
   expect(anchorId).toBeTruthy();
   await page.evaluate((id) => document.getElementById(id!)!.scrollIntoView({ block: "start" }), anchorId);
@@ -143,15 +143,19 @@ try {
         const slug = path === "/" ? "home" : profilePaths.includes(path) ? (path === profilePaths[0] ? "actor" : "campaign") : path.replaceAll("/", "");
         await page.screenshot({ path: resolve(screenshots, `${slug}-${width}-${theme}.png`), fullPage: path === "/" });
         if (path === "/benchmark/") {
-          const v2 = page.locator("#v2-results .results-table").first();
-          await expect(v2.locator("tbody tr")).toHaveCount(5);
-          await v2.scrollIntoViewIfNeeded();
-          await page.screenshot({ path: resolve(screenshots, `v2-table-${width}-${theme}.png`) });
-          const profiles = page.locator("#profiles .profile-table");
-          await expect(profiles.locator("tbody tr")).toHaveCount(5);
-          await profiles.screenshot({ path: resolve(screenshots, `profiles-table-${width}-${theme}.png`) });
-          const pilot = page.locator("#pilot-results .results-table").first();
-          await expect(pilot.locator("tbody tr")).toHaveCount(12);
+          const comparison = page.locator("#results .benchmark-snapshot");
+          await expect(comparison.locator("tbody tr")).toHaveCount(5);
+          await expect(comparison).toContainText("437/499");
+          await expect(page.locator("table:visible")).toHaveCount(1);
+          await comparison.scrollIntoViewIfNeeded();
+          await page.screenshot({ path: resolve(screenshots, `benchmark-table-${width}-${theme}.png`) });
+          const method = page.locator("#method > details").first();
+          await method.locator("summary").click();
+          await expect(method.locator('a[href$="/report.json"]')).toBeVisible();
+          await method.locator("summary").click();
+          const archive = page.locator("#archive");
+          await archive.locator("summary").click();
+          await expect(archive.locator('a[href="/benchmark/agent-v0/manifest.json"]')).toBeVisible();
         }
         checked++;
       }
@@ -183,7 +187,9 @@ try {
   await expect(page.locator("[data-practice-solution]")).toBeVisible();
   await expect(page.locator("[data-practice-controls]")).toBeHidden();
   await page.goto(origin + "/benchmark/");
-  await expect(page.locator("#pilot-results .results-table").first()).toBeVisible();
+  await expect(page.locator("#results .benchmark-snapshot")).toBeVisible();
+  await page.locator("#method > details").first().locator("summary").click();
+  await expect(page.locator('#method a[href$="/report.json"]')).toBeVisible();
   await noScript.close();
   expect(errors).toEqual([]);
   console.log(JSON.stringify({ pagesChecked: checked, widths: [1280, 608, 390, 320], themes: ["light", "dark"], noScript: true, browserErrors: errors.length, screenshots }, null, 2));

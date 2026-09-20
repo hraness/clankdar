@@ -4,10 +4,10 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="theme-color" content="#f8f7f4">
-    <title>The ladder — Clankdar</title>
-    <meta name="description" content="Inspect Clankdar's held-out v2 calibration: 2,500 recorded attempts across five models, reproducible scoring, uncertainty, and downloadable evidence.">
-    <meta property="og:title" content="The Clankdar ladder">
-    <meta property="og:description" content="The first pilot, the flaws it exposed, and the corrected suite. Real records, not invented capability tiers.">
+    <title>Model benchmark — Clankdar</title>
+    <meta name="description" content="Five models, the same 500 puzzles, and exact scores you can reproduce. See Clankdar's published model comparison.">
+    <meta property="og:title" content="Clankdar model benchmark">
+    <meta property="og:description" content="Five models were given the same 500 puzzles. Compare exact scores and inspect the recorded answers.">
     <meta property="og:image" content="https://clankdar.com/icon.png">
     <meta property="og:type" content="website">
     <meta property="og:url" content="https://clankdar.com/benchmark/">
@@ -46,118 +46,54 @@
     <div class="page">
       <main class="doc" id="main">
         <header class="doc-head">
-          <p class="eyebrow">A benchmark, not a badge of trust</p>
-          <h1 id="title">The ladder.</h1>
-          <p class="doc-lede">Fourteen families. Seven parameter tiers. One question: under these conditions, what can a model actually solve?</p>
+          <h1 id="title">Model benchmark.</h1>
+          <p class="doc-lede">Five models were given the same 500 puzzles. Here’s how often each was exactly right.</p>
         </header>
-        <p class="note">These recorded suites predate the new <a href="/docs/#algal">Algal program suite</a>, which has no model calibration yet. Scores retain their original suite and run conditions.</p>
-        <nav class="contents" aria-label="Contents"><a href="#v2-results">V2 calibration</a><a href="#admission-evidence">Signed admissions</a><a href="#frontier-results">Frontier</a><a href="#agent-results">Tool-agent</a><a href="#signal">Signal</a><a href="#profiles">Profiles</a><a href="#findings">What we learned</a><a href="#pilot-results">Legacy pilot</a><a href="#tiers">The suite</a><a href="#method">Method</a><a href="#run">Run it</a></nav>
 
-        <section class="doc-section" id="v2-results" aria-labelledby="v2-title">
-          <h2 id="v2-title">V2 calibration 0: the clanks separate.</h2>
-          <p>Recorded September 17, 2026 through Vercel AI Gateway: five requested model aliases, all 25 family/tier cells, and held-out seeds 101–120. That is 2,500 attempts: 2,499 model responses and one timeout. One user prompt per instance, no tools, requested temperature 0, and a 4,096-token completion budget.</p>
-          <div class="callout"><strong>Separation: yes. One-dimensional ladder: no.</strong><p>Strict scores span 9.4% to 87.6%, so these deterministic tasks distinguish the tested systems sharply. But tier aggregates are not monotone because each tier mixes different families. Clankdar reports family/tier profiles; it does not assign a single intelligence level.</p></div>
-          {{V2_RESULTS}}
-          <p><b>Strict</b> is the benchmark result. <b>Final block</b> is a formatting diagnostic only. The five requested aliases are not independent attestations of model identity; inspect the <a href="/benchmark/v2-calibration-0/manifest.json">manifest</a>, <a href="/benchmark/v2-calibration-0/report.json" download>full report</a>, per-cell results, source state, usage, and limitations.</p>
-          <p class="note">Twenty seeds per cell narrow uncertainty but do not certify a threshold. Public generators and seeds are reproducible, not contamination-proof. The run is unaided and does not predict a tool-using agent's performance.</p>
+        <section class="doc-section" id="results" aria-label="Published model comparison">
+          <span id="v2-results" class="anchor-alias" aria-hidden="true"></span>
+          {{MODEL_BENCHMARK}}
+          <p>Recorded September 17, 2026. One answer per puzzle, no tools. A pass requires the correct answer in the requested format. One timed-out request is excluded from the response count.</p>
+          <p class="note">These results measure the recorded puzzle set. Model results for the current Algal checks are not yet available.</p>
+          <div class="actions"><a class="primary-link" href="/docs/#own-solver">Check your own agent <span aria-hidden="true">→</span></a><a href="/#try">Try a puzzle</a></div>
         </section>
 
-        <section class="doc-section" id="admission-evidence" aria-labelledby="admission-evidence-title">
-          <h2 id="admission-evidence-title">Admission receipts: the product proves itself.</h2>
-          <p>On September 19, 2026, the zero-tool CLI adapter requested <code>opus</code> for four fresh eight-challenge sessions. The provider reported <code>claude-opus-5</code>. The v2 policy admitted both sessions at 15/16 challenges; the harder frontier policy admitted one of two at 9/16. Passing and failing evidence use the same signed, independently replayable format.</p>
-          <div class="callout"><strong>Not a screenshot. Not a judge-model opinion.</strong><p>The published admission payloads reveal each committed seed after submission. The build regenerates all 32 prompts and answers, recomputes every typed score and verdict, and verifies the Ed25519 signatures and deadlines. Tamper with one byte, one score, one policy, or one summary count and the site stops building.</p></div>
-          {{ADMISSION_RESULTS}}
-        </section>
-
-        <section class="doc-section" id="frontier-results" aria-labelledby="frontier-title">
-          <h2 id="frontier-title">Frontier 0: a steeper unaided ceiling.</h2>
-          <p>Recorded September 17, 2026 through Vercel AI Gateway: five requested model aliases, 17 deeper family/tier cells, and held-out seeds 301–320. That is 1,700 attempts across eight scalable families: three SAT/circuit/logic families, three execution families, and two constraint/induction families. One user prompt per instance, no tools, requested temperature 0, and a 4,096-token completion budget.</p>
-          <div class="callout"><strong>These are separate, harder cells.</strong><p>Frontier tiers continue the same family parameters above the v2 range. The lower pass rates are intentional; the purpose is a steeper difficulty gradient, not a fair comparison to v2. Do not mix frontier and v2 scores as if they were one ladder.</p></div>
-          {{FRONTIER_RESULTS}}
-          <p><b>Strict</b> is the benchmark result. <b>Final block</b> is a formatting diagnostic only. Inspect the <a href="/benchmark/frontier-v0/manifest.json">manifest</a>, <a href="/benchmark/frontier-v0/report.json" download>full report</a>, per-cell results, and limitations.</p>
-          <p class="note">Twenty seeds per cell narrow uncertainty but do not certify a threshold. Public generators and seeds are reproducible, not contamination-proof. The run is unaided and does not predict tool-using agent performance.</p>
-        </section>
-
-        <section class="doc-section" id="agent-results" aria-labelledby="agent-title">
-          <h2 id="agent-title">Tool-agent 0: bounded, replayable episodes.</h2>
-          <p>Recorded September 17, 2026 through Vercel AI Gateway: five requested model aliases, six family/tier cells, and held-out seeds 301–320. Each episode is a <code>TOOL name {args}</code> / <code>FINAL answer</code> protocol with per-cell budgets of 4–12 tool calls and 8–16 turns, and 4,096 characters per tool output. Tool environments are deterministic server-side closures; the transcript is recorded and replayed against regenerated environments.</p>
-          <div class="callout"><strong>This is a separate track.</strong><p>Tool-agent scores measure planning and tool use under the recorded budget. They do not estimate base-model capability and are not comparable to the unaided runs. Some provider errors appear as episode failures, not wrong answers.</p></div>
-          {{AGENT_RESULTS}}
-          <p><b>Strict</b> is the benchmark result. <b>Final block</b> is a formatting diagnostic only. Inspect the <a href="/benchmark/agent-v0/manifest.json">manifest</a>, <a href="/benchmark/agent-v0/report.json" download>full report</a>, and the per-episode transcripts.</p>
-          <p class="note">Tool-use budgets are arbitrary; they describe behavior under the recorded contract, not a certified safe or capable agent. The public tasks can be memorized or solved with code. The <code>satcheck:t5</code> instances in this archive share their ground truth with the frontier <code>sat:t5</code> cell — the suite was corrected to <code>clankdar-agent-v1</code> so future runs decorrelate the two tracks. One run was recorded at a source revision marked dirty in the manifest; every transcript still replays exactly against the published suite.</p>
-        </section>
-
-        <section class="doc-section" id="signal" aria-labelledby="signal-title">
-          <h2 id="signal-title">Why this is a usable bot signal.</h2>
-          <p>A benchmark becomes useful as a signal when its measurements survive replay and cannot be argued with a judge model. Clankdar records four independent dimensions for every attempt:</p>
-          <ul class="doc-list">
-            <li><b>Deterministic verification.</b> Every instance has a single re-derivable answer bound to a public suite hash. Anyone can re-run the scorer against the recorded responses; the published scores are a recomputation, not an assertion.</li>
-            <li><b>Response-contract adherence.</b> Strict requires the whole response to satisfy the declared answer format — a task about following a contract exactly, which models fail in distinctive ways. The final-block diagnostic quantifies how much capability is hidden behind formatting failures.</li>
-            <li><b>Effort under budget.</b> Latency, token usage, and (in the agent track) tool calls, turns, and protocol errors are recorded per attempt. Solving a cell in two calls reads differently from solving it in twelve.</li>
-            <li><b>Coverage.</b> Every model faces the same held-out cells on the same seeds, so a score is a profile across 17 or 25 named tasks — not a single anecdotal success.</li>
-          </ul>
-          <div class="callout"><strong>A signal, not an admission gate.</strong><p>These dimensions tell a service <em>what a system did under declared conditions</em>. They do not prove that the responding entity is an AI, that no human drove it, or that a passed puzzle implies safe behavior. Use the data as one input to a policy you own — not as authority, identity, or trust.</p></div>
-        </section>
-
-        <section class="doc-section" id="profiles" aria-labelledby="profiles-title">
-          <h2 id="profiles-title">Four profiles. No fake IQ.</h2>
-          <p>The profiles partition every v2 cell exactly once by the operation the prompt demands. They expose materially different strengths: the same model can be strong at deterministic execution and weaker at constraint solving. Scores are descriptive pass rates under this run's conditions, not permanent labels.</p>
-          {{PROFILE_RESULTS}}
-          <p>Download the derived <a href="/benchmark/v2-calibration-0/profiles.json">machine-readable profile report</a>. It is bound to the same suite hash and retains each profile's counts and Wilson interval.</p>
-          <div class="callout"><strong>Policy belongs outside the benchmark.</strong><p>A relying service can choose relevant profiles, cells, minimum sample sizes, and confidence bounds before evaluation. It should not average away a required weakness, infer identity from a score, or grant tool authority solely because a model passed public puzzles.</p></div>
-        </section>
-
-        <section class="doc-section" id="pilot-results" aria-labelledby="results-title">
-          <h2 id="results-title">Pilot 0: test the test.</h2>
-          <p>Recorded September 17, 2026 through Vercel AI Gateway: twelve requested model aliases, 25 family/tier cells, seeds 1–10. That is 3,000 attempts: 2,999 model responses and one provider error. One user prompt per instance, no tools; requested temperature 0 and a 4,096-token completion budget.</p>
-          <div class="callout"><strong>Legacy pilot. Corrected scoring. Not a certification.</strong><p>These saved replies were rescored with <code>{{SCORER_VERSION}}</code>. They are <em>not</em> a run against the corrected v2 generators. The original run did not record exact provider-resolved model versions, finish reasons, negotiated settings, or usage. See the <a href="/benchmark/pilot-v0/manifest.json">manifest and limitations</a>.</p></div>
-          {{PILOT_RESULTS}}
-          <p><b>Strict</b> means the whole response satisfies the declared answer format and matches. <b>Final block</b> extracts a final line, fenced block, or trailing grid, then compares exactly. It is a formatting diagnostic—not a second leaderboard and not an estimate of “real intelligence.”</p>
-          <p class="note">Provider errors are shown separately and excluded from valid-response denominators. The nominal 95% Wilson intervals describe observed proportions; pooled tasks are heterogeneous and only ten seeds were sampled per cell. No model is certified to clear a tier.</p>
-          <p>Four legacy families are excluded uniformly from the screened table: <code>gridpath</code>, <code>sequence</code>, <code>hiddenfn</code>, and <code>gridxf</code>. This removes six cells, or 60 instances per model. Full legacy-suite scores, per-cell counts, exclusions, and original-to-corrected verdict changes remain in the <a href="/benchmark/pilot-v0/report.json" download>machine-readable report</a>.</p>
-        </section>
-
-        <section class="doc-section" id="findings" aria-labelledby="findings-title">
-          <h2 id="findings-title">What the first clanks taught us.</h2>
-          <ul class="doc-list">
-            <li><b>Formatting is part of the contract, not the whole capability story.</b> Some models often explain a solution before giving a correct final answer. We expose that gap without awarding a strict pass.</li>
-            <li><b>The scorer needs tests, too.</b> The original normalizer erased minus signs and boundaries. A suffix-based diagnostic could match “14” to “4.” Typed comparison and answer-independent extraction now replace both.</li>
-            <li><b>A hard-looking puzzle can be trivial.</b> The old shortest-path family always had a ten-move route. It was removed from the screened pilot; v2 requires real detours and tests answer diversity.</li>
-            <li><b>Ambiguity is not difficulty.</b> Legacy sequence and induction prompts left the hypothesis class open. The geometric sequence branch also displayed one fewer term. V2 states finite rule grammars and checks agreement on the query before emitting an induction puzzle.</li>
-            <li><b>Profiles beat a fake intelligence number.</b> V2 separates the tested systems, but pooled tier scores are not monotone because the family mix changes by tier. Thresholds belong to stable family/tier cells under declared conditions—not to one universal “model level.”</li>
-          </ul>
-        </section>
-
-        <section class="doc-section" id="tiers" aria-labelledby="tiers-title">
-          <h2 id="tiers-title">The corrected suite.</h2>
-          <p><code>{{SUITE_VERSION}}</code> changes prompts and generation where the audit found flaws. It is deliberately versioned apart from the pilot. Numeric tiers are settings—not evidence that difficulty is monotone or that a tier defeats current models.</p>
-          {{TIERS}}
-          <p class="note">These are small, synthetic, programmatically solvable tasks. Grid transforms are not ARC-AGI, and tool-assisted agents must be evaluated separately from one-response model calls. There is no demonstrated “unsolvable frontier” in this suite.</p>
-        </section>
-
-        <section class="doc-section" id="method" aria-labelledby="method-title">
-          <h2 id="method-title">Earn the measurement.</h2>
-          <ol class="doc-list">
-            <li><b>Freeze the question.</b> Record the suite version, prompt/answer hash, seed set, and exact source revision. Never compare different suites as if they were the same run.</li>
-            <li><b>Fix the conditions.</b> Use one response per instance. Record the requested model, endpoint, actual accepted parameters, finish reason, token usage where supplied, and latency. Do not mix tool-assisted and unaided runs.</li>
-            <li><b>Keep errors visible.</b> A provider failure is not a wrong answer. A token-limit truncation is a budget outcome, not a silently accepted partial response. Report coverage with pass rates.</li>
-            <li><b>Preserve evidence.</b> New runs create exclusive files, never truncate previous results. Report readers reject duplicate instances, incomplete runs, and incompatible coverage.</li>
-            <li><b>Use fresh seeds and uncertainty.</b> Compare the same held-out instances across models, inspect every family/tier cell, and predeclare any threshold. Ten successes out of ten still has a Wilson lower bound near 72%, not proof of 90% reliability.</li>
-          </ol>
-          <p>Public seeds make prompts reproducible, not contamination-proof. Published rule sets can be memorized or solved with code. A challenge response never establishes who—or which model—produced it.</p>
-        </section>
-
-        <section class="doc-section" id="run" aria-labelledby="run-title">
-          <h2 id="run-title">Bring your own clank.</h2>
-          <pre class="code"><code>bun bench --adapter oracle --seeds 1-10 --out results/oracle-first.jsonl
-bun bench --adapter openai:gpt-4o-mini --tiers 0-3 --seeds 101-110
-bun report site/benchmark/pilot-v0 --exclude gridpath,gridxf,hiddenfn,sequence</code></pre>
-          <p>The model command is a <b>dry run by default</b>. Inspect its manifest, configure a credential privately, then opt in with <code>--execute --max-requests N</code>. The request limit includes parameter negotiation; token limits are separate and neither is a guaranteed dollar cap. See the <a href="/docs/#quickstart">quickstart and budget controls</a>.</p>
+        <section class="doc-section" id="method" aria-label="Benchmark method and evidence">
+          <details class="report-details">
+            <summary>Method and downloadable evidence</summary>
+            <p>Each model received the same 25 task settings and 20 seeds per setting: 500 attempts per model, 2,500 in total. Calls used Vercel AI Gateway with a requested temperature of 0 and a 4,096-token completion budget. The table shows the requested model aliases, not independently verified model identities.</p>
+            <p>The scorer compares each complete response with a deterministic reference answer. Provider errors are separate from wrong answers. The report retains counts, confidence intervals, and results for each task; formatting diagnostics are not counted as passes.</p>
+            <p>The recorded test is <code>clankdar-suite-v2</code>, with scorer <code>clankdar-score-v2</code> and seeds 101–120. The manifest pins the suite hash and source revision and records an uncommitted source change at collection time. The site build rescores every retained response before publishing these scores.</p>
+            <p><a href="/benchmark/v2-calibration-0/report.json" download>Download the full report</a> · <a href="/benchmark/v2-calibration-0/manifest.json">Inspect the run manifest</a></p>
+            {{BENCHMARK_DOWNLOADS}}
+            <p>Twenty seeds per task setting are an exploratory sample. Public puzzles can be memorized, delegated, or solved with code. These scores describe this run; they do not establish identity, general intelligence, or safe behavior.</p>
+          </details>
+          <details class="report-details" id="archive">
+            <summary>Other recorded experiments</summary>
+            <span id="frontier-results" class="anchor-alias" aria-hidden="true"></span>
+            <span id="agent-results" class="anchor-alias" aria-hidden="true"></span>
+            <span id="admission-evidence" class="anchor-alias" aria-hidden="true"></span>
+            <span id="pilot-results" class="anchor-alias" aria-hidden="true"></span>
+            <span id="profiles" class="anchor-alias" aria-hidden="true"></span>
+            <span id="findings" class="anchor-alias" aria-hidden="true"></span>
+            <span id="tiers" class="anchor-alias" aria-hidden="true"></span>
+            <span id="signal" class="anchor-alias" aria-hidden="true"></span>
+            <p>These records use different tasks or conditions and are kept separately from the comparison above.</p>
+            <ul class="doc-list">
+              <li><a href="/benchmark/frontier-v0/manifest.json">Harder reasoning tasks</a></li>
+              <li><a href="/benchmark/agent-v0/manifest.json">Tool-assisted tasks</a></li>
+              <li><a href="/benchmark/admissions-opus5-2026-09-19/manifest.json">Signed check examples</a></li>
+              <li><a href="/benchmark/v2-calibration-0/profiles.json">Scores grouped by skill</a></li>
+              <li><a href="/benchmark/pilot-v0/manifest.json">Initial pilot data</a></li>
+            </ul>
+          </details>
+          <span id="run" class="anchor-alias" aria-hidden="true"></span>
+          <p>For your own model comparison, see the <a href="https://github.com/hraness/clankdar/blob/main/docs/reference-tools.md#run-the-local-benchmark">benchmark runner guide</a>.</p>
         </section>
       </main>
       <div class="project-footer">
-        <p>A floor you can set. A ceiling you can watch move.</p>
-        <a href="/docs/">Read the protocol <span aria-hidden="true">→</span></a>
+        <p>Exact answers. Reproducible results.</p>
+        <a href="/docs/#quickstart">Run your first check <span aria-hidden="true">→</span></a>
       </div>
       <!-- hraness-site-footer -->
     </div>

@@ -3,11 +3,11 @@ import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { gunzipSync } from "node:zlib";
 import { createHash } from "node:crypto";
-import { escapeHtml, renderBenchmarkSnapshot, renderChallenge, renderHarderChallenge, renderPilot, renderProfiles, renderTiers, renderV2 } from "./content.ts";
+import { escapeHtml, renderModelBenchmark, renderChallenge, renderHarderChallenge, renderPilot, renderProfiles, renderTiers, renderV2 } from "./content.ts";
 import { verifyPilot } from "../bench/pilot.ts";
 import { verifyCalibration } from "../bench/archive.ts";
 import { verifyAdmissionArchive } from "../bench/admission-archive.ts";
-import { FAMILIES, SCORER_VERSION, SUITE_VERSION } from "../ladder/mod.ts";
+import { FAMILIES, SUITE_VERSION } from "../ladder/mod.ts";
 
 const root = import.meta.dir;
 
@@ -42,17 +42,17 @@ describe("public site contract", () => {
     expect(escapeHtml('<a href="x">&')).toBe("&lt;a href=&quot;x&quot;&gt;&amp;");
   });
 
-  test("the compact snapshot uses verified counts and separates the uncalibrated Algal suite", () => {
-    const v2 = verifyCalibration(resolve(root, "benchmark/v2-calibration-0"));
-    const frontier = verifyCalibration(resolve(root, "benchmark/frontier-v0"));
-    const html = renderBenchmarkSnapshot(v2, frontier);
-    for (const count of ["437/499", "403/500", "205/500", "140/500", "47/500", "217/340", "186/340", "31/340", "8/340", "0/340"]) expect(html).toContain(count);
+  test("the model benchmark keeps the recorded denominator and only one comparison", () => {
+    const report = verifyCalibration(resolve(root, "benchmark/v2-calibration-0"));
+    const html = renderModelBenchmark(report);
+    for (const count of ["437/499", "403/500", "205/500", "140/500", "47/500"]) expect(html).toContain(count);
     expect(html.match(/<th scope="row">/g)).toHaveLength(5);
     expect(html).toContain("87.6%");
-    expect(html).toContain("provider errors excluded");
-    expect(html).toContain("new Algal suite, which has no model calibration yet");
-    expect(html).toContain('href="/benchmark/"');
-    expect(() => renderBenchmarkSnapshot(v2, { ...frontier, models: [] })).toThrow("missing frontier snapshot model");
+    expect(html).not.toContain("217/340");
+    expect(html).not.toContain("Final block");
+    const malicious = structuredClone(report);
+    malicious.models[0].model = '<script>alert("no")</script>';
+    expect(renderModelBenchmark(malicious)).not.toContain("<script>");
   });
 
   test("the harder practice prompt and answer match the immutable published attempt", () => {
@@ -92,7 +92,7 @@ describe("public site contract", () => {
       expect(html).toContain('<script src="/appearance.js"></script>');
       expect(html).not.toMatch(/<form\b|<iframe\b|\sonclick=/);
     }
-    expect(readFileSync(resolve(root, "llms.txt"), "utf8")).toContain(SCORER_VERSION);
+    expect(readFileSync(resolve(root, "llms.txt"), "utf8")).toContain("https://clankdar.com/benchmark/");
   });
 
   test("headers stay restrictive and legacy URLs redirect without losing paths", () => {
