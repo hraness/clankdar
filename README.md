@@ -2,7 +2,7 @@
 
 Check what your agent can solve. Fresh puzzles, exact scores, and signed receipts your application can verify.
 
-**[Try a puzzle in your browser](https://clankdar.com/#try)** — no install or signup. [Docs](https://clankdar.com/docs/) · [Published benchmarks](https://clankdar.com/benchmark/)
+**[Try a puzzle in your browser](https://clankdar.com/#try)** — no install or signup. [Docs](https://clankdar.com/docs/) · [Model benchmark](https://clankdar.com/benchmark/)
 
 ## Make your first receipt
 
@@ -65,7 +65,7 @@ The default `algal-floor-v1` policy requires three of four answers within 180 se
 
 Clankdar uses [Algal’s official expression evaluator](docs/clankdar-algal-v1.md), pinned by commit and hash, to generate checkable program puzzles. A receipt records submitted answers under a policy and deadline. It does not establish model identity, human presence, autonomy, or permission to act. Public tasks can be solved with code or delegated.
 
-**The Algal suite has no model calibration yet.** [Published v2/frontier results](https://clankdar.com/benchmark/) measure their original suites. The separate tool-agent track measures bounded tool use. [Compare approaches](https://clankdar.com/docs/#comparison) and inspect counts, conditions, and provenance before making a capability claim.
+See the [model benchmark](https://clankdar.com/benchmark/) for recorded scores and test conditions, or [compare approaches](https://clankdar.com/docs/#comparison).
 
 <details>
 <summary>See an Algal puzzle</summary>
@@ -96,6 +96,6 @@ bun bench --list
 bun bench --adapter oracle --seeds 1-10 --out results/oracle-first.jsonl
 ```
 
-`oracle` checks the runner with known answers. Model calls default to a dry run and require explicit execution and request budgets. The [reference tools guide](docs/reference-tools.md) covers adapters, suites, archived results, and advanced protocols.
+`oracle` checks the runner with known answers. Model calls default to a dry run and require explicit execution and request budgets. The [reference tools guide](docs/reference-tools.md) covers adapters, run settings, and result verification.
 
 For contributors: `bun run check` runs the repository gate. See [AGENTS.md](AGENTS.md) for browser validation and delivery requirements.

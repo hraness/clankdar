@@ -98,23 +98,16 @@ Work can be delegated or solved with code. An issuer can self-mint; choose
 which issuers you accept. Hosted policies use fresh public-generator instances,
 not issuer-private held-out pools.
 
-The current clankdar-algal-v1 suite uses Algal's official Rust expression
+Clankdar uses Algal's official Rust expression
 evaluator compiled to WASM, pinned by upstream commit and SHA-256. Its pure
 language has bounded fuel and no network, filesystem, or model access.
 Clankdar adds challenges, deadlines, exact scoring, and signed receipts.
-The Algal suite has no model calibration yet.
-
-Archived v2 calibration uses clankdar-suite-v2. Typed scorer: clankdar-score-v2.
-The v2 calibration has 2,500 attempts from five requested model aliases and one
-timeout; strict scores span 9.4%–87.6%. Frontier has 1,700 unaided attempts;
-the separate tool-agent track has 600 bounded episodes. Four signed reference
-sessions contain 32 replayed challenge checks. These archives do not measure
-the new Algal suite. Preserve task versions, sample sizes, and conditions.
+The model benchmark and its methodology are at https://clankdar.com/benchmark/.
+Those model measurements do not calibrate the default Algal checks.
 
 Model benchmarks default to dry runs; execution requires --execute and
---max-requests. Advanced source tools include badges, held-out pools, and
-transparency/witness prototypes; they are not all integrated into the check API.
-Existing actor/campaign routes and records remain an optional legacy reference.
+--max-requests. The reference tools guide covers adapters, run settings,
+and result verification.
 
 - Try locally: https://clankdar.com/docs/#quickstart
 - Integration: https://clankdar.com/docs/#integrate
@@ -127,9 +120,8 @@ Existing actor/campaign routes and records remain an optional legacy reference.
 - Algal contract: https://github.com/hraness/clankdar/blob/main/docs/clankdar-algal-v1.md
 - JavaScript helper source: https://github.com/hraness/clankdar/blob/main/cloudflare/examples/check.mjs
 - Offline verifier: https://github.com/hraness/clankdar/blob/main/cloudflare/examples/verify-receipt.mjs
-- Benchmarks and downloadable evidence: https://clankdar.com/benchmark/
+- Model benchmark and downloadable evidence: https://clankdar.com/benchmark/
 - Reference tools: https://github.com/hraness/clankdar/blob/main/docs/reference-tools.md
-- Legacy actor/campaign guide: https://github.com/hraness/clankdar/blob/main/docs/clankdar-hosted-v1.md
 - Source: https://github.com/hraness/clankdar
 
 The static site has no tracking, forms, or third-party requests.
