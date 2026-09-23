@@ -59,7 +59,7 @@ The helper issues prompts, calls your solver, submits answers, and downloads the
 | `POST /v1/checks/:id/responses` with the ticket and answers | Score and signed receipt |
 | `GET /v1/checks/:id` | Exact, immutable receipt JSON |
 
-The default `algal-floor-v1` policy requires three of four answers within 180 seconds. The first accepted submission fixes the result, including a failed one; any later retry with the same ticket returns that first result. Keep your token and each check’s ticket private. Any `context` you send and the submitted answers become public. Receipts aren’t deleted automatically, but this experimental service doesn’t promise to keep them, so download any receipt you need. See the [API contract and staging limits](docs/clankdar-checks-v1.md).
+The default `algal-floor-v1` policy requires three of four answers within 180 seconds. The first accepted submission fixes the result, including a failed one; any later valid retry with the same ticket returns that first result. Keep your token and each check’s ticket private. Any `context` you send and the submitted answers become public. Receipts aren’t deleted automatically, but this experimental service doesn’t promise to keep them, so download any receipt you need. See the [API contract and staging limits](docs/clankdar-checks-v1.md).
 
 ## What the evidence means
 

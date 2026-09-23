@@ -243,7 +243,7 @@ A prompt, skill, or template that makes a model write published text is public c
 
 ### Public copy
 
-- Clankdar's one-line description in the portfolio registry is “reproducible capability checks for agents”. The homepage title, README lead, and `llms.txt` lead use it or the homepage heading “Check what your agent can solve.”
+- Clankdar's one-line description in the portfolio registry is “reproducible capability checks for agents”. The homepage title uses “capability checks for agents”, and the README and `llms.txt` leads start from the homepage heading “Check what your agent can solve.”
 - “Less yap. More proof.” and “reproducible capability checks.” are the owner's authored registry headlines. Do not rewrite them; propose punctuation changes to the owner.
 - *Receipt* is Clankdar's public name for the signed result of a check. Use it on public pages, and say what it records the first time a page uses it. The other delivery words in `AGENTS.md` stay internal. Translate these when they would reach a reader:
   - *admission* becomes “signed result” (a technical reference may name `clankdar-gate-v1` admissions once, with that gloss);
