@@ -4,10 +4,10 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="theme-color" content="#f8f7f4">
-    <title>Docs — Clankdar</title>
-    <meta name="description" content="Run a complete local check without credentials, connect your solver, then integrate the hosted API and verify signed receipts.">
+    <title>Docs · Clankdar</title>
+    <meta name="description" content="Run a Clankdar check on your machine without credentials, then call the hosted API from your server and verify each signed receipt offline.">
     <meta property="og:title" content="Clankdar docs">
-    <meta property="og:description" content="From a local signed receipt to your own agent integration, with a small HTTP API and verifiable results.">
+    <meta property="og:description" content="Run a Clankdar check on your machine without credentials, then call the hosted API from your server and verify each signed receipt offline.">
     <meta property="og:image" content="https://clankdar.com/icon.png">
     <meta property="og:type" content="website">
     <meta property="og:url" content="https://clankdar.com/docs/">
@@ -50,22 +50,22 @@
           <p class="doc-lede">Run a check locally, connect your own solver, and keep the signed result.</p>
         </header>
         <nav class="contents" aria-label="Contents">
-          <a href="#quickstart">Try locally</a><a href="#integrate">Integrate</a><a href="#verification">Verify</a><a href="#api">API</a><a href="#evidence">Evidence</a><a href="#limits">Limits</a>
+          <a href="#quickstart">Try locally</a><a href="#integrate">Integrate</a><a href="#verification">Verify</a><a href="#recipes">Recipes</a><a href="#api">API</a><a href="#evidence">Evidence</a><a href="#limits">Limits</a>
         </nav>
 
         <section class="doc-section" id="quickstart" aria-labelledby="quickstart-title">
           <h2 id="quickstart-title">Run a complete check.</h2>
-          <p>Want to see a puzzle first? <a href="/#try">Try browser practice</a> without an install or signup. For a real signed receipt, install <a href="https://bun.sh/docs/installation">Bun 1.3.14</a> and run:</p>
+          <p>To see a puzzle before installing anything, <a href="/#try">try one in your browser</a>. To get a signed receipt, install <a href="https://bun.sh/docs/installation">Bun 1.3.14</a> and run:</p>
           <pre class="code"><code>git clone https://github.com/hraness/clankdar.git
 cd clankdar
 bun install --frozen-lockfile --ignore-scripts
 bun run try</code></pre>
           <p>The demo creates four fresh Algal puzzles, solves them with an included script, and signs and independently verifies the result. It saves <code>receipt.json</code> and <code>verification.json</code> in a new <code>results/try-…/</code> directory and prints the paths and verification command.</p>
-          <p>No credentials or model calls are involved. The local signing key is temporary, and the scripted score is a flow check, not a model score or hosted attestation.</p>
+          <p>It needs no credentials and calls no model. A script answers the puzzles and a temporary key signs the result, so the score only shows that the flow works. It is not a model score, and the receipt does not come from the hosted service.</p>
           <details class="report-details" id="own-solver"><summary>Use your own solver</summary>
             <p>Export <code>solve(challenges, signal)</code> from a JavaScript or TypeScript module, then run:</p>
             <pre class="code"><code>bun run try --solver ./my-solver.mjs</code></pre>
-            <p>Your function receives public challenge objects and an <code>AbortSignal</code>. Return an object mapping each actual <code>challengeId</code> to its answer string. For example, connect your existing agent in <code>my-solver.mjs</code>:</p>
+            <p>Your function receives public challenge objects and an <code>AbortSignal</code>. Return an object that maps each <code>challengeId</code> you received to its answer string. For example, connect your existing agent in <code>my-solver.mjs</code>:</p>
             <pre class="code"><code>import { askAgent } from "./your-agent.mjs";
 
 export async function solve(challenges, signal) {
@@ -75,14 +75,14 @@ export async function solve(challenges, signal) {
   }
   return answers;
 }</code></pre>
-            <p><code>askAgent</code> is your application function, not a Clankdar API. Return only each requested answer, forward the signal to provider requests, and set your own model and spending bounds. Loading your module runs its code and can incur your provider costs. The default policy requires three of four correct answers within 180 seconds.</p>
+            <p><code>askAgent</code> is your application function, not a Clankdar API. Return only each requested answer, forward the signal to provider requests, and set your own model and spending limits. Loading your module runs its code and can incur your provider costs. The default policy requires three of four correct answers within 180 seconds.</p>
           </details>
         </section>
 
         <section class="doc-section" id="integrate" aria-labelledby="integrate-title">
           <span id="hosted" class="anchor-alias" aria-hidden="true"></span>
           <h2 id="integrate-title">Use the API from your server.</h2>
-          <p>The hosted API is invitation-only experimental staging. <a href="https://github.com/hraness/clankdar/issues/new?title=Hosted%20API%20access">Request hosted access</a>, then store your token privately as <code>CLANKDAR_TOKEN</code>. No agent registration or campaign setup is required.</p>
+          <p>The hosted API is an experimental staging service, open by invitation. <a href="https://github.com/hraness/clankdar/issues/new?title=Hosted%20API%20access">Request hosted access</a>, then store your token privately as <code>CLANKDAR_TOKEN</code>.</p>
           <p>Use ordinary HTTP, or download the small JavaScript helper. It runs on Node 22+ or Bun and needs no repository checkout:</p>
           <pre class="code"><code>curl -fsS https://clankdar.com/clankdar-client.mjs -o clankdar-client.mjs</code></pre>
           <p>Connect the same <code>solve</code> function from the local example in your server code:</p>
@@ -97,8 +97,8 @@ const result = await check({
 });
 await writeFile("receipt.json", result.receiptText);
 console.log(result.receiptUrl);</code></pre>
-          <p>The helper issues a check, passes its prompts to your solver, submits the answers, and downloads the exact receipt bytes. Your solver chooses any provider and pays its own compute costs. Keep the token and live ticket off the browser; submitted answers and optional <code>context</code> become public evidence.</p>
-          <p><a href="#verification">Verify the receipt before relying on it</a>. The helper’s download and hash check do not establish a trusted issuer or a passing result.</p>
+          <p>The helper issues a check, passes its prompts to your solver, submits the answers, and downloads the signed receipt. You choose the provider your solver calls and pay its costs. Keep the token, and the one-time ticket each check returns, out of browser code. Submitted answers and any <code>context</code> you send become public.</p>
+          <p>The helper checks that the receipt it downloads matches the result returned when you submitted. That doesn’t tell you the issuer is one you trust, or that the check passed, so <a href="#verification">verify the receipt before relying on it</a>.</p>
           <details class="report-details"><summary>Recover a submission after a connection failure</summary><p>The first accepted submission fixes the result, even when it fails. Retry that submission to recover the result; creating another check consumes another quota slot. Use the helper’s optional <code>onIssued(record)</code> and <code>checkpoint(record)</code> callbacks to save the ticket privately before solving and the answers before submitting. The <a href="https://github.com/hraness/clankdar/blob/main/cloudflare/examples/check.mjs">helper source</a> and <a href="https://github.com/hraness/clankdar/blob/main/docs/clankdar-checks-v1.md">API contract</a> describe the records and retry behavior.</p></details>
         </section>
 
@@ -108,18 +108,19 @@ console.log(result.receiptUrl);</code></pre>
           <p>From the repository checkout, use the offline verifier with an issuer key from your trusted application configuration:</p>
           <pre class="code"><code>bun cloudflare/examples/verify-receipt.mjs receipt.json \
   --issuer "$EXPECTED_ISSUER_PUBLIC_KEY"</code></pre>
-          <p>The checker verifies the signature and replays the recorded answers. Your app must require its expected policy, suitable freshness, and a passing result. A valid receipt can record a failed check. For the local demo, use the exact verification command printed by <code>bun run try</code>.</p>
-          <details class="report-details"><summary>Signer pins, expected context, and replay details</summary><p>Never take the expected issuer key from the receipt you are checking. Optional <code>--context</code>, <code>--session</code>, and <code>--sha256</code> assert your integration’s expected context, check ID, and exact file hash. See the <a href="https://github.com/hraness/clankdar/blob/main/cloudflare/examples/verify-receipt.mjs">verifier source</a> for its output.</p><p>Present, well-formed answers produce challenge receipts with seeds that let a checker regenerate and rescore those puzzles. Missing or malformed answers count as nonpassing without a challenge receipt or seed reveal. An empty-answer control still independently verifies as zero of four passing.</p></details>
+          <p>The checker verifies the signature and replays the recorded answers. Your app still has to check three things itself: the receipt uses the policy you expect, it is recent enough for your purpose, and it passed. A valid receipt can record a failed check. For the local demo, use the exact verification command printed by <code>bun run try</code>.</p>
+          <details class="report-details"><summary>Issuer key, expected context, and replay details</summary><p>Never take the expected issuer key from the receipt you are checking. Optional <code>--context</code>, <code>--session</code>, and <code>--sha256</code> assert your integration’s expected context, check ID, and exact file hash. See the <a href="https://github.com/hraness/clankdar/blob/main/cloudflare/examples/verify-receipt.mjs">verifier source</a> for its output.</p><p>Present, well-formed answers produce challenge receipts with seeds that let a checker regenerate and rescore those puzzles. Missing or malformed answers count as nonpassing without a challenge receipt or seed reveal. A check submitted with every answer blank still verifies, as zero of four passing.</p></details>
         </section>
 
         <section class="doc-section" id="recipes" aria-labelledby="recipes-title">
           <h2 id="recipes-title">Three places to start.</h2>
           <dl class="evidence-list">
-            <div><dt>Agent preflight</dt><dd>Request a fresh result before offering a job. Use it alongside your existing authentication and admission policy.</dd></div>
+            <div><dt>Agent preflight</dt><dd>Request a fresh result before offering a job. Use it alongside your existing sign-in and your own rules for accepting agents.</dd></div>
             <div><dt>Release checks</dt><dd>Compare a changed model endpoint under the same declared conditions. Keep receipts with your release record.</dd></div>
             <div><dt>Listing evidence</dt><dd>Show a recent result with its policy, date, and sample size. Let readers inspect the receipt.</dd></div>
           </dl>
-          <details class="report-details" id="drift"><summary>Schedule checks in your own app</summary><p>Your cron job or agent loop can call the same API. You choose cadence, budgets, missed-run treatment, and alerting. One check makes no ongoing availability claim.</p><p id="landscape">Use the same check API for a single request or a schedule your application controls.</p></details>
+          <span id="landscape" class="anchor-alias" aria-hidden="true"></span>
+          <details class="report-details" id="drift"><summary>Schedule checks in your own app</summary><p>Your cron job or agent loop can call the same API. You choose cadence, budgets, how to treat missed runs, and alerting. A single check says nothing about whether an agent stays available.</p></details>
         </section>
 
         <section class="doc-section" id="api" aria-labelledby="api-title">
@@ -128,13 +129,13 @@ console.log(result.receiptUrl);</code></pre>
           <dl class="api-list">
             <div><dt><code>POST /v1/checks</code></dt><dd>Send <code>{}</code> with your bearer token. Receive fresh challenges, their deadline, a scoped ticket, and the future receipt URL.</dd></div>
             <div><dt><code>POST /v1/checks/:id/responses</code></dt><dd>Send <code>{"ticket":"…","responses":{"actualChallengeId":"answer"}}</code>. Receive the score, signed receipt, URL, and exact-byte hash. No issue token is needed.</dd></div>
-            <div><dt><code>GET /v1/checks/:id</code></dt><dd>Download the immutable canonical JSON receipt. This read needs no token.</dd></div>
+            <div><dt><code>GET /v1/checks/:id</code></dt><dd>Download the receipt as immutable JSON. This read needs no token.</dd></div>
           </dl>
           <p>The default <code>algal-floor-v1</code> policy asks four puzzles, requires three passes, and allows 180 seconds. Every answer is checked exactly; there is no judge model.</p>
           <details class="report-details"><summary>Policy selection and optional fields</summary><p>Set <code>policyId</code> when issuing if you need a particular policy. <a href="https://clankdar-hosted-staging.972abc65.workers.dev/v1/policies">List hosted policies</a> and check the prompts, required passes, and deadline before selecting one.</p><p>Optional <code>context</code> is a nonempty, non-sensitive string up to 256 characters. It becomes part of the public result.</p></details>
           <details class="report-details" id="subject"><summary>Bind a check to a subject key</summary><p>Include <code>subjectPublicKey</code> when issuing and the matching <code>subjectProof</code> when submitting. This binds a key to the check, not the identity of its solver. Most integrations can start without it. The <a href="https://github.com/hraness/clankdar/blob/main/docs/clankdar-checks-v1.md">API contract</a> defines the proof format.</p></details>
           <details class="report-details" id="curl"><summary>Exercise the HTTP flow with curl and jq</summary>
-            <p>This optional control uses a hosted invitation token and a quota slot. It submits blank answers for a deliberately failed result; it does not call a model.</p>
+            <p>This optional walkthrough uses your invitation token and one quota slot. These commands never call a model; they submit blank answers to show a failed check.</p>
 <h3>Create a check and inspect its prompts.</h3>
 <pre class="code"><code>export CLANKDAR_URL=&quot;https://clankdar-hosted-staging.972abc65.workers.dev&quot;
 # Set CLANKDAR_TOKEN privately to your invitation token.
@@ -144,11 +145,11 @@ curl -fsS &quot;$CLANKDAR_URL/v1/checks&quot; \
   -H &quot;Content-Type: application/json&quot; \
   --data &#x27;{&quot;policyId&quot;:&quot;algal-floor-v1&quot;}&#x27; &gt; check.json
 jq -r &#x27;.challenges[] | &quot;\(.challengeId)\n\(.prompt)\n&quot;&#x27; check.json</code></pre>
-          <p><code>check.json</code> contains the actual challenge IDs and prompts, <code>expiresAt</code>, and a private <code>ticket</code> for this check. The default <code>algal-floor-v1</code> policy gives you four Algal program puzzles, requires three passing answers, and allows 180 seconds. Creating the check does not call a model.</p>
+          <p><code>check.json</code> contains the challenge IDs and prompts, <code>expiresAt</code>, and a private <code>ticket</code> for this check. The default <code>algal-floor-v1</code> policy gives you four Algal program puzzles, requires three passing answers, and allows 180 seconds.</p>
           <h3>Build the answer map and submit once.</h3>
 <pre class="code"><code>jq &#x27;.challenges | map({key: .challengeId, value: &quot;&quot;}) | from_entries&#x27; \
   check.json &gt; answers.json</code></pre>
-          <p>This creates blank answers under the real challenge IDs. <b>Submit them unchanged for an intentionally failed-check demo.</b> To test capability, replace each blank value with your solver’s answer before <code>expiresAt</code>. No model is called by these commands. Failed answers consume the attempt just as passing answers do.</p>
+          <p>This creates blank answers under the real challenge IDs. <b>Submit them unchanged for an intentionally failed-check demo.</b> To test capability, replace each blank value with your solver’s answer before <code>expiresAt</code>. Failed answers consume the attempt just as passing answers do.</p>
 <pre class="code"><code>jq -n --slurpfile check check.json --slurpfile answers answers.json \
   &#x27;{ticket: $check[0].ticket, responses: $answers[0]}&#x27; &gt; submission.json
 curl -fsS &quot;$CLANKDAR_URL/v1/checks/$(jq -r &#x27;.id&#x27; check.json)/responses&quot; \
@@ -158,13 +159,13 @@ jq &#x27;{id, pass, passed, required, receiptUrl, sha256}&#x27; result.json</cod
           <p>The response includes <code>pass</code>, the passing and required counts, a content hash, a receipt URL, and the signed receipt itself. Submission uses the scoped ticket, so your main issue token stays with your server. Retrying submission recovers the first result; it cannot replace the answers. Retrying creation makes a new check and consumes another quota slot.</p>
           <h3>Download the exact JSON receipt.</h3>
 <pre class="code"><code>curl -fsS &quot;$CLANKDAR_URL$(jq -r &#x27;.receiptUrl&#x27; result.json)&quot; &gt; receipt.json</code></pre>
-          <p>The receipt is a raw <code>clankdar-gate-v1</code> signed admission with <code>protocol</code>, <code>payload</code>, and <code>signature</code>. It remains readable after the ticket expires. Keep a copy: this experimental service has no automatic deletion policy, but does not promise permanent hosting.</p>
+          <p>The receipt is signed JSON in the <code>clankdar-gate-v1</code> format, with <code>protocol</code>, <code>payload</code>, and <code>signature</code> fields. It stays readable after the ticket expires. Save the file; see <a href="#limits">Limits</a> for how long receipts are kept.</p>
           </details>
           <p><a href="https://github.com/hraness/clankdar/blob/main/docs/clankdar-checks-v1.md">Full API contract: fields, errors, limits, and retries</a></p>
         </section>
 
         <section class="doc-section" id="evidence" aria-labelledby="evidence-title">
-          <h2 id="evidence-title">Inspect the evidence and approach.</h2>
+          <h2 id="evidence-title">See the benchmark, puzzle design, and comparisons.</h2>
           <p id="scoring"><span id="scoring-title" class="anchor-alias" aria-hidden="true"></span><span id="profiles" class="anchor-alias" aria-hidden="true"></span><span id="agent" class="anchor-alias" aria-hidden="true"></span><span id="ladder" class="anchor-alias" aria-hidden="true"></span>See the <a href="/benchmark/">model benchmark</a> for recorded scores, test conditions, and downloadable evidence.</p>
           <details class="report-details" id="algal"><summary>How Clankdar uses Algal</summary>
             <h3 id="algal-title">A program with a checkable answer.</h3>
@@ -187,31 +188,31 @@ jq &#x27;{id, pass, passed, required, receiptUrl, sha256}&#x27; result.json</cod
               </tbody>
             </table>
           </div>
-          <p class="note">Other systems use puzzles too. Clankdar’s distinction is inspectable task evidence. Public tasks can be solved with code or delegated; results do not establish model identity or human presence.</p>
+          <p class="note">Other systems use puzzles too. What Clankdar adds is a signed record of the tasks and answers that you can replay yourself. A puzzle can be solved with code or handed to someone else; see <a href="#security">what a check establishes</a>.</p>
           </details>
         </section>
 
         <section class="doc-section" id="limits" aria-labelledby="limits-title">
           <h2 id="limits-title">Limits, storage, and boundaries.</h2>
-          <p>Shared staging allows <b>1,024 issued checks over its lifetime</b> and at most <b>60 issues per fixed UTC minute</b>. These are service-wide limits, not a quota for every token. Request bodies are bounded at 128 KiB and receipts at 256 KiB. Your application supplies any inference and pays its own provider costs.</p>
-          <p>Each completed result is one canonical signed JSON object in R2. A small D1 counter enforces issue quotas; the core does not need an agent registry or session database. Receipts have no automatic deletion policy, but experimental hosting is not a permanence guarantee. Download results you need to retain.</p>
+          <p>Shared staging allows <b>1,024 issued checks over its lifetime</b> and at most <b>60 issues per fixed UTC minute</b>. These are service-wide limits, not a quota for every token. Request bodies are limited to 128 KiB and receipts to 256 KiB. Your application supplies any inference and pays its own provider costs.</p>
+          <p>Each finished check is stored once, as a signed JSON file. Receipts aren’t deleted automatically, but this experimental service doesn’t promise to keep them. Download any receipt you need.</p>
           <h3 id="binding">Keep credentials separate from results.</h3>
           <p>Keep the issue token server-side. The ticket is a private credential scoped to one check until it is consumed or expires. A recorded failed check fixes the result too; retry only to recover that first result. A receipt stays readable after the ticket expires. Results are public, so do not put private information in <code>context</code> or responses.</p>
           <h3 id="security">What a check establishes.</h3>
-          <p>A receipt measures the submitted responses under a recorded policy and deadline. It does not prove model identity, autonomy, uniqueness, safety, ongoing availability, or permission to act. A challenge can be delegated or solved with code. The current hosted policies use fresh seeds from public generator streams; they are not issuer-private held-out pools. An issuer can self-mint results, so choose which issuers you accept.</p>
+          <p>A receipt measures the submitted responses under a recorded policy and deadline. It does not prove model identity, human presence, autonomy, uniqueness, safety, ongoing availability, or permission to act, and it does not record what the answers cost. A puzzle can be solved with code or handed to someone else. Hosted checks draw new random seeds from the public puzzle generators; none of the hosted policies uses a private puzzle set. Whoever runs an issuer can sign any result it wants, so decide which issuers you trust.</p>
         </section>
 
         <section class="doc-section" id="source" aria-labelledby="source-title">
           <h2 id="source-title">Source and deeper references.</h2>
           <ul class="doc-list">
-            <li><a href="https://github.com/hraness/clankdar/blob/main/docs/clankdar-checks-v1.md">Check API contract</a>: the current hosted primitive and storage behavior.</li>
-            <li><a href="https://github.com/hraness/clankdar/blob/main/docs/clankdar-attest-v1.md">Receipt protocol</a>: signed admissions and independent replay.</li>
+            <li><a href="https://github.com/hraness/clankdar/blob/main/docs/clankdar-checks-v1.md">Check API contract</a>: fields, errors, limits, and retries.</li>
+            <li><a href="https://github.com/hraness/clankdar/blob/main/docs/clankdar-attest-v1.md">Receipt protocol</a>: the signed receipt format and how to replay it.</li>
             <li id="modes"><a href="https://github.com/hraness/clankdar/blob/main/docs/reference-tools.md">Reference tools</a>: benchmark adapters, run settings, and result verification.</li>
           </ul>
         </section>
       </main>
       <div class="project-footer">
-        <p>Keep the conditions with the claim.</p>
+        <p>The benchmark compares five models on the same 500 puzzles.</p>
         <a href="/benchmark/">See the benchmark <span aria-hidden="true">→</span></a>
       </div>
       <!-- hraness-site-footer -->

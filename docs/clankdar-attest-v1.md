@@ -1,8 +1,17 @@
-# clankdar-attest-v1 + clankdar-gate-v1 + clankdar-tlog-v1 + clankdar-badge-v1
+# Clankdar receipt protocols
 
-Sealed-seed capability attestation, the admission-session profile built on
-it, and the issuance transparency log derived from the gate ledger. The
-TypeScript reference is `bench/attest.ts` + `bench/gate.ts` + `bench/tlog.ts`;
+This specification defines six wire formats:
+
+- `clankdar-attest-v1`: sealed-seed capability attestation (§1 to §7).
+- `clankdar-gate-v1`: admission sessions built on it (§8).
+- `clankdar-tlog-v1`: the issuance transparency log derived from the gate
+  ledger (§11), with consistency proofs in §19.
+- `clankdar-badge-v1`: portable subject badges (§14).
+- `clankdar-holdout-v1`: held-out puzzle pools (§15).
+- `clankdar-admission-archive-v1`: the envelope for published admission
+  archives (§20).
+
+The TypeScript reference is `bench/attest.ts` + `bench/gate.ts` + `bench/tlog.ts`;
 an independent Rust implementation lives in
 [hraness/valhalla](https://github.com/hraness/valhalla/tree/main/prototypes/clankdar-attest).
 
@@ -395,7 +404,7 @@ shorter head that is not an ancestor of a longer one) cannot be decided
 here: the registry stores heads, not entries, so no ancestry proof is
 possible without the underlying logs.
 
-The honest limit: the log binds *this* issuer's history under *its own*
+The limit: the log binds *this* issuer's history under *its own*
 key. It does not stop self-minting — a verifier can always answer its own
 oracle — and a single log cannot detect a fork alone: an issuer could
 show different parties different logs. Fork detection is now implemented
@@ -414,7 +423,7 @@ every session and decision the issuer stands behind is committed,
 ordered, and replayable, so an admission that does not trace to a logged
 session is issuer-claimed only.
 
-## 12. Threat model — say it plainly
+## 12. Threat model
 
 - **Delegation.** A receipt binds a response to a window; an optional
   `subjectProof` binds it to a respondent key — but the key holder can still
@@ -537,7 +546,7 @@ transcript (a different message with a different layout), and a receipt or
 admission signature can never be a badge signature — those verify under
 issuer keys, not the subject's. No `BADGE_DOMAIN` label is needed.
 
-### Honest limits
+### Limits
 
 A badge proves exactly that the subject key accumulated these signed
 admissions. It does **not** prove the key holder solved anything — §7
@@ -626,7 +635,7 @@ are validated against the pool when supplied and syntactically otherwise;
 the checker reports `unreplayed` — the count of receipts whose scores
 could not be independently regenerated.
 
-### Honest limits
+### Limits
 
 - A held-out cell is the *same puzzle family* under an unpublished
   parameterization. It defeats instance memorization, lookup, and
@@ -720,7 +729,7 @@ that bounds ledger spam. A client key authorizes ledger writes for this
 issuer; it is not identity, personhood, or authority. Without
 `--auth-keys` every route behaves exactly as before.
 
-### Honest boundary
+### Boundary
 
 Hosting publishes evidence; it does not create trust. A hosted issuer can
 still self-mint — the verifier can always answer its own oracle — and can
@@ -759,7 +768,7 @@ are walked to the first index whose `entryHash` differs:
   chains, or a strict prefix in either direction — ordinary growth or a
   stale copy, reported as `relation` with `ok:true`.
 
-### Honest limits
+### Limits
 
 The evidence is the two published logs themselves — a consistency proof
 (§19) can show a log extends a pinned head, but it cannot show two logs
@@ -836,7 +845,7 @@ and `tlog equivocate`, so CLI and HTTP observations converge on one evidence
 format. A provider key rotation starts a new independent history unless an
 external identity system links the keys; Clankdar does not infer that link.
 
-### Honest limits
+### Limits
 
 The service is an experimental intake, not gossip or a production witness.
 It does not discover providers, co-sign observations, anchor them

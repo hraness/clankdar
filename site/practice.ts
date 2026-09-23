@@ -19,7 +19,7 @@ if (root) {
     const pass = scoreAnswer(puzzle.answer, button.textContent!, "integer").pass;
     for (const choice of buttons) choice.disabled = true;
     button.dataset.selected = "true";
-    feedback.textContent = pass ? `Correct — ${puzzle.answer}. The response matches exactly.` : `The response doesn’t match. The answer is ${puzzle.answer}.`;
+    feedback.textContent = pass ? `Correct. The answer is ${puzzle.answer}.` : `The response doesn’t match. The answer is ${puzzle.answer}.`;
     next.hidden = false;
   });
   root.querySelector<HTMLButtonElement>("[data-practice-another]")!.addEventListener("click", () => {

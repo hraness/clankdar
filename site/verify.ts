@@ -124,7 +124,8 @@ try {
           const choices = page.locator("[data-practice-answer]");
           await expect(page.locator("[data-practice-next]")).toBeHidden();
           await choices.filter({ hasText: /^34$/ }).click();
-          await expect(page.locator("[data-practice-feedback]")).toContainText("Correct — 34");
+          await expect(page.locator("[data-practice-feedback]")).toContainText("Correct");
+          await expect(page.locator("[data-practice-feedback]")).toContainText("34");
           for (const choice of await choices.all()) await expect(choice).toBeDisabled();
           await expect(page.locator("[data-practice-next] a")).toHaveAttribute("href", "/docs/#quickstart");
           await page.locator("[data-practice-another]").click();

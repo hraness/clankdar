@@ -41,7 +41,7 @@ async function main() {
   try { ({ values } = parseArgs({ args: process.argv.slice(2), options: { solver: { type: "string" }, help: { type: "boolean", short: "h" } }, strict: true, allowPositionals: false })); }
   catch { throw new Error("unknown or incomplete option; use bun run try --help"); }
   if (values.help) {
-    console.log("Usage: bun run try [--solver ./my-solver.ts]\n\nCreates four fresh Algal puzzles, signs a local receipt, and independently verifies it.\nDefault: scripted public-prompt solver; no credentials, provider, or network calls.\nCustom module: export async function solve(challenges, signal) returning {[challengeId]: answerString}.\nCustom code runs with your local permissions; forward signal to async solver work.\nThe check expires after 180 seconds. Only public receipt and verification metadata are saved.");
+    console.log("Usage: bun run try [--solver ./my-solver.mjs]\n\nCreates four fresh Algal puzzles, signs a local receipt, and independently verifies it.\nDefault: scripted public-prompt solver; no credentials, provider, or network calls.\nCustom module: export async function solve(challenges, signal) returning {[challengeId]: answerString}.\nCustom code runs with your local permissions; forward signal to async solver work.\nThe check expires after 180 seconds. Only public receipt and verification metadata are saved.");
     return;
   }
   let solve: LocalSolver | undefined;
@@ -59,10 +59,10 @@ async function main() {
   try { saved = saveLocalCheck(result); }
   catch { throw new Error("could not save verified evidence; check write access to results/"); }
   console.log(`${result.verified.pass ? "PASS" : "FAIL"} · ${result.verified.passed}/4 passed · 3 required · signature and scores independently verified`);
-  console.log(`Receipt: ${saved.receiptPath}\nVerification pins: ${saved.verificationPath}\nIssuer: ${result.issuerPublicKey}\nSHA-256: ${result.sha256}`);
+  console.log(`Receipt: ${saved.receiptPath}\nVerification record: ${saved.verificationPath}\nIssuer: ${result.issuerPublicKey}\nSHA-256: ${result.sha256}`);
   console.log("Local demonstration with an ephemeral issuer. This is not a model score or hosted attestation.");
   console.log(`\nVerify again:\nbun cloudflare/examples/verify-receipt.mjs ${shellQuote(saved.receiptPath)} --issuer ${result.issuerPublicKey} --session ${result.id} --context ${result.context} --sha256 ${result.sha256}`);
-  if (!solve) console.log("\nTry your own solver:\nbun run try --solver ./my-solver.ts");
+  if (!solve) console.log("\nTry your own solver:\nbun run try --solver ./my-solver.mjs");
   if (!result.verified.pass) process.exitCode = 1;
 }
 
