@@ -36,7 +36,8 @@ selects an OpenAI-compatible endpoint; the `OPENAI_API_KEY` and
 are supported for local models; remote endpoints must use HTTPS. Environment
 files, credentials, and private run directories stay gitignored.
 
-Local model CLIs run through `cli:<program>:<model>` — currently `cli:claude`.
+Local model CLIs run through `cli:<program>:<model>`; `claude` is the only
+supported program.
 The adapter spawns one pinned program per instance with every built-in and
 MCP tool disabled (`claude -p --tools "" --strict-mcp-config`), so the model
 gets a single unaided text turn; provider stderr never enters recorded
@@ -78,7 +79,7 @@ files are exclusive-create: existing evidence is never overwritten. Partial
 runs are retained, but comparison reports reject incomplete runs, duplicate
 instances, different coverage, and conflicting prompt/answer pairs.
 
-### Pilot 0 is evidence, not certification
+### Pilot 0: exploratory legacy data
 
 The public archive under `site/benchmark/pilot-v0/` contains 3,000 legacy
 attempt records across twelve requested model aliases, seeds 1–10. One attempt
@@ -128,10 +129,9 @@ bun bench/gate.ts serve --key verifier.json --policy policy.json --dir gate-stat
 `GET /receipts/:challengeId`, and `GET /policy`; sessions and decisions persist
 in an append-only ledger that consumes each session exactly once across
 restarts. Optional rate limits (`--open-total`, `--open-per-subject`,
-`--issue-window MAX:SECONDS`) bound live sessions and mint pacing — counted
-from the ledger, so they hold across restarts; subject claims are
-unauthenticated, so per-subject limits pace fairness rather than exclude
-abuse. `gate probe` points the same machinery at your own model endpoint
+`--issue-window MAX:SECONDS`) cap live sessions and pace issuance. They are
+counted from the ledger, so they hold across restarts. Subject claims are
+unauthenticated, so per-subject limits keep use fair but do not stop abuse. `gate probe` points the same machinery at your own model endpoint
 and keeps the signed admissions as replayable score-band evidence. The wire
 format, checking procedure, and threat model are specified in
 [docs/clankdar-attest-v1.md](clankdar-attest-v1.md). The independent
@@ -145,42 +145,43 @@ preserves held-out `unreplayed` counts until the matching pool is disclosed.
 `tlog witness --heads heads.jsonl` records
 each checked log's signed head in a local append-only registry, and
 `tlog equivocate --heads heads.jsonl` proves a fork from two heads under one
-issuer key — same count with different tips, or one tip at two counts — and
+issuer key (the same count with different tips, or one tip at two counts) and
 warns on counts that regress in issue order. `tlog compare A.json B.json`
-decides the case heads cannot: two published logs under one key are walked
-to the first divergent index — a proven fork — or reported as a consistent
-prefix. `tlog prove LOG --from-count N` emits a
+decides the case heads cannot: it walks two published logs under one key to
+the first divergent index, which proves a fork, or reports that one is a
+consistent prefix of the other. `tlog prove LOG --from-count N` emits a
 `clankdar-tlog-consistency-v1` proof that a larger log extends a previously
 pinned `count:N` head, and `tlog check-proof PROOF --old-head head.json`
-(or `--old-tip HEX --old-count N`) replays the suffix against the pin —
-O(new−old) entries, linear in growth rather than Merkle-logarithmic, since
-the log is a linear hash chain by design.
+(or `--old-tip HEX --old-count N`) replays the suffix against the pin. The
+proof holds O(new−old) entries, so it grows linearly rather than
+logarithmically as a Merkle proof would, because the log is a linear hash
+chain by design.
 `tlog witness-serve --heads heads.jsonl` is a provider-neutral common
 intake: any issuer's self-describing signed head can be submitted, heads are
 indexed by their embedded `keyId`, bounded pages can filter by key, and
 conflict reports stay isolated per provider. It needs no provider registry.
 `--providers providers.json --poll-ms N` additionally polls each configured
-provider's `GET /tlog/head` (default 60s, the file re-read every cycle) —
-a provider URL is configuration, not trust; only the embedded signature
-decides what is recorded. Provider discovery, gossip, witnessed
+provider's `GET /tlog/head` (default 60s; the file is re-read every cycle).
+A provider URL confers no trust; only the embedded signature decides what is
+recorded. Provider discovery, gossip, witnessed
 co-signing, and external anchoring remain unimplemented.
 
 `bun drift` turns probes into monitoring: `drift run` appends each signed
 admission to a series file, `drift report` aggregates per-cell pass bands,
 `drift baseline` pins a reference, and `drift compare` exits nonzero when a
-cell or the overall band drops past `--threshold` — a CI gate for silent model
+cell or the overall band drops past `--threshold`, so CI can catch silent model
 substitutions and regressions at a probed endpoint.
 
 `clankdar-badge-v1` is the portable-credential layer on top: a respondent
 binds each gate session to its own Ed25519 key, then packs subject-bound
-admissions — from any issuer — into a badge it signs itself. `bun badge pack`
+admissions from any issuer into a badge it signs itself. `bun badge pack`
 and `bun badge check` emit and replay the dossier; optional `tlog` inclusion
 proofs upgrade issuer-claimed sessions to logged ones. Disclosed
 `--pools p1.json,p2.json` may come from many issuers and are selected by
 `poolKey`; undisclosed held-out scores remain visible in `unreplayed` rather
 than silently appearing fully replayed. A badge proves the subject key
-accumulated these admissions — never that the key holder solved them, and it
-is not an identity.
+accumulated these admissions. It never proves that the key holder solved
+them, and it is not an identity.
 
 `bun hosted` is the deployable issuer surface: one service that composes the
 gate and the transparency log, so a deployment third parties can hold
@@ -189,18 +190,18 @@ log rebuilt fresh from the ledger on each request), `GET /tlog/head` (the
 signed head an external witness pins), and `GET /tlog/proof/:sessionId`
 (inclusion evidence). `bun hosted head` prints that head for pinning;
 holdout pools and the rate-limit flags pass through. The state dir stays
-`0700` — published entries carry record digests, never seeds or responses.
+`0700`; published entries carry record digests, never seeds or responses.
 `bun hosted serve --auth-keys state/keys.jsonl` optionally requires
 `Authorization: Bearer clk_…` on `POST /sessions`; `bun hosted keys
 issue|list|revoke` manages the append-only key file (tokens print once and
 store as SHA-256; revocations are appended records), and per-key mint
 quotas compose the gate's ledger-derived limits. Client keys authorize
-ledger writes — they are not identity — and the submit path stays
-unauthenticated: the live session id is the capability. This publishes
-evidence, not trust: the issuer can still self-mint. A checker can submit
-heads to the provider-neutral witness intake — or configure the witness to
-poll this endpoint — but a private fork stays invisible until both views
-reach one witness.
+ledger writes but are not an identity, and the submit path stays
+unauthenticated: the live session ID is the capability. Publishing evidence
+does not make the issuer trustworthy, because the issuer can still sign any
+result it wants. A checker can submit heads to the provider-neutral witness
+intake, or configure the witness to poll this endpoint, but a private fork
+stays invisible until both views reach one witness.
 
 `cloudflare/` implements the atomic check API: issue one bounded challenge
 session, consume one response set, and return a canonical signed admission
@@ -218,11 +219,12 @@ capabilities; their presence does not imply integration into the atomic API.
 pool of published generator cells re-parameterized by secret labels, and gate
 policies can name them as `h:family:tN`. The instance stream stays
 unpublished, so solvers cannot pre-compute or look it up; checkers holding
-the pool replay fully, everyone else gets `ok` with `replayable:false` —
-signature and commitment verified, score issuer-claimed. Publishing the pool
+the pool replay fully; everyone else gets `ok` with `replayable:false`,
+meaning the signature and commitment verified but the score rests on the
+issuer's claim. Publishing the pool
 later upgrades every historical held-out receipt to verifiable. A held-out
-cell is the same puzzle family under a secret parameterization — a general
-family solver still solves it.
+cell is the same puzzle family under a secret parameterization, so a general
+solver for that family still solves it.
 
 An admission attests that one session produced K passing responses under one
 policy in one window. It is not identity, liveness, or authority: challenges
@@ -268,8 +270,9 @@ when using Playwright's Chromium instead of installed Chrome. Screenshots are
 retained in a new ignored `results/visual-*` directory. The site uses the pinned
 Hraness design kit's Paper palette, Lantern material, Nebula Sans and Instrument
 Serif, plus the canonical shared footer with no newsletter or support profile.
-Only the shared appearance controller runs in the browser. Challenges, tables,
-and downloads remain usable without JavaScript.
+Two small same-origin scripts run in the browser: the shared appearance
+controller and, on the homepage, the practice puzzle. Challenges, tables, and
+downloads remain usable without JavaScript.
 
 `bun run check` runs strict TypeScript checking, tests, archived-report replay,
 and the static build. `bun run check:browser` verifies responsive layout,

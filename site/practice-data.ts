@@ -36,6 +36,6 @@ export function renderPractice(): string {
 <p class="practice-feedback" data-practice-feedback role="status" aria-live="polite" aria-atomic="true"></p>
 <div class="practice-next" data-practice-next hidden><a class="primary-link" href="/docs/#quickstart">Run a complete check <span aria-hidden="true">→</span></a><button type="button" data-practice-another>Another puzzle</button></div>
 <details class="answer-reveal"><summary>See the Algal code and solution</summary><pre class="code algal-code"><code>${escapeHtml(ALGAL_EXAMPLE_CODE)}</code></pre><code data-practice-solution>${escapeHtml(first.answer)}</code><p data-practice-explanation>${escapeHtml(first.explanation)}</p></details>
-<p class="sample-note">Public practice, scored in this page. Answers are computed with Algal during the build. No receipt is issued.</p>
+<p class="sample-note">Public practice, scored in this page. No receipt is issued. The puzzle is a small program in Algal’s expression language, and each answer comes from running it when the site is built.</p>
 </div>`;
 }

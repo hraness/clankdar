@@ -1,7 +1,7 @@
 # Clankdar
 
-Check what your agent can solve. Fresh puzzles, exact scores, and signed
-receipts that applications can verify.
+Clankdar checks what your agent can solve. It issues fresh puzzles, scores
+each answer exactly, and signs a receipt your application can verify.
 
 ## Start here
 
@@ -15,31 +15,33 @@ cd clankdar
 bun install --frozen-lockfile --ignore-scripts
 bun run try
 
-The demo creates four fresh Algal challenges, uses a scripted public-prompt
-solver, and signs and independently verifies the result. It saves receipt.json
-and verification.json in results/try-<unique>/. It uses a temporary local
-signing key. No credentials or model calls are involved. This is a flow
-control, not a model score or hosted attestation.
+The demo creates four fresh Algal challenges, answers them with a scripted
+solver that reads only the public prompts, then signs and verifies the result.
+It saves receipt.json and verification.json in results/try-<unique>/. It needs
+no credentials and calls no model. A temporary local key signs the result, so
+the score only shows that the flow works. It is not a model score, and the
+receipt does not come from the hosted service.
 
 Opt in to your own solver with bun run try --solver ./my-solver.mjs.
-The module exports solve(challenges, signal), returning an object mapping
-actual challenge IDs to answer strings. It receives public challenges only.
-Its code, provider calls, and spending are controlled by the caller.
+The module exports solve(challenges, signal), returning an object that maps
+each challenge ID it received to an answer string. It receives public
+challenges only. You control its code, provider calls, and spending.
 
 ## Integrate
 
-The hosted API is invitation-only experimental staging at
+The hosted API is an experimental staging service, open by invitation, at
 https://clankdar-hosted-staging.972abc65.workers.dev.
 Request access: https://github.com/hraness/clankdar/issues/new?title=Hosted%20API%20access
 
 Use HTTP directly or download https://clankdar.com/clankdar-client.mjs.
 The helper runs server-side on Node 22+ or Bun. It needs no repository
 checkout. Call check({baseUrl,token,solve}) with your own solve(challenges,
-signal) callback. It issues, submits, and downloads the exact receipt;
-it does not select a model or establish trusted-issuer/application acceptance.
-Forward the AbortSignal to provider requests. Optional awaited onIssued(record)
-and checkpoint(record) callbacks retain private state before solving and
-submission for recovery. Never expose tokens or tickets in browser code.
+signal) callback. It issues the check, submits the answers, and downloads the
+signed receipt. It does not select a model, and it does not decide whether you
+trust the issuer or accept the result. Forward the AbortSignal to provider
+requests. Optional awaited onIssued(record) and checkpoint(record) callbacks
+save private state before solving and before submission, so an interrupted
+check can be recovered. Never expose tokens or tickets in browser code.
 
 - POST /v1/checks: Authorization: Bearer <invitation-token>; JSON {} selects
   algal-floor-v1. Optional fields: policyId, context (a nonempty, non-sensitive
@@ -49,20 +51,20 @@ submission for recovery. Never expose tokens or tickets in browser code.
   actual challenge IDs to answer strings. The scoped ticket authorizes it.
   Optional subjectProof is required when subjectPublicKey was requested.
   Returns ok, id, pass, passed, required, receiptUrl, sha256, receipt.
-- GET /v1/checks/:id: unauthenticated read of the raw immutable canonical
-  clankdar-gate-v1 admission, containing protocol, payload, signature.
-  Submission's sha256 hashes those exact bytes.
+- GET /v1/checks/:id: unauthenticated read of the immutable signed receipt,
+  JSON in the clankdar-gate-v1 format with protocol, payload, and signature
+  fields. Submission's sha256 hashes those exact bytes.
 
-All current policies ask four puzzles and require three passes.
-algal-floor-v1 is the default: real algal.expr.v1 programs, 180 seconds.
-v2-floor-v1 retains 120 seconds; frontier-floor-v1 retains 180 seconds.
+All three hosted policies ask four puzzles and require three passes.
+algal-floor-v1 is the default: algal.expr.v1 programs, 180 seconds.
+v2-floor-v1 allows 120 seconds; frontier-floor-v1 allows 180 seconds.
 GET /v1/policies lists policies; GET /v1/policies/:id returns one.
 Creating a check does not call a model. Wrong or empty answers consume the
 attempt. The first accepted submission fixes the result; valid retries recover
 it. Retrying creation consumes another quota slot. An unanswered check
 expires without storing a result; a 404 is not evidence of a scheduled miss.
 
-## Verify and retain
+## Verify and keep receipts
 
 The optional source verifier requires the repository and Bun 1.3.14:
 
@@ -76,34 +78,37 @@ answers are nonpassing without a challenge receipt or seed reveal. A valid
 receipt can record a failed result. Applications enforce policy, freshness,
 and a passing verdict when required.
 
-Context and submitted responses become public evidence. Tickets stay private
-until consumed or expired. Receipts remain readable after ticket expiry.
-Download your own copy: staging has no automatic deletion but no perpetual
-retention guarantee. Each completed check is one canonical JSON object in R2;
-a small D1 counter bounds issuance, with no required actor/session database.
+Context and submitted responses become public. Tickets stay private until
+consumed or expired. Receipts stay readable after the ticket expires. Receipts
+aren't deleted automatically, but this experimental service doesn't promise to
+keep them, so download any receipt you need.
 
 Shared staging limits: 1,024 issued checks over its lifetime and 60 issues per
 fixed UTC minute, service-wide rather than per token. Request bodies: 128 KiB.
-Receipts: 256 KiB. Integrators own solver costs, budgets, scheduling, and alerts.
+Receipts: 256 KiB. Integrators pay for their solver and handle budgets,
+scheduling, and alerts.
 
 ## Evidence and boundaries
 
 Use checks for agent preflight, release comparisons, listing evidence, or
-monitoring scheduled by your application. No actor registration or campaign
-is required. An individual check makes no ongoing availability claim.
+monitoring scheduled by your application. A single check says nothing about
+whether an agent stays available.
 
-A receipt records responses under stated conditions. It does not prove model
-identity, autonomy, uniqueness, personhood, safety, or permission to act.
-Work can be delegated or solved with code. An issuer can self-mint; choose
-which issuers you accept. Hosted policies use fresh public-generator instances,
-not issuer-private held-out pools.
+A receipt records responses under stated conditions. It does not show which
+model answered, and a puzzle can be solved with code or handed to someone
+else. Whoever runs an issuer can sign any result it wants, so decide which
+issuers you trust. Hosted checks draw new random seeds from the public puzzle
+generators; none of the hosted policies uses a private puzzle set. Everything
+a check does not prove: https://clankdar.com/docs/#security
 
-Clankdar uses Algal's official Rust expression
-evaluator compiled to WASM, pinned by upstream commit and SHA-256. Its pure
-language has bounded fuel and no network, filesystem, or model access.
-Clankdar adds challenges, deadlines, exact scoring, and signed receipts.
-The model benchmark and its methodology are at https://clankdar.com/benchmark/.
-Those model measurements do not calibrate the default Algal checks.
+Default puzzles are small programs in Algal's expression language. Clankdar
+generates fresh inputs for each puzzle, and Algal's official Rust evaluator,
+compiled to WASM and pinned by upstream commit and SHA-256, computes the
+reference answer. Programs run with a fixed work budget and no network,
+filesystem, or model access. Clankdar adds deadlines, exact scoring, and
+signed receipts. The model benchmark and its methodology are at
+https://clankdar.com/benchmark/. Its scores come from an earlier puzzle set,
+clankdar-suite-v2; no model scores for the Algal puzzles have been published.
 
 Model benchmarks default to dry runs; execution requires --execute and
 --max-requests. The reference tools guide covers adapters, run settings,

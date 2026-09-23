@@ -1,14 +1,15 @@
 # Clankdar’s Algal suite
 
-Clankdar uses Algal’s bounded expression language to make executable puzzles.
-Algal is the general language/runtime; Clankdar supplies fresh instances,
-deadlines, typed answer scoring, and portable signed evidence.
+Clankdar’s default puzzles are small programs in Algal’s expression language.
+Clankdar generates fresh inputs for each puzzle, and Algal’s official
+evaluator computes the reference answer. Clankdar adds deadlines, exact answer
+scoring, and signed receipts.
 
 The suite is **`clankdar-algal-v1`**, selected locally by `--suite algal`.
 The hosted default is **`algal-floor-v1`**: four challenges drawn from
 `algal:t1`, `algal:t2`, and `algal:t3`, three passes required, 180 seconds.
-These are task settings, not calibrated model classes. There are no published
-model measurements for this suite yet.
+These are task settings, not calibrated model classes. No model scores have
+been published for this suite.
 
 ## One shared evaluator
 
@@ -61,7 +62,7 @@ An expression is JSON data: the first item of each array names an operation.
 for their bodies; they are bounded operations over finite lists. Literal
 arrays inside expressions use `list` or `quote`. Inputs are ordinary JSON.
 
-## Progressively composed tasks
+## The three puzzle types
 
 | Cell | Structure |
 | --- | --- |
@@ -80,9 +81,9 @@ Run a deterministic runner control:
 bun bench --suite algal --adapter oracle --seeds 1-10 --out results/algal-control.jsonl
 ```
 
-The oracle uses known answers and checks infrastructure; it is not model
-performance. Real model adapters retain their dry-run default and explicit
-request budget. Model scores need a separate recorded calibration under fixed
+The oracle uses known answers to test the runner; its score says nothing about
+a model. Model adapters default to a dry run; a real run needs `--execute`
+and `--max-requests`. Model scores need a separate recorded calibration under fixed
 conditions; see the [benchmark guide](reference-tools.md).
 
 ## Bounds and evidence
@@ -106,12 +107,13 @@ The [check API contract](clankdar-checks-v1.md) defines retries and storage.
 The v2, frontier, agent, and legacy generators remain frozen. Their published
 archives, scores, explicit policies, tickets, and receipts keep their original
 meaning. Selecting `algal` never relabels an old benchmark as an Algal run.
-Current TypeScript/Bun admission checking supports the new suite; older
-checkers that do not recognize it must reject it rather than accept an
-unreplayed result. This change makes no claim that the separate Valhalla Rust
-admission-checker prototype supports the new suite.
+The TypeScript checker in this repository supports `clankdar-algal-v1`. A
+checker that does not recognize the suite must reject its receipts rather than
+accept an unreplayed result. Support in the separate Valhalla Rust
+admission-checker prototype is not claimed.
 
 A program can be solved with code, reasoning, or delegated help. The receipt
-records task performance under an issuer’s conditions; it does not prove
-which model answered, that a human was absent, or that the respondent should
-receive authority. Keep application acceptance policy outside the primitive.
+records task performance under an issuer’s conditions; it does not show which
+model answered. The docs list
+[everything a check does not prove](https://clankdar.com/docs/#security).
+Your application decides whether to accept a result.
