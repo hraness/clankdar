@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { renderActorProfile, renderCampaignProfile } from "./src/public.ts";
+import { plural, renderActorProfile, renderCampaignProfile } from "./src/public.ts";
 
 describe("public evidence pages", () => {
   test("keeps absent evidence absent and uses same-origin assets with a restrictive CSP", async () => {
@@ -29,8 +29,8 @@ describe("public evidence pages", () => {
     expect(html).not.toContain("<img src=x");
     expect(html).not.toContain('href="javascript:');
     expect(html).toContain("1 responded · 1 missed");
-    expect(html).toContain("1 checks remain");
-    expect(html).toContain("0 of 1 responses passed");
+    expect(html).toContain("1 check remains");
+    expect(html).toContain("0 of 1 response passed");
     expect(html).toContain("&lt;svg");
   });
 
@@ -41,5 +41,28 @@ describe("public evidence pages", () => {
     expect(html).toContain("Did not pass");
     expect(html).toContain("Missed");
     expect(html).toContain("A completed campaign.");
+  });
+
+  test("interpolated counts agree with their nouns for zero, one, and several", async () => {
+    expect([0, 1, 2].map((n) => plural(n, "check", "checks"))).toEqual(["0 checks", "1 check", "2 checks"]);
+    const campaign = async (scheduled: number, completed: number, pendingEvidence: number) => renderCampaignProfile({
+      campaignId: "cmp_test", policyId: "algal-floor-v1", epochs: scheduled, cadenceSeconds: 3600, windowSeconds: 120,
+      evidence: { scheduled, completed, missed: 0, admitted: 0, challengesPassed: completed, pendingEvidence },
+    }, "clank1_test").text();
+    for (const [scheduled, completed, pending, remains, passed, recorded] of [
+      [1, 1, 0, "0 checks remain or have", "0 of 1 response passed", "1 individual puzzle passed"],
+      [2, 1, 1, "1 check remains or has", "0 of 1 response passed", "1 recorded result is waiting"],
+      [5, 2, 3, "3 checks remain or have", "0 of 2 responses passed", "3 recorded results are waiting"],
+    ] as const) {
+      const html = await campaign(scheduled, completed, pending);
+      expect(html).toContain(remains);
+      expect(html).toContain(passed);
+      expect(html).toContain(recorded);
+      expect(html).not.toMatch(/\b1 (checks|responses|results|puzzles|heartbeats|campaigns)\b/);
+    }
+    const actor = async (campaigns: number, heartbeats: number) => (await renderActorProfile({ address: "clank1_test", publicKey: "public", evidence: { campaigns, heartbeats }, claims: {} })).text();
+    expect(await actor(0, 0)).toContain("0 committed campaigns. 0 heartbeats.");
+    expect(await actor(1, 1)).toContain("1 committed campaign. 1 heartbeat.");
+    expect(await actor(2, 3)).toContain("2 committed campaigns. 3 heartbeats.");
   });
 });

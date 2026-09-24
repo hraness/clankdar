@@ -5,10 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="theme-color" media="(prefers-color-scheme: light)" content="#e1e2e7">
     <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#1a1b26">
-    <title>Clankdar — capability checks for agents</title>
-    <meta name="description" content="Try a puzzle, run a complete local check, and add verifiable capability receipts to your agent workflow.">
-    <meta property="og:title" content="Clankdar">
-    <meta property="og:description" content="Check what your agent can solve. Try a puzzle without signing up, then keep signed evidence your application can verify.">
+    <title>Clankdar · capability checks for agents</title>
+    <meta name="description" content="Clankdar gives your agent fresh puzzles, scores each answer exactly, and signs a receipt your app can verify. Try a puzzle in your browser without signing up.">
+    <meta property="og:title" content="Clankdar: check what your agent can solve">
+    <meta property="og:description" content="Clankdar gives your agent fresh puzzles, scores each answer exactly, and signs a receipt your app can verify. Try a puzzle in your browser without signing up.">
     <meta property="og:image" content="https://clankdar.com/icon.png">
     <meta property="og:type" content="website">
     <meta property="og:url" content="https://clankdar.com/">
@@ -54,7 +54,7 @@
             <p class="description">Give your agent a fresh puzzle. Get an exact score and a signed receipt your app can verify.</p>
             <div class="actions">
               <a class="primary-link" href="#try">Try a puzzle <span aria-hidden="true">→</span></a>
-              <a href="/docs/#quickstart">Try it with code</a>
+              <a href="/docs/#quickstart">Run a check locally</a>
             </div>
           </div>
           <aside class="room hraness-material-terminal" id="try" aria-label="Try an Algal puzzle">{{PRACTICE}}</aside>
@@ -65,8 +65,8 @@
           <h2 class="section-title" id="local-title">Make your first signed receipt.</h2>
           <div class="duet">
             <div class="approach-copy">
-              <p>Run a complete check locally: four fresh puzzles, submitted answers, and a signed JSON result. The demo verifies the result and saves your receipt.</p>
-              <p>Requires Bun 1.3.14. No API token or model account needed. The included scripted solver demonstrates the flow; its score is not a model benchmark.</p>
+              <p>The demo runs a whole check on your machine. It creates four fresh puzzles, answers them with an included script, signs the result, verifies it, and saves the receipt as JSON.</p>
+              <p>You need Bun 1.3.14, but no API token or model account. Because a script supplies the answers, the score only shows that the flow works; it is not a model benchmark.</p>
               <p><a href="/docs/#quickstart">Connect your own solver <span aria-hidden="true">→</span></a></p>
             </div>
             <pre class="code"><code>git clone https://github.com/hraness/clankdar.git
@@ -77,8 +77,8 @@ bun run try</code></pre>
         </section>
 
         <section class="section integrations" id="integrate" aria-labelledby="integrations-title">
-          <h2 class="section-title" id="integrations-title">Add a check where it helps.</h2>
-          <p class="context">Your app supplies the solver. Clankdar supplies fresh prompts, exact scoring, and a portable receipt. Call the API from your existing workflow.</p>
+          <h2 class="section-title" id="integrations-title">Use checks in your app.</h2>
+          <p class="context">Your app connects the agent or model that answers. Clankdar issues fresh puzzles, scores the answers exactly, and returns a signed receipt you can store and share.</p>
           <dl class="evidence-list">
             <div><dt>Before a job</dt><dd>Ask an agent for a fresh result before offering work.</dd></div>
             <div><dt>Before a release</dt><dd>Compare a changed endpoint with your recorded baseline.</dd></div>
@@ -88,19 +88,19 @@ bun run try</code></pre>
             <a class="primary-link" href="/docs/#integrate">Use the API <span aria-hidden="true">→</span></a>
             <a href="https://github.com/hraness/clankdar/issues/new?title=Hosted%20API%20access">Request hosted access</a>
           </div>
-          <p class="release-note">Hosted API: invitation-only experimental staging. Keep the token on your server.</p>
+          <p class="release-note">The hosted API is an experimental staging service, open by invitation. Keep your token on your server.</p>
         </section>
 
         <section class="section" id="results" aria-labelledby="results-title">
           <span id="comparison" class="anchor-alias" aria-hidden="true"></span>
-          <h2 class="section-title" id="results-title">Keep the evidence with the claim.</h2>
-          <p class="context">A receipt records answers under a policy and deadline. It can be replayed and rescored without trusting a screenshot. It does not prove model identity or permission to act.</p>
+          <h2 class="section-title" id="results-title">Check the receipt yourself.</h2>
+          <p class="context">A receipt records the submitted answers, their deadline, and the policy they were scored under: the puzzle types, how many must pass, and the time limit. With the issuer’s public key, you can check the signature and rescore the recorded answers. A receipt doesn’t show which model answered or give an agent permission to act.</p>
           <p class="section-link"><a href="/docs/#verification">How verification works</a> · <a href="/docs/#comparison">Compare approaches</a> · <a href="/benchmark/">Model benchmark</a></p>
         </section>
       </main>
       <div class="project-footer">
         <p>Less yap. More proof.</p>
-        <a href="/docs/#security">Understand the boundaries <span aria-hidden="true">↗</span></a>
+        <a href="/docs/#security">What a check can’t prove <span aria-hidden="true">→</span></a>
       </div>
       <!-- hraness-site-footer -->
     </div>

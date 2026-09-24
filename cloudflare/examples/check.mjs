@@ -2,7 +2,7 @@
  * Server-side JavaScript integration example (Node 22+ or Bun).
  * You supply solve(challenges, signal); this file selects no model and spends
  * no inference budget itself. Keep the invitation token on your server.
- * Verify the returned receipt before admitting work. This minimal helper keeps
+ * Verify the returned receipt before you accept the result. This minimal helper keeps
  * state in memory. Awaited onIssued(record) saves the private ticket before
  * solving; checkpoint(record) saves the ticket and answers before submission.
  * Keep both records private. Resume interrupted solving from the issued record;
@@ -11,7 +11,7 @@
  *
  * const result = await check({
  *   baseUrl: "https://clankdar-hosted-staging.972abc65.workers.dev",
- *   token: process.env.CLANKDAR_TOKEN, context: "my-room:request-123",
+ *   token: process.env.CLANKDAR_TOKEN, context: "release-42:request-123",
  *   onIssued: record => privateStore.saveIssued(record),
  *   checkpoint: record => privateStore.saveSubmission(record),
  *   solve: async (challenges, signal) => yourSolver(challenges, { signal }),

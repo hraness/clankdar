@@ -1,22 +1,21 @@
 # Clankdar check API
 
-Fresh capability checks with portable, verifiable receipts. Issue a check,
-submit answers, and keep the signed result. Scheduling, identity, aggregation,
-and decisions belong to the integrating application.
+The check API issues a fresh set of puzzles, scores the answers you submit,
+and returns a signed receipt you can verify offline. Your application handles
+scheduling, identity, aggregation, and decisions.
 
-This contract describes invitation-only experimental staging at
-`https://clankdar-hosted-staging.972abc65.workers.dev`. No actor registration,
-campaign, model provider, or Clankdar client library is required. The
+This contract describes an experimental staging service, open by invitation,
+at `https://clankdar-hosted-staging.972abc65.workers.dev`. You need no model
+provider or Clankdar client library. The
 [HTTP quickstart](https://clankdar.com/docs/#hosted) demonstrates the flow.
-Existing [actor and campaign records](clankdar-hosted-v1.md) remain available
-as an optional reference application.
+The [actor and campaign API](clankdar-hosted-v1.md) is a separate, optional
+reference application.
 
 ## Create one check
 
 `POST /v1/checks` requires `Authorization: Bearer <invitation-token>` and a JSON
-object. Keep the token server-side. The existing staging `REGISTRATION_TOKEN`
-secret authorizes this operation; it is an integrator credential, not an
-agent identity.
+object. Keep the token server-side. The invitation token authorizes issuing
+checks; it does not identify an agent.
 
 ```json
 {"policyId":"algal-floor-v1","context":"release-42-preflight"}
@@ -33,8 +32,8 @@ agent identity.
 The response contains `ok`, `id`, `ticket`, `policyId`, `expiresAt`,
 `challenges`, and a relative `receiptUrl`. Each challenge supplies its actual
 `challengeId`, `prompt`, recorded conditions, and issuer key. Answer those
-prompts; do not invent challenge IDs. The `gs_…` ID uses the existing gate
-protocol's session identifier format.
+prompts; do not invent challenge IDs. The `gs_…` ID uses the
+`clankdar-gate-v1` session identifier format.
 
 The opaque encrypted `ticket` authorizes one submission. Retain it until the
 outcome is known and do not log or publish it. An ID alone cannot authorize a
@@ -44,10 +43,10 @@ submission. Unanswered tickets expire without storing a result object.
 one immutable policy. All three policies ask four puzzles and require three
 passing responses. `algal-floor-v1` uses the shared Algal expression evaluator
 with a 180-second deadline; `v2-floor-v1` allows 120 seconds and
-`frontier-floor-v1` allows 180 seconds. Explicit older policies and issued
-tickets retain their original behavior. The [Algal suite](clankdar-algal-v1.md)
-has not yet been calibrated against models. Policy names refer to recorded puzzle
-conditions, not certified model classes. A create retry issues a fresh check
+`frontier-floor-v1` allows 180 seconds. A published policy does not change,
+and an issued ticket keeps the policy it was issued with. No model scores have
+been published for the [Algal suite](clankdar-algal-v1.md). Policy names refer
+to recorded puzzle conditions, not certified model classes. A create retry issues a fresh check
 and consumes another quota slot; it is not an idempotent retry.
 
 ## Submit answers once
@@ -83,13 +82,12 @@ result returns HTTP 200. The JSON response contains:
 ok, id, pass, passed, required, receiptUrl, sha256, receipt
 ```
 
-`receipt` is the complete existing `clankdar-gate-v1` signed admission. Its
-`payload` is a signed JSON string containing the challenges, any answered
-challenge receipts, policy, bindings, and verdict. The protocol name remains
-unchanged. Existing checkers retain support for their recognized older suites;
-Algal receipts require a checker that recognizes `clankdar-algal-v1` and its
-pinned evaluator. The convenient top-level score fields are projections of
-the signed payload.
+`receipt` is the complete signed result, a `clankdar-gate-v1` admission. Its
+`payload` is a signed JSON string that holds the challenges, the receipt for
+each answered challenge, the policy, the bindings, and the verdict. Checking
+an Algal receipt needs a checker that recognizes `clankdar-algal-v1` and its
+pinned evaluator. The top-level score fields repeat values from the signed
+payload for convenience.
 
 The API accepts a result when its create-only R2 write succeeds. Concurrent
 submissions cannot replace it. Every later valid retry returns the first
@@ -112,8 +110,8 @@ SHA-256 ETag, and can be downloaded or cached. The submission response's
 pretty-printed copy. A 404 means **no committed result**; it does not prove
 that a check was never issued or that a scheduled check was missed.
 
-Save the raw receipt as your own evidence. The existing reference checker
-can replay it with `bun gate check receipt.json` from the repository.
+Save the raw receipt as your own evidence. The reference checker in the
+repository replays it with `bun gate check receipt.json`.
 The optional `cloudflare/examples/verify-receipt.mjs` adds a mandatory issuer
 pin and optional expected context/session/hash checks around that same
 checker:
@@ -136,46 +134,46 @@ key is `4_1Qbm1y84b4ZAYJtFt7bhLL1WHv7vPsOXHP0XRUW2g`, key ID
 `fbedfce73b678cf9`. Establish this trust through an operator-controlled source;
 do not learn an expected key from the same untrusted receipt being checked.
 
-Proofs concern the responding system under the recorded conditions. They do
-not identify a base model, measure autonomy or dollar spend, establish
-uniqueness, or grant authority. An individual check has no availability
-denominator. A monitoring application must keep its own schedule, issued
-checks, timeouts, and misses.
+A receipt describes the responding system under the recorded conditions. It
+does not identify the model that answered; the docs list
+[everything a check does not prove](https://clankdar.com/docs/#security). A
+single check says nothing about availability, so a monitoring application
+must keep its own schedule, issued checks, timeouts, and misses.
 
 ## Storage and operational limits
 
-Each completed standalone check has **one canonical JSON admission** in the
-existing `clankdar-evidence-staging` R2 bucket at `checks/<id>.json`. The
-admission already embeds its challenge receipts; no duplicate array or
-separate receipt objects are written. A conditional create chooses the one
-authoritative result. It is immutable and hash-verifiable, but its object
-key is a check ID, not a content-addressed lookup.
+Each completed check is stored as **one JSON receipt** in the
+`clankdar-evidence-staging` R2 bucket at `checks/<id>.json`. The receipt
+embeds its challenge receipts; no separate receipt objects are written. The
+first successful conditional write becomes the result. The stored receipt is
+immutable and hash-verifiable, but its key is the check ID, not its content
+hash.
 
 Issuance returns an AES-GCM sealed ticket containing the temporary secret
 session. Its authenticated context binds the protocol, environment, issuer,
 and check ID; its encrypted data binds the policy, deadline, and optional
-subject/context. No actor, campaign, Durable Object session, or per-check D1
-row is created. A small atomic counter in the existing D1 database bounds
-staging issuance; it is separate from receipt storage.
+subject/context. Issuing a check creates no per-check database row or session
+object. One atomic counter in the staging D1 database enforces the issuance
+limits below; it is separate from receipt storage.
 
 - Standalone checks share a lifetime limit of 1,024 issued checks and a limit
   of 60 issues per fixed UTC minute. Failed issuance after reservation may consume a
   slot conservatively. These limits are separate from legacy actor quotas.
-- Submission bodies are bounded at 128 KiB and receipts at 256 KiB. Reads
+- Submission bodies are limited to 128 KiB and receipts to 256 KiB. Reads
   and retries do not create extra receipt objects.
-- No automatic deletion is configured for these receipts. Experimental
-  staging is not a perpetual retention guarantee; retain your own copies.
+- Receipts aren’t deleted automatically, but this experimental service
+  doesn’t promise to keep them; keep your own copies.
 - Inputs that become evidence are public. Do not submit private context,
   personal information, provider credentials, or invitation tokens as answers.
 - Clankdar does not call a model. Applications choose and pay for their own
   solver and own request/token/spending limits.
 
-This design avoids storing idle sessions and scanning a global receipt log.
-Throughput and per-check costs must be measured; bounded staging is not a
-claim of load-tested public-production capacity.
+Staging has not been load-tested, and its throughput and per-check costs
+have not been measured. Don’t plan production traffic around it.
 
 ## Deployment and recovery
 
+The Worker checks invitation tokens against its `REGISTRATION_TOKEN` secret.
 Apply the additive standalone-quota D1 migration before deploying this API.
 It creates a new counter table and leaves actor/anchor data untouched. Keep
 the existing issuer and wrapping secrets, Cloudflare identities, and R2

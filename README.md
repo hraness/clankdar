@@ -1,8 +1,8 @@
 # Clankdar
 
-Check what your agent can solve. Fresh puzzles, exact scores, and signed receipts your application can verify.
+Clankdar checks what your agent can solve. It issues fresh puzzles, scores each answer exactly, and signs a receipt your application can verify.
 
-**[Try a puzzle in your browser](https://clankdar.com/#try)** — no install or signup. [Docs](https://clankdar.com/docs/) · [Model benchmark](https://clankdar.com/benchmark/)
+**[Try a puzzle in your browser](https://clankdar.com/#try).** No install or signup. [Docs](https://clankdar.com/docs/) · [Model benchmark](https://clankdar.com/benchmark/)
 
 ## Make your first receipt
 
@@ -17,7 +17,7 @@ bun run try
 
 The demo creates four fresh Algal puzzles, solves them with an included script, signs a receipt, and independently verifies it. It saves `receipt.json` and `verification.json` in a new `results/try-…/` directory and prints a verification command.
 
-No credentials or model calls are involved. The temporary signer and scripted score demonstrate the flow; they are not a model benchmark or hosted attestation.
+It needs no credentials and calls no model. A script answers the puzzles and a temporary key signs the receipt, so the result only shows that the flow works. It does not measure a model, and the receipt is not from the hosted service.
 
 To test your own solver:
 
@@ -25,13 +25,13 @@ To test your own solver:
 bun run try --solver ./my-solver.mjs
 ```
 
-Export `solve(challenges, signal)` from that module. Return an object mapping each actual `challengeId` to an answer string. The callback receives only public challenges; you own its code, provider choice, request budget, and costs. [See the solver example](https://clankdar.com/docs/#own-solver).
+Export `solve(challenges, signal)` from that module. Return an object that maps each `challengeId` you received to an answer string. The callback receives only public challenges; you own its code, provider choice, request budget, and costs. [See the solver example](https://clankdar.com/docs/#own-solver).
 
 ## Add it to your application
 
-Use checks for agent preflight, release comparisons, or evidence on a listing. Your app owns identity, scheduling, and the decision to accept a result.
+Use checks for agent preflight, release comparisons, or evidence on a listing. Your app handles identity, scheduling, and the decision to accept a result.
 
-The hosted API is invitation-only experimental staging. [Request hosted access](https://github.com/hraness/clankdar/issues/new?title=Hosted%20API%20access), keep the token on your server, and use ordinary HTTP or the small [Node 22+/Bun helper](cloudflare/examples/check.mjs):
+The hosted API is an experimental staging service, open by invitation. [Request hosted access](https://github.com/hraness/clankdar/issues/new?title=Hosted%20API%20access), keep the token on your server, and use ordinary HTTP or the small [Node 22+/Bun helper](cloudflare/examples/check.mjs):
 
 ```sh
 curl -fsS https://clankdar.com/clankdar-client.mjs -o clankdar-client.mjs
@@ -59,11 +59,11 @@ The helper issues prompts, calls your solver, submits answers, and downloads the
 | `POST /v1/checks/:id/responses` with the ticket and answers | Score and signed receipt |
 | `GET /v1/checks/:id` | Exact, immutable receipt JSON |
 
-The default `algal-floor-v1` policy requires three of four answers within 180 seconds. The first accepted submission fixes the result, including failures; retries recover it. Tokens and live tickets are private. Context and submitted responses become public. Download receipts you need to keep; experimental hosting is not a permanence guarantee. [API contract and staging limits](docs/clankdar-checks-v1.md).
+The default `algal-floor-v1` policy requires three of four answers within 180 seconds. The first accepted submission fixes the result, including a failed one; any later valid retry with the same ticket returns that first result. Keep your token and each check’s ticket private. Any `context` you send and the submitted answers become public. Receipts aren’t deleted automatically, but this experimental service doesn’t promise to keep them, so download any receipt you need. See the [API contract and staging limits](docs/clankdar-checks-v1.md).
 
 ## What the evidence means
 
-Clankdar uses [Algal’s official expression evaluator](docs/clankdar-algal-v1.md), pinned by commit and hash, to generate checkable program puzzles. A receipt records submitted answers under a policy and deadline. It does not establish model identity, human presence, autonomy, or permission to act. Public tasks can be solved with code or delegated.
+Clankdar’s default puzzles are small programs in [Algal’s expression language](docs/clankdar-algal-v1.md). Clankdar generates fresh inputs for each puzzle, and Algal’s official evaluator, pinned by commit and hash, computes the reference answer. A receipt records submitted answers under a policy and deadline. It doesn’t show which model answered, and a puzzle can be solved with code or handed to someone else; see [what a check establishes](https://clankdar.com/docs/#security).
 
 See the [model benchmark](https://clankdar.com/benchmark/) for recorded scores and test conditions, or [compare approaches](https://clankdar.com/docs/#comparison).
 
@@ -98,4 +98,4 @@ bun bench --adapter oracle --seeds 1-10 --out results/oracle-first.jsonl
 
 `oracle` checks the runner with known answers. Model calls default to a dry run and require explicit execution and request budgets. The [reference tools guide](docs/reference-tools.md) covers adapters, run settings, and result verification.
 
-For contributors: `bun run check` runs the repository gate. See [AGENTS.md](AGENTS.md) for browser validation and delivery requirements.
+For contributors: `bun run check` runs the typechecks, tests, and site build. See [AGENTS.md](AGENTS.md) for browser validation and delivery requirements.
