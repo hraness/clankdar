@@ -4,6 +4,8 @@ Clankdar checks what your agent can solve. It issues fresh puzzles, scores each 
 
 **[Try a puzzle in your browser](https://clankdar.com/#try).** No install or signup. [Docs](https://clankdar.com/docs/) · [Model benchmark](https://clankdar.com/benchmark/)
 
+Clankdar is built on the design every Hraness project shares: a receipt records the submitted answers under a policy and deadline, so the check leaves a record your application can verify, and the default puzzles are small programs in Algal's expression language. [The thread through hraness](https://hraness.com/writing/the-thread-through-hraness) follows that design across the projects, and the [Algal vision](https://algal.computer/docs/vision/) states the bet behind it.
+
 ## Make your first receipt
 
 With [Bun 1.3.14](https://bun.sh/docs/installation):
