@@ -21,6 +21,7 @@ jobs:
           bun-version: 1.3.14
       - run: bun install --frozen-lockfile --ignore-scripts
       - run: bun run check
+      - run: bun run cloudflare:dry-run
       - name: Run the documented first check
         run: bun run try
       - run: bun x --no-install playwright install --with-deps chromium
