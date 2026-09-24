@@ -30,7 +30,7 @@
     "try": "bun demo/cli.ts"
   },
   "dependencies": {
-    "@hraness/design-kit": "github:hraness/design-kit#b0326108cf58268827ee69007414188ee27e2963",
+    "@hraness/design-kit": "github:hraness/design-kit#v0.16.2",
     "@hraness/site-footer": "github:hraness/site-footer#v0.12.1",
     "@hraness/algal": "github:hraness/algal#723c35d3c60d1ef7b88437a9ddeaf6588a1814cf"
   },
@@ -41,7 +41,7 @@
     "typescript": "5.9.3",
     "vitest": "4.1.0",
     "wrangler": "4.131.1",
-    "@hraness/ui": "github:hraness/ui#c6b824c3ebcb95ba804f98076639946d03759a21",
+    "@hraness/ui": "github:hraness/ui#v0.5.18",
     "react": "19.2.3",
     "react-dom": "19.2.3"
   },
