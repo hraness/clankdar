@@ -1,4 +1,5 @@
 :root {
+  --hraness-marketing-display-font: var(--font-text);
   --site-header-block-size: 4rem;
   --site-header-clearance: calc(var(--site-header-block-size) + 1rem);
   scroll-padding-block-start: var(--site-header-clearance);
@@ -47,7 +48,7 @@ summary:focus-visible { outline: 2px solid var(--focus); outline-offset: 5px; }
 .answer-reveal code { display: block; margin-top: 16px; padding: 10px 12px; color: var(--focus); font-size: 18px; }
 .signal-strip { display: grid; grid-template-columns: repeat(4, 1fr); gap: 24px; padding: 30px 0 36px; border-top: 1px solid var(--line); }
 .signal-strip > div { display: flex; flex-direction: column; gap: 7px; }
-.signal-strip strong { font: 400 35px/1.2 "Instrument Serif", Georgia, serif; }
+.signal-strip strong { font: 550 2rem/1.2 var(--font-text); font-variant-numeric: tabular-nums; }
 .signal-strip span { font: 13px/1.6 var(--font-text); color: var(--muted); }
 .texture-grain { position: relative; }
 .texture-grain::before { content: ""; position: absolute; inset: 0; background: url('/design/marketing-assets/grain.svg') repeat; opacity: .03; pointer-events: none; }
@@ -63,7 +64,7 @@ summary:focus-visible { outline: 2px solid var(--focus); outline-offset: 5px; }
 .results-table td.score, .profile-table td .score { color: var(--focus); font-weight: 600; }
 .profile-table td small, .cell-table td small { display: block; color: var(--muted); font: 10px/1.5 var(--font-mono); }
 .model-name { display: inline-block; max-width: 260px; overflow-wrap: anywhere; }
-.callout { margin-top: 22px; border: 1px solid var(--line); border-radius: 8px; padding: 18px 20px; background: var(--surface); font-size: 14px; line-height: 1.6; }
+.callout { margin-top: 22px; border: 1px solid var(--hraness-material-seam); border-radius: 8px; padding: 18px 20px; background: var(--surface); font-size: 14px; line-height: 1.6;  box-shadow: var(--hraness-material-lift); }
 .callout > p { margin-top: 8px; }
 .report-details { margin-top: 20px; padding: 16px 0; border-bottom: 1px solid var(--line); }
 .report-details summary { color: var(--focus); }
@@ -71,8 +72,8 @@ summary:focus-visible { outline: 2px solid var(--focus); outline-offset: 5px; }
 .doc section[id] { scroll-margin-top: 24px; }
 
 /* Marketing page */
-.introduction { display: grid; grid-template-columns: 1.4fr 1fr; gap: 64px; align-items: center; padding: 92px 32px 90px; margin-inline: -32px; border-radius: 1.25rem; }
-h1 { font-family: "Instrument Serif", Georgia, serif; font-size: clamp(64px, 6.8vw, 96px); line-height: 0.99; font-weight: 400; letter-spacing: -0.025em; }
+.introduction { display: grid; grid-template-columns: 1.4fr 1fr; gap: 64px; align-items: center; padding: 64px 32px 72px; margin-inline: -32px; border-radius: 1.25rem; }
+h1 { font-family: var(--font-text); font-size: clamp(3rem, 5.7vw, 5.2rem); line-height: 1.06; font-weight: 550; letter-spacing: -0.05em; text-wrap: balance; }
 .description { margin-top: 30px; font-size: 20px; line-height: 1.55; }
 .context { margin-top: 16px; color: var(--muted); font-size: 16px; line-height: 1.6; }
 .actions { display: flex; flex-wrap: wrap; gap: 28px; align-items: center; margin-top: 32px; font-size: 14px; }
@@ -110,24 +111,24 @@ h2 { font-size: 24px; line-height: 1.55; font-weight: 550; }
 /* Docs and benchmark pages */
 .doc { max-width: 860px; }
 .doc-head { padding: 72px 0 40px; }
-.doc h1 { font-size: clamp(56px, 6vw, 80px); }
+.doc h1 { max-inline-size: 22ch; font-size: clamp(2.25rem, 4.5vw, 4rem); line-height: 1.1; }
 .doc-lede { margin-top: 26px; font-size: 19px; line-height: 1.6; max-width: 62ch; color: var(--muted); }
 .contents { display: flex; flex-wrap: wrap; gap: 8px 22px; padding: 16px 0; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); font-size: 14px; }
 .contents a { text-decoration: none; color: var(--muted); }
 .contents a:hover { color: var(--focus); }
-.doc-section { padding: 36px 0; border-bottom: 1px solid var(--line); }
+.doc-section { padding: 36px 0; }
 .doc-section:last-child { border-bottom: 0; }
-.doc-section h2 { font-size: 20px; font-weight: 600; letter-spacing: -0.015em; margin-bottom: 14px; scroll-margin-top: 24px; }
-.doc-section h3 { font-size: 15px; font-weight: 600; margin-top: 24px; }
+.doc-section h2 { font-size: clamp(1.5rem, 2.25vw, 2rem); line-height: 1.2; font-weight: 600; letter-spacing: -0.015em; margin-bottom: 14px; scroll-margin-top: 24px; }
+.doc-section h3 { font-size: 1.125rem; font-weight: 600; margin-top: 24px; }
 .doc-section h3 + p { margin-top: 8px; }
-.doc-section p { margin-top: 12px; font-size: 15px; line-height: 1.8; max-width: 72ch; }
+.doc-section p { margin-top: 12px; font-size: inherit; line-height: 1.8; max-width: 72ch; }
 .doc-section p + p { margin-top: 10px; }
-.doc-list { margin-top: 12px; padding-left: 22px; font-size: 15px; line-height: 1.8; max-width: 72ch; }
+.doc-list { margin-top: 12px; padding-left: 22px; font-size: inherit; line-height: 1.8; max-width: 72ch; }
 .doc-list li { margin-top: 8px; }
 .doc-list li::marker { color: var(--muted); }
 code { font-family: var(--font-mono, ui-monospace, "SFMono-Regular", Consolas, monospace); font-size: 0.9em; background: var(--secondary); padding: 0.12em 0.38em; border-radius: 5px; }
-.code { margin-top: 16px; padding: 18px 20px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); overflow-x: auto; }
-.code code { background: none; padding: 0; border-radius: 0; font-size: 13px; line-height: 1.7; display: block; }
+.code { margin-top: 16px; padding: 18px 20px; border: 1px solid var(--hraness-material-seam); border-radius: 10px; background: var(--surface); overflow-x: auto;  box-shadow: var(--hraness-material-lift); }
+.code code { background: none; padding: 0; border-radius: 0; font-size: .875rem; line-height: 1.7; display: block; }
 .note { margin-top: 14px; color: var(--muted); font-size: 12.5px; line-height: 1.6; }
 .tag { display: inline-block; font: 500 11px/1.7 var(--font-mono, ui-monospace, "SFMono-Regular", Consolas, monospace); color: var(--muted); border: 1px solid var(--line); border-radius: 999px; padding: 0 9px; vertical-align: 1px; }
 .ladder-table { width: 100%; margin-top: 20px; border-collapse: collapse; font-size: 14px; line-height: 1.6; }
@@ -162,7 +163,7 @@ code { font-family: var(--font-mono, ui-monospace, "SFMono-Regular", Consolas, m
   .signal-strip { grid-template-columns: repeat(2, 1fr); gap: 25px 20px; }
   .sample-body { padding: 22px; }
   .release-note { font-size: 12px; }
-  .callout { padding: 16px; }
+  .callout { padding: 16px;  box-shadow: var(--hraness-material-lift); }
   .context { font-size: 15px; }
   .desktop-break { display: none; }
   .actions { gap: 24px; margin-top: 28px; }
@@ -234,7 +235,7 @@ code { font-family: var(--font-mono, ui-monospace, "SFMono-Regular", Consolas, m
 /* Worked examples and compact evidence stay inside the editorial page measure. */
 .introduction > *, .duet > * { min-width: 0; }
 .room .sample-body { font-size: 14px; line-height: 1.65; }
-.room .code { margin-top: 18px; padding: 0; border: 0; border-radius: 0; background: transparent; }
+.room .code { margin-top: 18px; padding: 0; border: 0; border-radius: 0; background: transparent;  box-shadow: var(--hraness-material-lift); }
 .room .code code, .harder-example .code code { font-size: 13px; line-height: 1.7; white-space: pre-wrap; overflow-wrap: anywhere; }
 .room .answer-reveal { margin-top: 20px; }
 .room .sample-note { margin-top: 18px; }
@@ -245,7 +246,7 @@ code { font-family: var(--font-mono, ui-monospace, "SFMono-Regular", Consolas, m
 .compact-journey p { margin-top: 6px; font-size: 14px; }
 .harder-example { margin-top: 24px; }
 .harder-example > p, .harder-example .answer-reveal p { margin-top: 16px; max-width: 72ch; color: var(--muted); font-size: 14px; line-height: 1.75; }
-.harder-example .code { max-width: 72ch; }
+.harder-example .code { max-width: 72ch;  box-shadow: var(--hraness-material-lift); }
 .benchmark-snapshot, .comparison-table { table-layout: fixed; margin-top: 0; }
 .benchmark-snapshot { max-width: 860px; }
 .benchmark-snapshot th:first-child { width: 50%; }
@@ -290,5 +291,10 @@ code { font-family: var(--font-mono, ui-monospace, "SFMono-Regular", Consolas, m
 
 /* Keep first-use controls and anchor navigation clear of the shared sticky chrome. */
 summary, button, .actions a { scroll-margin-block: 1rem; }
-#local .code { align-self: start; min-width: 0; }
+#local .code { align-self: start; min-width: 0;  box-shadow: var(--hraness-material-lift); }
 @media (max-width: 640px) { .introduction { padding-block-start: 36px; gap: 32px; } }
+
+.introduction { position: relative; isolation: isolate; }
+.introduction .opening, .introduction .room { position: relative; z-index: 1; }
+.doc { font-size: 1rem; line-height: 1.75; }
+.doc :is(h2, h3) { font-family: var(--font-text); letter-spacing: -.025em; }

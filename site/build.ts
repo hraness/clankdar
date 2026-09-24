@@ -45,7 +45,7 @@ for (const page of pages) {
 for (const archive of ["pilot-v0", "v2-calibration-0", "frontier-v0", "agent-v0", "admissions-opus5-2026-09-19"]) await cp(resolve(root, `benchmark/${archive}`), resolve(output, `benchmark/${archive}`), { recursive: true });
 await writeFile(resolve(output, "benchmark/v2-calibration-0/profiles.json"), JSON.stringify({ schemaVersion: 1, suiteHash: v2.suiteHash, profiles: CAPABILITY_PROFILES, models: profileReport(v2) }, null, 2) + "\n");
 await cp(fileURLToPath(import.meta.resolve("@hraness/site-footer/stylex.css")), resolve(output, "footer.css"));
-const files = ["paper-theme.css", "product-marketing.css", "product-marketing-preset.css", "lantern-material.css", "appearance-menu.css", "fonts.css"];
+const files = ["paper-theme.css", "palette-system.css", "palette-bridge.css", "syntax-highlighting.css", "product-marketing.css", "product-marketing-preset.css", "lantern-material.css", "appearance-menu.css", "fonts.css"];
 for (const name of files) await cp(resolve(kit, name), resolve(output, "design", name));
 await cp(resolve(kit, "fonts/nebula-sans"), resolve(output, "design/fonts/nebula-sans"), { recursive: true });
 await cp(resolve(kit, "fonts/instrument-serif"), resolve(output, "design/fonts/instrument-serif"), { recursive: true });
