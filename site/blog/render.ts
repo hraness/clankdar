@@ -69,10 +69,14 @@ export function renderBody(post: BlogPost): { html: string; toc: ArticleTocItem[
   const html = Bun.markdown.html(markdown, { headings: { ids: true } })
     .replace(/<table>/g, '<div class="table-scroll" tabindex="0" role="region" aria-label="Table"><table>')
     .replace(/<\/table>/g, "</table></div>");
-  const toc = [...html.matchAll(/<h2 id="([^"]+)">(.*?)<\/h2>/g)].map(([, id, label]) => ({
-    href: `#${id}` as const,
-    label: label.replace(/<[^>]+>/g, "").replace(/&quot;/g, '"').replace(/&#x27;|&#39;/g, "'").replace(/&amp;/g, "&"),
-  }));
+  // Contents labels come from the Markdown heading text (escaped by the renderer),
+  // paired in order with the ids the Markdown renderer assigned.
+  const ids = [...html.matchAll(/<h2 id="([^"]+)">/g)].map(match => match[1]!);
+  const labels = markdown.replace(/^```[\s\S]*?^```/gm, "").split("\n")
+    .filter(line => line.startsWith("## "))
+    .map(line => line.slice(3).trim().replaceAll("`", ""));
+  if (ids.length !== labels.length) throw new Error(`Contents for ${post.slug} do not match its headings.`);
+  const toc = ids.map((id, index) => ({ href: `#${id}` as const, label: labels[index]! }));
   return { html, toc: toc.length >= 4 ? toc.slice(0, 8) : [] };
 }
 

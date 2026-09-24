@@ -31,6 +31,7 @@ describe("blog", () => {
       expect(html).not.toMatch(/human/i);
       expect(html).toContain(`<link rel="canonical" href="https://clankdar.com${post.path}">`);
       expect(html).toContain('"@type":"BlogPosting"');
+      expect(html).toContain('<nav aria-labelledby="article-title-contents" class="plain-publication__toc">');
       expect(html.split("<!-- hraness-site-footer -->")).toHaveLength(2);
       expect(html).not.toMatch(/\{\{[A-Z_]+\}\}/);
       expect(html).not.toContain("botcaptcha.dev");
