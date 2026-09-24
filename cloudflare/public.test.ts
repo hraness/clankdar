@@ -9,6 +9,11 @@ describe("public evidence pages", () => {
     expect(html).toContain("No capability results yet");
     expect(html).toContain("No campaigns yet");
     expect(html).toContain('id="hraness-site-footer"');
+    expect(html).toContain('data-palette="tokyo-night"');
+    expect(html).toContain('href="/design/palette-bridge.css"');
+    expect(html).toContain('media="(prefers-color-scheme: light)" content="#e1e2e7"');
+    expect(html).toContain('media="(prefers-color-scheme: dark)" content="#1a1b26"');
+    expect(html).not.toContain('data-theme="light"');
     expect(html).not.toContain("0% uptime");
     expect(response.headers.get("content-security-policy")).toContain("form-action 'none'");
     expect([...html.matchAll(/(?:src|href)="(https?:[^\"]+)"/g)].every(m => !m[0].startsWith("src=") && m[1].startsWith("https://"))).toBe(true);

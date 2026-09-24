@@ -9,10 +9,11 @@ const campaignPath = (address: string, id: string) => `${actorPath(address)}/cam
 
 function page(title: string, body: string): Response {
   return new Response(`<!doctype html>
-<html lang="en" data-hraness-theme="paper" data-hraness-material="lantern" data-hraness-marketing-preset="editorial"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<html lang="en" data-hraness-theme="paper" data-palette="tokyo-night" data-hraness-material="lantern" data-hraness-pattern="mesh" data-hraness-marketing-preset="editorial"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="robots" content="noindex,follow"><meta name="color-scheme" content="light dark">
+<meta name="theme-color" media="(prefers-color-scheme: light)" content="#e1e2e7"><meta name="theme-color" media="(prefers-color-scheme: dark)" content="#1a1b26">
 <title>${escape(title)} · Clankdar</title>
-<link rel="icon" href="/icon.png"><link rel="stylesheet" href="/design/fonts.css"><link rel="stylesheet" href="/design/paper-theme.css"><link rel="stylesheet" href="/design/product-marketing.css"><link rel="stylesheet" href="/design/product-marketing-preset.css"><link rel="stylesheet" href="/design/lantern-material.css"><link rel="stylesheet" href="/design/appearance-menu.css"><link rel="stylesheet" href="/styles.css"><link rel="stylesheet" href="/profile.css"><link rel="stylesheet" href="/footer.css"><script src="/appearance.js"></script></head>
+<link rel="icon" href="/icon.png"><link rel="stylesheet" href="/design/fonts.css"><link rel="stylesheet" href="/design/paper-theme.css"><link rel="stylesheet" href="/design/palette-bridge.css"><link rel="stylesheet" href="/design/product-marketing.css"><link rel="stylesheet" href="/design/product-marketing-preset.css"><link rel="stylesheet" href="/design/lantern-material.css"><link rel="stylesheet" href="/design/appearance-menu.css"><link rel="stylesheet" href="/styles.css"><link rel="stylesheet" href="/profile.css"><link rel="stylesheet" href="/footer.css"><script src="/appearance.js"></script></head>
 <body><a class="skip-link" href="#main">Skip to content</a>
 <header class="masthead hraness-marketing-header hraness-material-chrome" data-hraness-marketing="header">
       <div class="hraness-marketing-header__inner">
