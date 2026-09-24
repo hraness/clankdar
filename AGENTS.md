@@ -8,6 +8,7 @@
 - `demo/` owns the credential-free local first check (`bun run try`): shared issue/submit primitives, an ephemeral signer, public-prompt scripted control or explicit caller solver, independently verified canonical receipt, and unique public-evidence outputs. Never imply that a local demo key is a trusted hosted issuer, execute a model implicitly, or expose seeds/expected answers to the solver callback.
 - `site/` owns the static marketing and documentation pages for clankdar.com. The homepage practice fixtures execute in Algal at build time; a small same-origin script uses the shared exact scorer. They are public practice, never issued checks or signed receipts. Keep the browser practice offline, with a usable no-script solution. The downloadable JavaScript HTTP helper is copied from `cloudflare/examples/check.mjs` during the build, not maintained separately.
 - `site/benchmark/` holds the published calibration archives: `pilot-v0` (intentional legacy data), `v2-calibration-0`, `frontier-v0`, `agent-v0`, and `admissions-opus5-2026-09-19` (four signed gate sessions verified during the site build); private runtime results stay in ignored `results/`.
+- `site/blog/` holds the blog: `articles.ts` is the post registry with each post's admission record (checked by `assertArticleAdmissions` in `site/blog/blog.test.ts`), `posts/*.md` are the post bodies, and `render.ts` renders the pages, Atom feed, sitemap, and `llms.txt` section with the pinned design-kit and web-discovery releases. Quarantined posts render `noindex` and stay out of the index, sitemap, feed, and `llms.txt`.
 - `site/build.ts` is the bundling entry; `site/dist/` is generated output.
 - `vercel.json` sets the static build, output directory, and content security headers.
 
@@ -38,6 +39,15 @@
 - Take one-line product and sibling descriptions from the portfolio registry and versions from the release record. Tests pin facts, not prose.
 - Run `bun run check:copy` before handoff when the repository has it.
 <!-- hraness-public-copy:end -->
+
+<!-- hraness-articles:start -->
+- Essays and blog posts follow the essay addendum in `GENERATION_STYLE.md` and `ARTICLE_COPY.md` in `@hraness/design-kit`. The byline is “Hraness”, every post shows the provenance note naming its recorded reviewer, and no AI-drafted post is credited to a person unless that person rewrites and adopts it.
+- Take product names, one-line descriptions, addresses, status labels, and relations from the portfolio facts in `@hraness/design-kit`. Render versions from the release record (`package.json`, a published-release file), never typed by hand.
+- Write a “How X uses Y” post only for a registered relation that has a description. Change the relation and its post in the same change. Link between products only along registered relations, and between a technique post and product posts about the same technique.
+- Every post has a review record: reader job, non-obvious answer, sources with the date checked, owner, reviewer identity, reviewer type (`ai` or `human`), a score out of 12, and a `reassessOn` date 28 to 56 days after review. The reviewer is independent of the run or person that drafted the post. An AI reviewer is recorded and shown as AI; `humanReview` stays null unless a person reviewed the post.
+- A new post starts out of search indexes, sitemaps, and feeds. It becomes indexable only when its review record is complete, scores at least 9 of 12 with no zero score, and the page shows the provenance note.
+- When a product is renamed or a relation changes, update the post bodies that mention it in the same change.
+<!-- hraness-articles:end -->
 
 <!-- hraness-delivery:start -->
 - Treat the user's request to change this repository as standing authorization for routine task-owned commits, pushes, pull requests, merges, releases, deployments, and production verification after the gates applicable to that action pass. Do not ask for duplicate confirmation. Build confidence through relevant automated checks, bounded diagnostics, and independent review, not another human approval. Passing checks does not expand task scope or authority.

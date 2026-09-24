@@ -9,6 +9,8 @@ import { verifyPilot } from "../bench/pilot.ts";
 import { verifyCalibration } from "../bench/archive.ts";
 import { verifyAdmissionArchive } from "../bench/admission-archive.ts";
 import { CAPABILITY_PROFILES, profileReport } from "../bench/profiles.ts";
+import { POSTS } from "./blog/articles.ts";
+import { FEED_PATH, renderFeed, renderIndexPage, renderLlmsSection, renderPostPage, renderSitemap } from "./blog/render.ts";
 const root = import.meta.dir;
 const output = resolve(root, "dist");
 const kit = dirname(fileURLToPath(import.meta.resolve("@hraness/design-kit/paper-theme.css")));
@@ -28,7 +30,7 @@ const substitutions: Record<string, string> = {
 };
 await rm(output, { recursive: true, force: true });
 await mkdir(resolve(output, "design"), { recursive: true });
-for (const name of ["styles.css", "icon.png", "apple-icon.png", "robots.txt", "sitemap.xml", "llms.txt"]) await cp(resolve(root, name), resolve(output, name));
+for (const name of ["styles.css", "icon.png", "apple-icon.png", "robots.txt"]) await cp(resolve(root, name), resolve(output, name));
 await cp(resolve(root, "../cloudflare/examples/check.mjs"), resolve(output, "clankdar-client.mjs"));
 await cp(resolve(root, "icons"), resolve(output, "icons"), { recursive: true });
 await cp(resolve(root, "marks"), resolve(output, "marks"), { recursive: true });
@@ -42,10 +44,22 @@ for (const page of pages) {
   await mkdir(dirname(target), { recursive: true });
   await writeFile(target, html.replace(footerMarker, supportFooter()));
 }
+const blogTemplate = await readFile(resolve(root, "blog/page.html"), "utf8");
+if (blogTemplate.split(footerMarker).length !== 2) throw new Error("Expected one shared footer slot in blog/page.html.");
+const blogPages: [string, string][] = [["blog/index.html", renderIndexPage(blogTemplate)], ...POSTS.map(post => [`${post.path.slice(1)}.html`, renderPostPage(blogTemplate, post)] as [string, string])];
+for (const [page, html] of blogPages) {
+  if (/\{\{[A-Z_]+\}\}/.test(html)) throw new Error(`Unresolved content slot in ${page}`);
+  const target = resolve(output, page);
+  await mkdir(dirname(target), { recursive: true });
+  await writeFile(target, html.replace(footerMarker, supportFooter()));
+}
+await writeFile(resolve(output, FEED_PATH.slice(1)), renderFeed());
+await writeFile(resolve(output, "sitemap.xml"), renderSitemap(["/", "/docs/", "/benchmark/"]));
+await writeFile(resolve(output, "llms.txt"), (await readFile(resolve(root, "llms.txt"), "utf8")).trimEnd() + "\n" + renderLlmsSection());
 for (const archive of ["pilot-v0", "v2-calibration-0", "frontier-v0", "agent-v0", "admissions-opus5-2026-09-19"]) await cp(resolve(root, `benchmark/${archive}`), resolve(output, `benchmark/${archive}`), { recursive: true });
 await writeFile(resolve(output, "benchmark/v2-calibration-0/profiles.json"), JSON.stringify({ schemaVersion: 1, suiteHash: v2.suiteHash, profiles: CAPABILITY_PROFILES, models: profileReport(v2) }, null, 2) + "\n");
 await cp(fileURLToPath(import.meta.resolve("@hraness/site-footer/stylex.css")), resolve(output, "footer.css"));
-const files = ["paper-theme.css", "palette-system.css", "palette-bridge.css", "syntax-highlighting.css", "product-marketing.css", "product-marketing-preset.css", "lantern-material.css", "appearance-menu.css", "fonts.css"];
+const files = ["plain-publication.css", "paper-theme.css", "palette-system.css", "palette-bridge.css", "syntax-highlighting.css", "product-marketing.css", "product-marketing-preset.css", "lantern-material.css", "appearance-menu.css", "fonts.css"];
 for (const name of files) await cp(resolve(kit, name), resolve(output, "design", name));
 await cp(resolve(kit, "fonts/nebula-sans"), resolve(output, "design/fonts/nebula-sans"), { recursive: true });
 await cp(resolve(kit, "fonts/instrument-serif"), resolve(output, "design/fonts/instrument-serif"), { recursive: true });
@@ -58,4 +72,4 @@ const practice = await Bun.build({ entrypoints: [resolve(root, "practice.ts")], 
 if (!practice.success) throw new AggregateError(practice.logs, "Practice bundle failed");
 const pkg = JSON.parse(await readFile(resolve(kit, "../package.json"), "utf8"));
 await writeFile(resolve(output, "design/source.json"), JSON.stringify({ package: pkg.name, version: pkg.version, files: Object.fromEntries(await Promise.all(files.map(async name => [name, createHash("sha256").update(await readFile(resolve(output, "design", name))).digest("hex")]))) }, null, 2));
-console.log(`Built Clankdar (${pages.length} pages) with ${pkg.name}@${pkg.version}.`);
+console.log(`Built Clankdar (${pages.length + blogPages.length} pages) with ${pkg.name}@${pkg.version}.`);

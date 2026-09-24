@@ -16,6 +16,7 @@ const fixtureAddress = `clank1_${"a".repeat(27)}`;
 const fixtureCampaign = { campaignId: `cmp_${"b".repeat(16)}`, policyId: "v2-floor-v1", epochs: 24, cadenceSeconds: 3600, windowSeconds: 120, startsAt: "2026-09-19T00:00:00Z", scheduleCommit: "c".repeat(64), evidence: { scheduled: 24, completed: 5, missed: 2, admitted: 4, challengesPassed: 17 } };
 const fixtureActor = { address: fixtureAddress, publicKey: "d".repeat(43), createdAt: "2026-09-18T00:00:00Z", evidence: { campaigns: 1, heartbeats: 0 }, campaigns: [fixtureCampaign], claims: { automatedAvailability: { completed: 5, missed: 2 }, capability: { admitted: 4, epochs: 5 } }, head: { seq: 16, eventHash: "e".repeat(64) } };
 const profilePaths = [`/actors/${fixtureAddress}`, `/actors/${fixtureAddress}/campaigns/${fixtureCampaign.campaignId}`];
+const blogPaths = ["/blog/", "/blog/introducing-clankdar", "/blog/how-clankdar-uses-algal"];
 const server = Bun.serve({
   hostname: "127.0.0.1", port: 0,
   fetch(request) {
@@ -25,7 +26,7 @@ const server = Bun.serve({
     if (pathname === "/profile.css") return new Response(Bun.file(resolve(import.meta.dir, "../cloudflare/profile.css")), { headers: { ...headers, "content-type": "text/css" } });
     let path = pathname.slice(1);
     if (!path || path.endsWith("/")) path += "index.html";
-    else if (!path.includes(".")) path += "/index.html";
+    else if (!path.includes(".")) path += files.has(`${path}.html`) ? ".html" : "/index.html";
     if (!files.has(path)) return new Response("Not found", { status: 404, headers });
     return new Response(Bun.file(resolve(root, path)), { headers });
   },
@@ -61,7 +62,7 @@ async function verifyChrome(page: Page, width: number): Promise<void> {
   expect(Math.abs(initial.brand.center - initial.appearance.center)).toBeLessThanOrEqual(2);
   expect(initial.appearance.right).toBeGreaterThan(initial.brand.right);
   expect(initial.header.height).toBeLessThanOrEqual(width <= 768 ? 112 : 80);
-  await expect(page.locator(".masthead .site-nav a")).toHaveText(["Docs", "Benchmark", "GitHub"]);
+  await expect(page.locator(".masthead .site-nav a")).toHaveText(["Docs", "Benchmark", "Blog", "GitHub"]);
   if (width <= 768) {
     expect(initial.nav.top).toBeGreaterThanOrEqual(initial.appearance.bottom);
     expect(initial.nav.left).toBeCloseTo(initial.brand.left, 0);
@@ -101,7 +102,7 @@ try {
       page.on("pageerror", (error) => errors.push(error.message));
       page.on("console", (message) => { if (message.type() === "error") errors.push(message.text()); });
       page.on("response", (response) => { if (response.status() >= 400) errors.push(`HTTP ${response.status()} ${new URL(response.url()).pathname}`); });
-      for (const path of ["/", "/docs/", "/benchmark/", ...profilePaths]) {
+      for (const path of ["/", "/docs/", "/benchmark/", ...blogPaths, ...profilePaths]) {
         await page.goto(origin + path, { waitUntil: "networkidle" });
         await page.evaluate(async () => { await document.fonts.ready; });
         await expect(page).toHaveTitle(/Clankdar/);
@@ -142,6 +143,14 @@ try {
         }
         const slug = path === "/" ? "home" : profilePaths.includes(path) ? (path === profilePaths[0] ? "actor" : "campaign") : path.replaceAll("/", "");
         await page.screenshot({ path: resolve(screenshots, `${slug}-${width}-${theme}.png`), fullPage: path === "/" });
+        if (path.startsWith("/blog/")) {
+          await expect(page.locator(".plain-publication")).toHaveCount(1);
+          if (path !== "/blog/") {
+            await expect(page.locator(".plain-publication__byline")).toHaveText("By Hraness");
+            await expect(page.locator(".plain-publication__provenance")).toHaveText("Drafted with AI from the source code and reviewed by Claude Opus 5.5 (claude-opus-5-5) editorial review.");
+            await expect(page.locator('meta[name="robots"]')).toHaveCount(path.endsWith("how-clankdar-uses-algal") ? 1 : 0);
+          }
+        }
         if (path === "/benchmark/") {
           const comparison = page.locator("#results .benchmark-snapshot");
           await expect(comparison.locator("tbody tr")).toHaveCount(5);
