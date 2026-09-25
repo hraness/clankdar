@@ -17,7 +17,7 @@ async function cli(cwd: string, ...args: string[]) {
 }
 
 describe("local first-use demonstration", () => {
-  test("fresh offline checks use the hosted Algal policy and independently replay exact canonical receipts", async () => {
+  test("fresh offline checks use the hosted ALGAL policy and independently replay exact canonical receipts", async () => {
     const originalFetch = globalThis.fetch;
     globalThis.fetch = Object.assign(() => { throw new Error("network forbidden in local demo"); }, { preconnect: originalFetch.preconnect }) as typeof fetch;
     try {

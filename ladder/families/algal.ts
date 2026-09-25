@@ -16,14 +16,14 @@ const squaresAbove = (values: JsonValue, cutoff: JsonValue): JsonValue => sum([
   "map", ["filter", values, "x", ["gt", get("x"), cutoff]], "x", ["mul", get("x"), get("x")],
 ]);
 
-/** Reference solution is real Algal execution, never a second JS implementation. */
+/** Reference solution is real ALGAL execution, never a second JS implementation. */
 export function solveAlgalPuzzle(puzzle: AlgalPuzzle): { answer: string; fuel: number } {
-  if (puzzle.expr.contract !== ALGAL_EXPR_CONTRACT || puzzle.fuelLimit !== ALGAL_FUEL_LIMIT) throw new Error("unsupported Algal puzzle contract");
+  if (puzzle.expr.contract !== ALGAL_EXPR_CONTRACT || puzzle.fuelLimit !== ALGAL_FUEL_LIMIT) throw new Error("unsupported ALGAL puzzle contract");
   const checked = checkProgram(puzzle.expr.program, Object.keys(puzzle.inputs));
-  if (!checked.ok) throw new Error(`Algal puzzle is invalid: ${checked.err.code}`);
+  if (!checked.ok) throw new Error(`ALGAL puzzle is invalid: ${checked.err.code}`);
   const result = evalProgram(puzzle.expr.program, puzzle.inputs, puzzle.fuelLimit);
-  if (!result.ok) throw new Error(`Algal puzzle failed: ${result.err.code}`);
-  if (typeof result.value !== "number" || !Number.isSafeInteger(result.value)) throw new Error("Algal puzzle must produce a safe integer");
+  if (!result.ok) throw new Error(`ALGAL puzzle failed: ${result.err.code}`);
+  if (typeof result.value !== "number" || !Number.isSafeInteger(result.value)) throw new Error("ALGAL puzzle must produce a safe integer");
   return { answer: String(result.value), fuel: result.fuel };
 }
 
@@ -35,7 +35,7 @@ export function algalWorkedExample() {
 
 /** Frozen clankdar-algal-v1 generation. Tiers describe structure, not model classes. */
 export function createAlgalPuzzle(tier: number, seed: number): AlgalPuzzle {
-  if (![1, 2, 3].includes(tier) || !Number.isInteger(seed) || seed < 0 || seed > 0xffff_ffff) throw new Error("Algal puzzle requires tier 1..3 and uint32 seed");
+  if (![1, 2, 3].includes(tier) || !Number.isInteger(seed) || seed < 0 || seed > 0xffff_ffff) throw new Error("ALGAL puzzle requires tier 1..3 and uint32 seed");
   const r = rng(mixSeed(`algal:t${tier}`, seed));
   if (tier === 1) {
     const cutoff = r.intBetween(4, 10);

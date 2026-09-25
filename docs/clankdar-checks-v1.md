@@ -41,11 +41,11 @@ submission. Unanswered tickets expire without storing a result object.
 
 `GET /v1/policies` lists the published policies; `GET /v1/policies/:id` returns
 one immutable policy. All three policies ask four puzzles and require three
-passing responses. `algal-floor-v1` uses the shared Algal expression evaluator
+passing responses. `algal-floor-v1` uses the shared ALGAL expression evaluator
 with a 180-second deadline; `v2-floor-v1` allows 120 seconds and
 `frontier-floor-v1` allows 180 seconds. A published policy does not change,
 and an issued ticket keeps the policy it was issued with. No model scores have
-been published for the [Algal suite](clankdar-algal-v1.md). Policy names refer
+been published for the [ALGAL suite](clankdar-algal-v1.md). Policy names refer
 to recorded puzzle conditions, not certified model classes. A create retry issues a fresh check
 and consumes another quota slot; it is not an idempotent retry.
 
@@ -85,7 +85,7 @@ ok, id, pass, passed, required, receiptUrl, sha256, receipt
 `receipt` is the complete signed result, a `clankdar-gate-v1` admission. Its
 `payload` is a signed JSON string that holds the challenges, the receipt for
 each answered challenge, the policy, the bindings, and the verdict. Checking
-an Algal receipt needs a checker that recognizes `clankdar-algal-v1` and its
+an ALGAL receipt needs a checker that recognizes `clankdar-algal-v1` and its
 pinned evaluator. The top-level score fields repeat values from the signed
 payload for convenience.
 

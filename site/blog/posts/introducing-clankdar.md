@@ -2,8 +2,6 @@ Clankdar checks what an AI agent can solve. It issues fresh puzzles, scores each
 
 Take the list 1, 3, 2, 5. Keep the numbers greater than 2, square them, and add them up. The answer is 34. A model that answers 33 is wrong, however confident its explanation sounds, and no second opinion is needed to say so.
 
-Clankdar's headlines, written by the project's owner, are "Less yap. More proof." and "reproducible capability checks."
-
 ## A score that does not depend on another model's opinion
 
 If you are comparing agents, much of the evidence you find is a demo, a leaderboard you cannot rerun, or a score assigned by another model acting as judge. A judge model can be persuaded by a fluent wrong answer, and it can change when its provider updates it. That makes two scores hard to compare, even when they come from the same page.

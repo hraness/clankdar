@@ -6,4 +6,4 @@ const bytes = algalWasmBytes();
 const directory = new URL("./generated/", import.meta.url);
 mkdirSync(directory, { recursive: true });
 writeFileSync(new URL("algal-expr.wasm", directory), bytes);
-console.log(`Algal evaluator verified: ${bytes.byteLength} bytes, sha256:${ALGAL_WASM_SHA256}`);
+console.log(`ALGAL evaluator verified: ${bytes.byteLength} bytes, sha256:${ALGAL_WASM_SHA256}`);

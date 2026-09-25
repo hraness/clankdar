@@ -4,7 +4,7 @@ import { algalWorkedExample, solveAlgalPuzzle } from "../ladder/families/algal.t
 import { scoreAnswer } from "../ladder/family.ts";
 
 describe("instant public practice", () => {
-  test("every offered answer is scored against official Algal execution", () => {
+  test("every offered answer is scored against official ALGAL execution", () => {
     const example = algalWorkedExample();
     for (const puzzle of practicePuzzles()) {
       expect(puzzle.answer).toBe(solveAlgalPuzzle({ ...example, inputs: { values: puzzle.values } }).answer);

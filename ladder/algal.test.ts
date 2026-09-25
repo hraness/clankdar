@@ -10,7 +10,7 @@ import { createHash } from "node:crypto";
 // This is the official Bun loader from the exact dependency pin, not our ABI adapter.
 const reference = await import(new URL("./src/expr.ts", import.meta.resolve("@hraness/algal")).href);
 
-describe("Frozen Algal expression suite", () => {
+describe("Frozen ALGAL expression suite", () => {
   test("loads the exact official evaluator with no host capabilities", () => {
     const bytes = algalWasmBytes();
     expect(createHash("sha256").update(bytes).digest("hex")).toBe(ALGAL_WASM_SHA256);

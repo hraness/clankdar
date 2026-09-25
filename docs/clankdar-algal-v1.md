@@ -1,7 +1,7 @@
-# Clankdar’s Algal suite
+# Clankdar’s ALGAL suite
 
-Clankdar’s default puzzles are small programs in Algal’s expression language.
-Clankdar generates fresh inputs for each puzzle, and Algal’s official
+Clankdar’s default puzzles are small programs in ALGAL’s expression language.
+Clankdar generates fresh inputs for each puzzle, and ALGAL’s official
 evaluator computes the reference answer. Clankdar adds deadlines, exact answer
 scoring, and signed receipts.
 
@@ -13,7 +13,7 @@ been published for this suite.
 
 ## One shared evaluator
 
-The implementation executes Algal’s official `algal.expr.v1` Rust evaluator,
+The implementation executes ALGAL’s official `algal.expr.v1` Rust evaluator,
 compiled to WebAssembly. It does not translate operations into a second
 JavaScript implementation.
 
@@ -97,7 +97,7 @@ small and fixed by this suite; the HTTP API does not accept arbitrary programs.
 
 Clankdar seals the fresh generator seed until an answered challenge produces
 a receipt. Verification regenerates the recorded puzzle, executes the same
-Algal evaluator, and checks the response and issuer signature. Missing or
+ALGAL evaluator, and checks the response and issuer signature. Missing or
 malformed answers remain failures without a per-challenge receipt. A complete
 check is still one `clankdar-gate-v1` signed admission stored as JSON in R2.
 The [check API contract](clankdar-checks-v1.md) defines retries and storage.
@@ -106,7 +106,7 @@ The [check API contract](clankdar-checks-v1.md) defines retries and storage.
 
 The v2, frontier, agent, and legacy generators remain frozen. Their published
 archives, scores, explicit policies, tickets, and receipts keep their original
-meaning. Selecting `algal` never relabels an old benchmark as an Algal run.
+meaning. Selecting `algal` never relabels an old benchmark as an ALGAL run.
 The TypeScript checker in this repository supports `clankdar-algal-v1`. A
 checker that does not recognize the suite must reject its receipts rather than
 accept an unreplayed result. Support in the separate Valhalla Rust

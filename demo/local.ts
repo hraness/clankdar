@@ -17,9 +17,9 @@ export interface LocalCheckResult {
 /** Solves only the public expression and inputs; never reads a seed or expected answer. */
 export const solveAlgalChallenges: LocalSolver = (challenges, signal) => Object.fromEntries(challenges.map((challenge) => {
   signal.throwIfAborted();
-  if (challenge.suiteVersion !== "clankdar-algal-v1" || challenge.family !== "algal") throw new Error("the scripted solver accepts Algal v1 challenges only");
+  if (challenge.suiteVersion !== "clankdar-algal-v1" || challenge.family !== "algal") throw new Error("the scripted solver accepts ALGAL v1 challenges only");
   const match = /^Expression: (.+)\nInputs: (.+)\nFuel limit: (\d+)\nEvaluator SHA-256: ([0-9a-f]{64})$/m.exec(challenge.prompt);
-  if (!match || Number(match[3]) !== ALGAL_FUEL_LIMIT || match[4] !== ALGAL_WASM_SHA256) throw new Error("the public Algal prompt is malformed or uses a different evaluator");
+  if (!match || Number(match[3]) !== ALGAL_FUEL_LIMIT || match[4] !== ALGAL_WASM_SHA256) throw new Error("the public ALGAL prompt is malformed or uses a different evaluator");
   const puzzle: AlgalPuzzle = { expr: JSON.parse(match[1]), inputs: JSON.parse(match[2]), fuelLimit: ALGAL_FUEL_LIMIT };
   return [challenge.challengeId, solveAlgalPuzzle(puzzle).answer];
 }));

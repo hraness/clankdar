@@ -105,7 +105,7 @@ export const POSTS: readonly BlogPost[] = [
         "Hosted staging policy or limits change (README.md, STYLE.md), or the API leaves invitation-only staging",
         "A packaged release ships (status sentence)",
         "Demo command, solver contract, Bun version, or bench flags change (README.md, bench/options.ts)",
-        "Owner headlines in STYLE.md change",
+        "Canonical messaging lines in STYLE.md change",
         "Relation runtime:clankdar:algal:scores-puzzles-with changes or is removed",
         "docs #security or site #try anchors move",
       ],

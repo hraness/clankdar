@@ -189,9 +189,8 @@ try {
   const noScript = await browser.newContext({ javaScriptEnabled: false, viewport: { width: 390, height: 844 } });
   const page = await noScript.newPage();
   activePage = page;
-  await page.goto(origin);
-  // Follow the actual no-script entry path; the anchor clears both sticky bars.
-  await page.locator('a[href="#try"]').click();
+  // No-script entry path: open the practice room by its fragment; the anchor clears both sticky bars.
+  await page.goto(origin + "/#try");
   await page.locator(".room .answer-reveal summary").click();
   await expect(page.locator("[data-practice-solution]")).toBeVisible();
   await expect(page.locator("[data-practice-controls]")).toBeHidden();

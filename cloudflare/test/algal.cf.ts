@@ -2,7 +2,7 @@ import { describe, expect, test } from "vitest";
 import { evalProgram, checkProgram } from "#clankdar-algal-runtime";
 import { algalWorkedExample, createAlgalPuzzle, solveAlgalPuzzle } from "../../ladder/families/algal.ts";
 
-describe("Official Algal WASM in Workers", () => {
+describe("Official ALGAL WASM in Workers", () => {
   test("uses the same expression ABI and deterministic fuel as Bun", () => {
     expect(checkProgram(["add", 1, 2], [])).toEqual({ ok: true });
     expect(evalProgram(["add", 1, 2], {})).toMatchObject({ ok: true, value: 3 });
