@@ -298,3 +298,11 @@ summary, button, .actions a { scroll-margin-block: 1rem; }
 .introduction .opening, .introduction .room { position: relative; z-index: 1; }
 .doc { font-size: 1rem; line-height: 1.75; }
 .doc :is(h2, h3) { font-family: var(--font-text); letter-spacing: -.025em; }
+
+/* Blog: the shared article layer from plain-publication.css inside the site page frame. */
+.blog { padding: 24px 0 80px; }
+.blog .plain-site.plain-publication.plain-publication--embedded { --plain-shell-gutter: 0px; margin-inline: 0; }
+.blog .plain-publication__article-body h2[id], .blog .plain-publication__article-body h3[id] { scroll-margin-top: 24px; }
+.blog .plain-publication__article-body .table-scroll { margin-block: 1.5rem; }
+.blog .plain-publication__section-heading > h1 + p { margin-top: 16px; }
+@media (max-width: 640px) { .blog { padding-block-start: 16px; } }
