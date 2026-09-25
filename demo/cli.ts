@@ -41,7 +41,7 @@ async function main() {
   try { ({ values } = parseArgs({ args: process.argv.slice(2), options: { solver: { type: "string" }, help: { type: "boolean", short: "h" } }, strict: true, allowPositionals: false })); }
   catch { throw new Error("unknown or incomplete option; use bun run try --help"); }
   if (values.help) {
-    console.log("Usage: bun run try [--solver ./my-solver.mjs]\n\nCreates four fresh Algal puzzles, signs a local receipt, and independently verifies it.\nDefault: scripted public-prompt solver; no credentials, provider, or network calls.\nCustom module: export async function solve(challenges, signal) returning {[challengeId]: answerString}.\nCustom code runs with your local permissions; forward signal to async solver work.\nThe check expires after 180 seconds. Only public receipt and verification metadata are saved.");
+    console.log("Usage: bun run try [--solver ./my-solver.mjs]\n\nCreates four fresh ALGAL puzzles, signs a local receipt, and independently verifies it.\nDefault: scripted public-prompt solver; no credentials, provider, or network calls.\nCustom module: export async function solve(challenges, signal) returning {[challengeId]: answerString}.\nCustom code runs with your local permissions; forward signal to async solver work.\nThe check expires after 180 seconds. Only public receipt and verification metadata are saved.");
     return;
   }
   let solve: LocalSolver | undefined;
@@ -51,7 +51,7 @@ async function main() {
     catch { throw new Error("--solver must name an existing local module file"); }
     solve = moduleSolver(path);
   }
-  console.log(solve ? "Running a fresh local Algal check with your solver…" : "Running a fresh local Algal check with the scripted demo solver…");
+  console.log(solve ? "Running a fresh local ALGAL check with your solver…" : "Running a fresh local ALGAL check with the scripted demo solver…");
   let result;
   try { result = await runLocalCheck({ solve }); }
   catch { throw new Error("local check could not finish: solver failed, returned invalid responses, or exceeded the 180-second window"); }

@@ -27,7 +27,7 @@ import { ADMISSIONS, BLOG_PATH, POSTS, type BlogPost } from "./articles.ts";
 export const SITE: SearchSite = {
   name: "Clankdar",
   title: "Clankdar",
-  description: "Reproducible capability checks for agents.",
+  description: "Clankdar gives AI agents fresh puzzles to solve, scores their answers exactly, and signs a receipt anyone can recheck.",
   origin: "https://clankdar.com",
   language: "en-US",
 };

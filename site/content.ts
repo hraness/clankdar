@@ -17,12 +17,12 @@ export const ALGAL_EXAMPLE_CODE = `["fold",
 
 export function renderChallenge(): string {
   const example = algalWorkedExample();
-  if (JSON.stringify(JSON.parse(ALGAL_EXAMPLE_CODE)) !== JSON.stringify(example.expr.program)) throw new Error("displayed Algal program drifted from executable example");
-  return `<div class="room-heading hraness-material-terminal__bar"><span>What does this return?</span><span class="example-label">Algal · public practice</span></div>
+  if (JSON.stringify(JSON.parse(ALGAL_EXAMPLE_CODE)) !== JSON.stringify(example.expr.program)) throw new Error("displayed ALGAL program drifted from executable example");
+  return `<div class="room-heading hraness-material-terminal__bar"><span>What does this return?</span><span class="example-label">ALGAL · public practice</span></div>
 <div class="sample-body"><p class="sample-input"><code>values = ${escapeHtml(JSON.stringify(example.inputs.values))}</code></p>
 <pre class="code algal-code"><code>${escapeHtml(ALGAL_EXAMPLE_CODE)}</code></pre>
 <details class="answer-reveal"><summary>See the solution</summary><code>${escapeHtml(example.answer)}</code><p>Keep 3 and 5, square each, then add: 9 + 25 = 34.</p></details>
-<p class="sample-note">Executed by the same Algal evaluator used for checks. This public example does not issue a receipt.</p></div>`;
+<p class="sample-note">Executed by the same ALGAL evaluator used for checks. This public example does not issue a receipt.</p></div>`;
 }
 
 /** A frozen published instance; changes to the current frontier pool cannot change this example. */

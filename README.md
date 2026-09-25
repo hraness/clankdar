@@ -1,10 +1,10 @@
 # Clankdar
 
-Clankdar checks what your agent can solve. It issues fresh puzzles, scores each answer exactly, and signs a receipt your application can verify.
+Clankdar checks what AI agents can solve. Each check gives your agent fresh puzzles, scores every answer exactly, and signs a receipt that anyone can recheck.
 
-**[Try a puzzle in your browser](https://clankdar.com/#try).** No install or signup. [Docs](https://clankdar.com/docs/) · [Model benchmark](https://clankdar.com/benchmark/)
+**Preview.** [Try a puzzle in your browser](https://clankdar.com/#try). No install or signup. [Docs](https://clankdar.com/docs/) · [Model benchmark](https://clankdar.com/benchmark/)
 
-Clankdar is built on the design every Hraness project shares: a receipt records the submitted answers under a policy and deadline, so the check leaves a record your application can verify, and the default puzzles are small programs in Algal's expression language. [The thread through hraness](https://hraness.com/writing/the-thread-through-hraness) follows that design across the projects, and the [Algal vision](https://algal.computer/docs/vision/) states the bet behind it.
+Clankdar is built on the design every Hraness project shares: a receipt records the submitted answers under a policy and deadline, so the check leaves a record your application can verify, and the default puzzles are small programs in ALGAL's expression language. [The thread through hraness](https://hraness.com/writing/the-thread-through-hraness) follows that design across the projects, and the [ALGAL vision](https://algal.computer/docs/vision/) states the bet behind it.
 
 ## Make your first receipt
 
@@ -17,7 +17,7 @@ bun install --frozen-lockfile --ignore-scripts
 bun run try
 ```
 
-The demo creates four fresh Algal puzzles, solves them with an included script, signs a receipt, and independently verifies it. It saves `receipt.json` and `verification.json` in a new `results/try-…/` directory and prints a verification command.
+The demo creates four fresh ALGAL puzzles, solves them with an included script, signs a receipt, and independently verifies it. It saves `receipt.json` and `verification.json` in a new `results/try-…/` directory and prints a verification command.
 
 It needs no credentials and calls no model. A script answers the puzzles and a temporary key signs the receipt, so the result only shows that the flow works. It does not measure a model, and the receipt is not from the hosted service.
 
@@ -65,14 +65,14 @@ The default `algal-floor-v1` policy requires three of four answers within 180 se
 
 ## What the evidence means
 
-Clankdar’s default puzzles are small programs in [Algal’s expression language](docs/clankdar-algal-v1.md). Clankdar generates fresh inputs for each puzzle, and Algal’s official evaluator, pinned by commit and hash, computes the reference answer. A receipt records submitted answers under a policy and deadline. It doesn’t show which model answered, and a puzzle can be solved with code or handed to someone else; see [what a check establishes](https://clankdar.com/docs/#security).
+Clankdar’s default puzzles are small programs in [ALGAL’s expression language](docs/clankdar-algal-v1.md). Clankdar generates fresh inputs for each puzzle, and ALGAL’s official evaluator, pinned by commit and hash, computes the reference answer. A receipt records submitted answers under a policy and deadline. It doesn’t show which model answered, and a puzzle can be solved with code or handed to someone else; see [what a check establishes](https://clankdar.com/docs/#security).
 
 See the [model benchmark](https://clankdar.com/benchmark/) for recorded scores and test conditions, or [compare approaches](https://clankdar.com/docs/#comparison).
 
 <details>
-<summary>See an Algal puzzle</summary>
+<summary>See an ALGAL puzzle</summary>
 
-Given `values = [1, 3, 2, 5]`, what does this Algal program return?
+Given `values = [1, 3, 2, 5]`, what does this ALGAL program return?
 
 ```json
 ["fold",
@@ -85,7 +85,7 @@ Given `values = [1, 3, 2, 5]`, what does this Algal program return?
 ```
 
 Filter keeps 3 and 5. The fold adds their squares: **3² + 5² = 34**.
-The Algal evaluator computes the reference answer; no judge model decides
+The ALGAL evaluator computes the reference answer; no judge model decides
 whether the response passed. Run it with `bun run algal:example` after
 installing the repository dependencies.
 

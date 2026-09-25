@@ -48,7 +48,7 @@ function freeze(families: readonly Family[]): readonly Family[] {
   })));
 }
 
-/** Pinned official Algal expression execution; no model calibration is published. */
+/** Pinned official ALGAL expression execution; no model calibration is published. */
 export const ALGAL_FAMILIES: readonly Family[] = freeze([algal]);
 
 /** The published v2 suite: frozen family/tier coverage for the recorded calibration. */

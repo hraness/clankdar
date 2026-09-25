@@ -2,7 +2,7 @@
 
 Run these commands from the repository root with Bun 1.3.14. For the hosted
 HTTP API, start with the [quickstart](https://clankdar.com/docs/#quickstart).
-The [README](../README.md) explains the product and its Algal integration.
+The [README](../README.md) explains the product and its ALGAL integration.
 
 ## Run the local benchmark
 

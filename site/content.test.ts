@@ -15,7 +15,7 @@ describe("public site contract", () => {
   test("the sample is real and every registered family appears in the ladder", () => {
     expect(renderChallenge()).toContain(">34</code>");
     expect(renderChallenge()).toContain("[1,3,2,5]");
-    expect(renderChallenge()).toContain("Algal evaluator");
+    expect(renderChallenge()).toContain("ALGAL evaluator");
     const table = renderTiers();
     for (const family of FAMILIES) expect(table).toContain(`<code>${family.name}</code>`);
     expect(table).toContain(SUITE_VERSION);

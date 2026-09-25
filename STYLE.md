@@ -243,8 +243,8 @@ A prompt, skill, or template that makes a model write published text is public c
 
 ### Public copy
 
-- Clankdar's one-line description in the portfolio registry is “reproducible capability checks for agents”. The homepage title uses “capability checks for agents”, and the README and `llms.txt` leads start from the homepage heading “Check what your agent can solve.”
-- “Less yap. More proof.” and “reproducible capability checks.” are the owner's authored registry headlines. Do not rewrite them; propose punctuation changes to the owner.
+- Clankdar's canonical messaging record sets the category “Agent capability checks”, the tagline “Check what your agent can solve.”, and the meta description “Clankdar gives AI agents fresh puzzles to solve, scores their answers exactly, and signs a receipt anyone can recheck.” The homepage title, page and share descriptions, README and `llms.txt` leads, package description, and GitHub About use those lines.
+- The earlier authored lines “capability checks for the agent internet”, “capability checks for agents”, “reproducible capability checks.”, “Less yap. More proof.”, and “reproducible capability checks for agents” are superseded by the canonical record. Do not reintroduce them as current copy.
 - *Receipt* is Clankdar's public name for the signed result of a check. Use it on public pages, and say what it records the first time a page uses it. The other delivery words in `AGENTS.md` stay internal. Translate these when they would reach a reader:
   - *admission* becomes “signed result” (a technical reference may name `clankdar-gate-v1` admissions once, with that gloss);
   - *issuer-private held-out pool* becomes “private puzzle set”;
@@ -253,5 +253,5 @@ A prompt, skill, or template that makes a model write published text is public c
   - *bounded* becomes “limited to N”, with the limit named.
 - Keep the full list of what a check does not prove in one place: the “What a check establishes” section of the docs page (`site/docs/index.html`, `#security`). Other pages and docs state one short limit in the reader's terms, such as “It doesn’t show which model answered”, and link there.
 - Keep these limits whenever a page states them: the hosted API is an experimental staging service, open by invitation; the default policy asks four puzzles, requires three passes, and allows 180 seconds; staging allows 1,024 issued checks over its lifetime and 60 per fixed UTC minute, service-wide; the first accepted submission fixes the result, including a failed one.
-- Describe the benchmark page's scores as results on the earlier `clankdar-suite-v2` puzzle set until model scores for the Algal puzzles are published.
+- Describe the benchmark page's scores as results on the earlier `clankdar-suite-v2` puzzle set until model scores for the ALGAL puzzles are published.
 - The archives under `site/benchmark/*` are frozen and verified by hash and replay during the build. Never edit their text.

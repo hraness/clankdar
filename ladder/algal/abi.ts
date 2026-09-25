@@ -1,4 +1,4 @@
-/** Host ABI only. Every expression operation executes in the pinned official Algal WASM. */
+/** Host ABI only. Every expression operation executes in the pinned official ALGAL WASM. */
 import { ALGAL_FUEL_LIMIT } from "./provenance.ts";
 export type JsonValue = null | boolean | number | string | JsonValue[] | { [key: string]: JsonValue };
 export type JsonObject = { [key: string]: JsonValue };
@@ -20,23 +20,23 @@ const MAX_RESPONSE_BYTES = 65_536;
 const MAX_RETAINED_MEMORY = 16 * 1024 * 1024;
 
 export function createEvaluator(module: WebAssembly.Module) {
-  if (WebAssembly.Module.imports(module).length) throw new Error("Algal evaluator must have no host imports");
+  if (WebAssembly.Module.imports(module).length) throw new Error("ALGAL evaluator must have no host imports");
   let instance: Exports | undefined;
   const call = (operation: "algal_eval" | "algal_check", request: JsonObject): unknown => {
     const bytes = encoder.encode(JSON.stringify(request));
-    if (bytes.byteLength > MAX_REQUEST_BYTES) throw new Error("Algal request exceeds its byte limit");
+    if (bytes.byteLength > MAX_REQUEST_BYTES) throw new Error("ALGAL request exceeds its byte limit");
     const ex = instance ??= new WebAssembly.Instance(module, {}).exports as unknown as Exports;
-    if (ex.memory.buffer.byteLength > MAX_RETAINED_MEMORY) { instance = undefined; throw new Error("Algal retained memory limit exceeded"); }
+    if (ex.memory.buffer.byteLength > MAX_RETAINED_MEMORY) { instance = undefined; throw new Error("ALGAL retained memory limit exceeded"); }
     let input = 0, output = 0, outputLength = 0;
     try {
       input = ex.algal_alloc(bytes.byteLength);
-      if (!input) throw new Error("Algal input allocation failed");
+      if (!input) throw new Error("ALGAL input allocation failed");
       new Uint8Array(ex.memory.buffer, input, bytes.byteLength).set(bytes);
       const packed = ex[operation](input, bytes.byteLength);
-      if (!packed) throw new Error("Algal evaluator returned no result");
+      if (!packed) throw new Error("ALGAL evaluator returned no result");
       output = Number(packed >> 32n);
       outputLength = Number(packed & 0xffff_ffffn);
-      if (outputLength > MAX_RESPONSE_BYTES || ex.memory.buffer.byteLength > MAX_RETAINED_MEMORY) throw new Error("Algal result exceeds its memory or byte limit");
+      if (outputLength > MAX_RESPONSE_BYTES || ex.memory.buffer.byteLength > MAX_RETAINED_MEMORY) throw new Error("ALGAL result exceeds its memory or byte limit");
       return JSON.parse(decoder.decode(new Uint8Array(ex.memory.buffer, output, outputLength)));
     } catch (error) {
       instance = undefined;
@@ -48,7 +48,7 @@ export function createEvaluator(module: WebAssembly.Module) {
   };
   return {
     evalProgram(program: JsonValue, env: JsonObject, fuel = ALGAL_FUEL_LIMIT): ExprResult {
-      if (!Number.isSafeInteger(fuel) || fuel < 0 || fuel > ALGAL_FUEL_LIMIT) throw new Error("Algal fuel must be an integer from 0 to 10000");
+      if (!Number.isSafeInteger(fuel) || fuel < 0 || fuel > ALGAL_FUEL_LIMIT) throw new Error("ALGAL fuel must be an integer from 0 to 10000");
       return call("algal_eval", { program, env, fuel }) as ExprResult;
     },
     checkProgram(program: JsonValue, names: readonly string[]): ExprCheck {

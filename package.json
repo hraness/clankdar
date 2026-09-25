@@ -1,6 +1,7 @@
 {
   "name": "clankdar",
   "private": true,
+  "description": "Clankdar gives AI agents fresh puzzles to solve, scores their answers exactly, and signs a receipt anyone can recheck.",
   "type": "module",
   "packageManager": "bun@1.3.14",
   "scripts": {

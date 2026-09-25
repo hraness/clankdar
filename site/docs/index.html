@@ -62,7 +62,7 @@
 cd clankdar
 bun install --frozen-lockfile --ignore-scripts
 bun run try</code></pre>
-          <p>The demo creates four fresh Algal puzzles, solves them with an included script, and signs and independently verifies the result. It saves <code>receipt.json</code> and <code>verification.json</code> in a new <code>results/try-…/</code> directory and prints the paths and verification command.</p>
+          <p>The demo creates four fresh ALGAL puzzles, solves them with an included script, and signs and independently verifies the result. It saves <code>receipt.json</code> and <code>verification.json</code> in a new <code>results/try-…/</code> directory and prints the paths and verification command.</p>
           <p>It needs no credentials and calls no model. A script answers the puzzles and a temporary key signs the result, so the score only shows that the flow works. It is not a model score, and the receipt does not come from the hosted service.</p>
           <details class="report-details" id="own-solver"><summary>Use your own solver</summary>
             <p>Export <code>solve(challenges, signal)</code> from a JavaScript or TypeScript module, then run:</p>
@@ -147,7 +147,7 @@ curl -fsS &quot;$CLANKDAR_URL/v1/checks&quot; \
   -H &quot;Content-Type: application/json&quot; \
   --data &#x27;{&quot;policyId&quot;:&quot;algal-floor-v1&quot;}&#x27; &gt; check.json
 jq -r &#x27;.challenges[] | &quot;\(.challengeId)\n\(.prompt)\n&quot;&#x27; check.json</code></pre>
-          <p><code>check.json</code> contains the challenge IDs and prompts, <code>expiresAt</code>, and a private <code>ticket</code> for this check. The default <code>algal-floor-v1</code> policy gives you four Algal program puzzles, requires three passing answers, and allows 180 seconds.</p>
+          <p><code>check.json</code> contains the challenge IDs and prompts, <code>expiresAt</code>, and a private <code>ticket</code> for this check. The default <code>algal-floor-v1</code> policy gives you four ALGAL program puzzles, requires three passing answers, and allows 180 seconds.</p>
           <h3>Build the answer map and submit once.</h3>
 <pre class="code"><code>jq &#x27;.challenges | map({key: .challengeId, value: &quot;&quot;}) | from_entries&#x27; \
   check.json &gt; answers.json</code></pre>
@@ -169,9 +169,9 @@ jq &#x27;{id, pass, passed, required, receiptUrl, sha256}&#x27; result.json</cod
         <section class="doc-section" id="evidence" aria-labelledby="evidence-title">
           <h2 id="evidence-title">See the benchmark, puzzle design, and comparisons.</h2>
           <p id="scoring"><span id="scoring-title" class="anchor-alias" aria-hidden="true"></span><span id="profiles" class="anchor-alias" aria-hidden="true"></span><span id="agent" class="anchor-alias" aria-hidden="true"></span><span id="ladder" class="anchor-alias" aria-hidden="true"></span>See the <a href="/benchmark/">model benchmark</a> for recorded scores, test conditions, and downloadable evidence.</p>
-          <details class="report-details" id="algal"><summary>How Clankdar uses Algal</summary>
+          <details class="report-details" id="algal"><summary>How Clankdar uses ALGAL</summary>
             <h3 id="algal-title">A program with a checkable answer.</h3>
-            <p>Algal’s official Rust evaluator, compiled to WebAssembly, calculates the reference answer for each program puzzle. The CLI and Worker use the same pinned evaluator. Clankdar supplies fresh inputs, deadlines, exact scoring, and signed receipts.</p>
+            <p>ALGAL’s official Rust evaluator, compiled to WebAssembly, calculates the reference answer for each program puzzle. The CLI and Worker use the same pinned evaluator. Clankdar supplies fresh inputs, deadlines, exact scoring, and signed receipts.</p>
             <p>Programs compose filtering and arithmetic, coupled recurrences, and matrix transitions. They have a 10,000-unit work budget and no network, filesystem, or model access. Your solver returns the final integer; Clankdar does not execute code supplied in a response.</p>
             <pre class="code"><code>bun run algal:example</code></pre>
             <p>Run this worked example from the repository after installing dependencies. <a href="https://github.com/hraness/clankdar/blob/main/docs/clankdar-algal-v1.md">Inspect the program contract, evaluator pin, and solution</a>.</p>

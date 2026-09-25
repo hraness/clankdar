@@ -16,21 +16,21 @@ The user revised the earlier campaign-first direction after PRs #36 and #37. Tho
 
 ## Release boundaries
 
-The existing invitation-only staging service and resources are reused. No paid upgrade or new database/bucket/account is needed. Default standalone checks now use `algal-floor-v1` and the official Algal expression evaluator. Explicit `v2-floor-v1` and frontier policies remain frozen and available. The core creates no hosted availability denominator. Receipt content is public, and integrations should retain their own copies rather than assume permanent staging retention.
+The existing invitation-only staging service and resources are reused. No paid upgrade or new database/bucket/account is needed. Default standalone checks now use `algal-floor-v1` and the official ALGAL expression evaluator. Explicit `v2-floor-v1` and frontier policies remain frozen and available. The core creates no hosted availability denominator. Receipt content is public, and integrations should retain their own copies rather than assume permanent staging retention.
 
 The issuer and session-wrapping secrets remain unchanged. Existing actor/anchor rows, Durable Objects, signed histories, campaigns, and `sha256/*` objects remain intact. The quota migration is additive, and a code rollback can leave its table and new receipt objects untouched. No counter reset or data deletion is part of delivery.
 
 No AI provider is called implicitly. Qualification uses a scripted public-prompt solver and an empty-answer failure control, not a model benchmark. Model identity, uniqueness, independent operation, spend, and authority are not claims of a check receipt. Held-out hosted pools, external anchors, key recovery, public self-service onboarding, and load-tested production capacity are outside this change.
 
-## Algal and product alignment
+## ALGAL and product alignment
 
-The follow-up makes Clankdar an application of Algal’s bounded expression
+The follow-up makes Clankdar an application of ALGAL’s bounded expression
 language, not a second implementation. Pin the upstream WASM by commit and
 hash; share that evaluator between Bun and Workers. Add a separately versioned
 `clankdar-algal-v1` suite and `algal-floor-v1` policy. Preserve all previous
 generators, recorded scores, policy IDs, tickets, and stored receipts.
 
-The homepage leads with an interactive public Algal example and the shortest
+The homepage leads with an interactive public ALGAL example and the shortest
 path to a complete local receipt. Deeper docs retain the harder frontier
 example, archive-derived benchmark counts, and source-backed comparison with
 traffic-risk checks, proof-of-work, and request signatures. Keep the new
@@ -41,7 +41,7 @@ Use the existing shared design-kit header grammar and sticky footer. Validate
 compact navigation, header/footer positioning while scrolling, content
 clearance, keyboard behavior, and anchored navigation on desktop and mobile.
 One integration owner runs the aggregate and browser gates, then the current-head
-PR, deployment, exact-site readback, and bounded live Algal/legacy qualification.
+PR, deployment, exact-site readback, and bounded live ALGAL/legacy qualification.
 
 
 ## Conversion follow-up acceptance

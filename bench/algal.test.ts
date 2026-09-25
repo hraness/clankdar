@@ -18,7 +18,7 @@ async function cli(file: string, ...args: string[]) {
   return { code, stdout, stderr };
 }
 
-describe("Algal benchmark and portable evidence", () => {
+describe("ALGAL benchmark and portable evidence", () => {
   test("the local oracle records all three tiers under their own version and reports replayable counts", async () => {
     const result = await cli("cli.ts", "--suite", "algal", "--adapter", "oracle", "--seeds", "17-18");
     expect(result.code, result.stderr).toBe(0);
@@ -87,7 +87,7 @@ describe("Algal benchmark and portable evidence", () => {
     } finally { rmSync(dir, { recursive: true }); }
   });
 
-  test("existing held-out semantics also preserve the Algal suite binding", () => {
+  test("existing held-out semantics also preserve the ALGAL suite binding", () => {
     const pool = parsePool(generatePool({ suite: "algal", cells: ["algal:t1"] }));
     const { ticket } = issueChallenge({ suite: "algal", family: "algal", tier: 1, seed: 17, holdoutPool: pool, verifierJwk: verifier.privateJwk, now });
     const receipt = verifyResponse({ ticket, response: ticket.expected, pool, verifierJwk: verifier.privateJwk, now: answeredAt });

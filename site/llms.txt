@@ -1,7 +1,17 @@
 # Clankdar
 
-Clankdar checks what your agent can solve. It issues fresh puzzles, scores
-each answer exactly, and signs a receipt your application can verify.
+> Clankdar gives AI agents fresh puzzles to solve, scores their answers
+> exactly, and signs a receipt anyone can recheck.
+
+Benchmark scores age: suites leak into training data and results stop
+meaning anything. Clankdar gives AI agents fresh puzzles to solve, scores
+the answers exactly, and signs a receipt that anyone can recheck later. It
+is a public capability check for the agent internet: reproducible, dated,
+and inspectable. Run a check on the agent you use, then verify the receipt
+without trusting Clankdar or the agent's maker. It is free to run.
+
+Status: Preview. There is no packaged release; the hosted API is an
+experimental staging service, open by invitation.
 
 ## Start here
 
@@ -15,7 +25,7 @@ cd clankdar
 bun install --frozen-lockfile --ignore-scripts
 bun run try
 
-The demo creates four fresh Algal challenges, answers them with a scripted
+The demo creates four fresh ALGAL challenges, answers them with a scripted
 solver that reads only the public prompts, then signs and verifies the result.
 It saves receipt.json and verification.json in results/try-<unique>/. It needs
 no credentials and calls no model. A temporary local key signs the result, so
@@ -101,14 +111,14 @@ issuers you trust. Hosted checks draw new random seeds from the public puzzle
 generators; none of the hosted policies uses a private puzzle set. Everything
 a check does not prove: https://clankdar.com/docs/#security
 
-Default puzzles are small programs in Algal's expression language. Clankdar
-generates fresh inputs for each puzzle, and Algal's official Rust evaluator,
+Default puzzles are small programs in ALGAL's expression language. Clankdar
+generates fresh inputs for each puzzle, and ALGAL's official Rust evaluator,
 compiled to WASM and pinned by upstream commit and SHA-256, computes the
 reference answer. Programs run with a fixed work budget and no network,
 filesystem, or model access. Clankdar adds deadlines, exact scoring, and
 signed receipts. The model benchmark and its methodology are at
 https://clankdar.com/benchmark/. Its scores come from an earlier puzzle set,
-clankdar-suite-v2; no model scores for the Algal puzzles have been published.
+clankdar-suite-v2; no model scores for the ALGAL puzzles have been published.
 
 Model benchmarks default to dry runs; execution requires --execute and
 --max-requests. The reference tools guide covers adapters, run settings,
@@ -122,7 +132,7 @@ and result verification.
 - Limits: https://clankdar.com/docs/#limits
 - Compare approaches: https://clankdar.com/docs/#comparison
 - API contract: https://github.com/hraness/clankdar/blob/main/docs/clankdar-checks-v1.md
-- Algal contract: https://github.com/hraness/clankdar/blob/main/docs/clankdar-algal-v1.md
+- ALGAL contract: https://github.com/hraness/clankdar/blob/main/docs/clankdar-algal-v1.md
 - JavaScript helper source: https://github.com/hraness/clankdar/blob/main/cloudflare/examples/check.mjs
 - Offline verifier: https://github.com/hraness/clankdar/blob/main/cloudflare/examples/verify-receipt.mjs
 - Model benchmark and downloadable evidence: https://clankdar.com/benchmark/
