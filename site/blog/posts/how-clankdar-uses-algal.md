@@ -91,5 +91,3 @@ An exact referee makes the answer key trustworthy. It does not say who produced 
 "Correct" here means what ALGAL's pinned evaluator returns under `algal.expr.v1`. Clankdar checks that it is running exactly that evaluator; it does not independently prove the evaluator right. The 16 MiB figure is a check on memory kept after a run, not a hard limit on peak use.
 
 No model scores for the ALGAL puzzles have been published. The benchmark page's recorded scores come from Clankdar's earlier puzzle set, and publishing ALGAL scores waits on a separate calibration recorded under fixed conditions. Clankdar is in Preview: you can try puzzles in the browser or run it from source, and the hosted API is an experimental staging service open by invitation.
-
-ALGAL keeps a list of [products built on ALGAL](https://algal.computer/blog/built-on-algal/). For the general method behind replaying someone else's run without trusting their machine, read [Checking someone else's run offline](https://hraness.com/reference/correctness/verifying-receipts-offline).
