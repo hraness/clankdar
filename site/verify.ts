@@ -17,6 +17,8 @@ const fixtureCampaign = { campaignId: `cmp_${"b".repeat(16)}`, policyId: "v2-flo
 const fixtureActor = { address: fixtureAddress, publicKey: "d".repeat(43), createdAt: "2026-09-18T00:00:00Z", evidence: { campaigns: 1, heartbeats: 0 }, campaigns: [fixtureCampaign], claims: { automatedAvailability: { completed: 5, missed: 2 }, capability: { admitted: 4, epochs: 5 } }, head: { seq: 16, eventHash: "e".repeat(64) } };
 const profilePaths = [`/actors/${fixtureAddress}`, `/actors/${fixtureAddress}/campaigns/${fixtureCampaign.campaignId}`];
 const blogPaths = ["/blog/", "/blog/introducing-clankdar", "/blog/how-clankdar-uses-algal"];
+// A missing address, and a mistyped real one that earns "Did you mean".
+const missingPaths: readonly [string, string | undefined][] = [["/this-page-does-not-exist", undefined], ["/benchmarks/", "/benchmark/"]];
 const server = Bun.serve({
   hostname: "127.0.0.1", port: 0,
   fetch(request) {
@@ -27,7 +29,8 @@ const server = Bun.serve({
     let path = pathname.slice(1);
     if (!path || path.endsWith("/")) path += "index.html";
     else if (!path.includes(".")) path += files.has(`${path}.html`) ? ".html" : "/index.html";
-    if (!files.has(path)) return new Response("Not found", { status: 404, headers });
+    // Vercel answers a path without a file with 404.html and status 404.
+    if (!files.has(path)) return new Response(Bun.file(resolve(root, "404.html")), { status: 404, headers: { ...headers, "content-type": "text/html; charset=utf-8" } });
     return new Response(Bun.file(resolve(root, path)), { headers });
   },
 });
@@ -100,8 +103,15 @@ try {
       const page = await context.newPage();
       activePage = page;
       page.on("pageerror", (error) => errors.push(error.message));
-      page.on("console", (message) => { if (message.type() === "error") errors.push(message.text()); });
-      page.on("response", (response) => { if (response.status() >= 400) errors.push(`HTTP ${response.status()} ${new URL(response.url()).pathname}`); });
+      page.on("console", (message) => {
+        // Chrome logs the 404 document itself; the missing-path checks expect that status.
+        const source = message.location().url ? new URL(message.location().url).pathname : "";
+        if (message.type() === "error" && !missingPaths.some(([missing]) => missing === source)) errors.push(message.text());
+      });
+      page.on("response", (response) => {
+        const pathname = new URL(response.url()).pathname;
+        if (response.status() >= 400 && !missingPaths.some(([missing]) => missing === pathname)) errors.push(`HTTP ${response.status()} ${pathname}`);
+      });
       for (const path of ["/", "/docs/", "/benchmark/", ...blogPaths, ...profilePaths]) {
         await page.goto(origin + path, { waitUntil: "networkidle" });
         await page.evaluate(async () => { await document.fonts.ready; });
@@ -166,6 +176,24 @@ try {
           await archive.locator("summary").click();
           await expect(archive.locator('a[href="/benchmark/agent-v0/manifest.json"]')).toBeVisible();
         }
+        checked++;
+      }
+      for (const [path, suggestion] of missingPaths) {
+        const response = await page.goto(origin + path, { waitUntil: "networkidle" });
+        expect(response!.status()).toBe(404);
+        await expect(page).toHaveTitle("Page not found · Clankdar");
+        await expect(page.locator('meta[name="robots"]')).toHaveAttribute("content", "noindex");
+        await expect(page.locator("h1")).toHaveText("We can’t find that page");
+        await expect(page.locator(".hraness-status-page__action")).toHaveAttribute("href", "/docs/#quickstart");
+        await expect(page.locator(".hraness-status-page__next-link")).toHaveCount(3);
+        await expect(page.locator(".hraness-status-page")).toHaveAttribute("data-hraness-status-field", "live");
+        const hint = page.locator(".hraness-status-page__hint");
+        if (suggestion === undefined) await expect(hint).toBeHidden();
+        else await expect(hint.locator("a")).toHaveAttribute("href", suggestion);
+        await expect(page.locator("#hraness-site-footer")).toHaveCount(1);
+        await expect(page.locator(".masthead .site-nav a")).toHaveText(["Docs", "Benchmark", "Blog", "GitHub"]);
+        expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1)).toBe(true);
+        await page.screenshot({ path: resolve(screenshots, `not-found${suggestion === undefined ? "" : "-hint"}-${width}-${theme}.png`) });
         checked++;
       }
       if (width === 1280 && theme === "light") {
