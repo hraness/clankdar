@@ -10,7 +10,9 @@ import { verifyCalibration } from "../bench/archive.ts";
 import { verifyAdmissionArchive } from "../bench/admission-archive.ts";
 import { CAPABILITY_PROFILES, profileReport } from "../bench/profiles.ts";
 import { POSTS } from "./blog/articles.ts";
-import { FEED_PATH, renderFeed, renderIndexPage, renderLlmsSection, renderPostPage, renderSitemap } from "./blog/render.ts";
+import { BLOG_PATH } from "./blog/articles.ts";
+import { FEED_PATH, indexablePosts, renderFeed, renderIndexPage, renderLlmsSection, renderPostPage, renderSitemap } from "./blog/render.ts";
+import { STATIC_PAGES, renderNotFound, routeLabel } from "./not-found.ts";
 const root = import.meta.dir;
 const output = resolve(root, "dist");
 const kit = dirname(fileURLToPath(import.meta.resolve("@hraness/design-kit/paper-theme.css")));
@@ -54,12 +56,19 @@ for (const [page, html] of blogPages) {
   await writeFile(target, html.replace(footerMarker, supportFooter()));
 }
 await writeFile(resolve(output, FEED_PATH.slice(1)), renderFeed());
-await writeFile(resolve(output, "sitemap.xml"), renderSitemap(["/", "/docs/", "/benchmark/"]));
+await writeFile(resolve(output, "sitemap.xml"), renderSitemap(STATIC_PAGES.map(page => page.href)));
+// Vercel serves 404.html with status 404 for any path without a file. "Did you mean" draws on the sitemap's pages.
+const notFoundTemplate = await readFile(resolve(root, "404.html"), "utf8");
+if (notFoundTemplate.split(footerMarker).length !== 2) throw new Error("Expected one shared footer slot in 404.html.");
+const notFoundRoutes = [...STATIC_PAGES, { href: BLOG_PATH, label: "Blog" }, ...indexablePosts().map(post => ({ href: post.path, label: routeLabel(post.title) }))];
+const notFound = notFoundTemplate.replace("{{STATUS_PAGE}}", renderNotFound(notFoundRoutes));
+if (/\{\{[A-Z_]+\}\}/.test(notFound)) throw new Error("Unresolved content slot in 404.html");
+await writeFile(resolve(output, "404.html"), notFound.replace(footerMarker, supportFooter()));
 await writeFile(resolve(output, "llms.txt"), (await readFile(resolve(root, "llms.txt"), "utf8")).trimEnd() + "\n" + renderLlmsSection());
 for (const archive of ["pilot-v0", "v2-calibration-0", "frontier-v0", "agent-v0", "admissions-opus5-2026-09-19"]) await cp(resolve(root, `benchmark/${archive}`), resolve(output, `benchmark/${archive}`), { recursive: true });
 await writeFile(resolve(output, "benchmark/v2-calibration-0/profiles.json"), JSON.stringify({ schemaVersion: 1, suiteHash: v2.suiteHash, profiles: CAPABILITY_PROFILES, models: profileReport(v2) }, null, 2) + "\n");
 await cp(fileURLToPath(import.meta.resolve("@hraness/site-footer/stylex.css")), resolve(output, "footer.css"));
-const files = ["plain-publication.css", "paper-theme.css", "palette-system.css", "palette-bridge.css", "syntax-highlighting.css", "product-marketing.css", "product-marketing-preset.css", "lantern-material.css", "appearance-menu.css", "fonts.css"];
+const files = ["plain-publication.css", "paper-theme.css", "palette-system.css", "palette-bridge.css", "syntax-highlighting.css", "product-marketing.css", "product-marketing-preset.css", "lantern-material.css", "appearance-menu.css", "status-page.css", "fonts.css"];
 for (const name of files) await cp(resolve(kit, name), resolve(output, "design", name));
 await cp(resolve(kit, "fonts/nebula-sans"), resolve(output, "design/fonts/nebula-sans"), { recursive: true });
 await cp(resolve(kit, "fonts/instrument-serif"), resolve(output, "design/fonts/instrument-serif"), { recursive: true });
@@ -70,6 +79,8 @@ const result = await Bun.build({ entrypoints: [resolve(root, "appearance.ts")], 
 if (!result.success) throw new AggregateError(result.logs, "Appearance bundle failed");
 const practice = await Bun.build({ entrypoints: [resolve(root, "practice.ts")], outdir: output, naming: "practice.js", target: "browser", format: "iife", minify: true });
 if (!practice.success) throw new AggregateError(practice.logs, "Practice bundle failed");
+const statusPage = await Bun.build({ entrypoints: [resolve(root, "status-page.ts")], outdir: output, naming: "status-page.js", target: "browser", format: "iife", minify: true });
+if (!statusPage.success) throw new AggregateError(statusPage.logs, "Status page bundle failed");
 const pkg = JSON.parse(await readFile(resolve(kit, "../package.json"), "utf8"));
 await writeFile(resolve(output, "design/source.json"), JSON.stringify({ package: pkg.name, version: pkg.version, files: Object.fromEntries(await Promise.all(files.map(async name => [name, createHash("sha256").update(await readFile(resolve(output, "design", name))).digest("hex")]))) }, null, 2));
-console.log(`Built Clankdar (${pages.length + blogPages.length} pages) with ${pkg.name}@${pkg.version}.`);
+console.log(`Built Clankdar (${pages.length + blogPages.length + 1} pages) with ${pkg.name}@${pkg.version}.`);

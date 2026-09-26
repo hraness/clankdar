@@ -184,11 +184,10 @@ code { font-family: var(--font-mono, ui-monospace, "SFMono-Regular", Consolas, m
 }
 
 .header-actions { flex: 0 0 auto; }
-/* The shared menu owns geometry, keyboard states and forced-color paint. */
-.header-actions .hraness-design-theme-toggle__trigger { min-width: 44px; min-height: 44px; border-color: var(--hraness-material-seam); box-shadow: var(--hraness-material-lift); }
-.header-actions .hraness-design-theme-toggle__popover { box-shadow: var(--hraness-material-lift); }
+/* The shared menu owns Lantern paint, keyboard states and forced-color paint; the site keeps a 44px target. */
+.header-actions .hraness-design-theme-toggle__trigger { min-width: 44px; min-height: 44px; }
 @media (max-width: 640px) { .introduction { padding-inline: 18px; margin-inline: -18px; } }
-@media (forced-colors: active) { .room, .hraness-design-theme-toggle__trigger, .hraness-design-theme-toggle__popover { border: 1px solid CanvasText; } }
+@media (forced-colors: active) { .room { border: 1px solid CanvasText; } }
 
 /* The shared header owns chrome; this compact slot layout keeps its final action beside the brand. */
 @media (max-width: 48rem) {
@@ -306,3 +305,5 @@ summary, button, .actions a { scroll-margin-block: 1rem; }
 .blog .plain-publication__article-body .table-scroll { margin-block: 1.5rem; }
 .blog .plain-publication__section-heading > h1 + p { margin-top: 16px; }
 @media (max-width: 640px) { .blog { padding-block-start: 16px; } }
+/* The shared status page lives in a cascade layer, so the unlayered element rules above would restyle its headings, text, and lists. */
+.hraness-status-page :is(h1, h2, p, ul) { all: revert-layer; }
