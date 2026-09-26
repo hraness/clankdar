@@ -148,7 +148,7 @@ try {
           if (path !== "/blog/") {
             await expect(page.locator(".plain-publication__byline")).toHaveText("By Hraness");
             await expect(page.locator(".plain-publication__provenance")).toHaveText("Drafted with AI from the source code and reviewed by Claude Opus 5.5 (claude-opus-5-5) editorial review.");
-            await expect(page.locator('meta[name="robots"]')).toHaveCount(path.endsWith("how-clankdar-uses-algal") ? 1 : 0);
+            await expect(page.locator('meta[name="robots"]')).toHaveCount(0);
           }
         }
         if (path === "/benchmark/") {
