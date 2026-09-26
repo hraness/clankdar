@@ -122,13 +122,11 @@ export const POSTS: readonly BlogPost[] = [
     sources: usesSources,
     admission: {
       href: "/blog/how-clankdar-uses-algal",
-      // hostFit is 0 until runtime:clankdar:algal:scores-puzzles-with and its
-      // detail sentence reach @hraness/design-kit/portfolio; rescore then.
-      lifecycle: "quarantined",
+      lifecycle: "indexable",
       readerJob: "Decide whether a Clankdar score on the default puzzles can be trusted and rechecked without trusting a judge model or the person who ran it.",
       nonObviousAnswer: "Clankdar never reimplements ALGAL: it loads ALGAL's own WebAssembly evaluator at a pinned commit, checks the file's SHA-256 before use, tests that the module takes no host imports and agrees with ALGAL's official loader, and any change to that pin or the generator requires a new suite name, so replay can rebuild each puzzle from suite, type and seed and fail the whole run on any mismatch.",
       originalContribution: "The scoring cases from Clankdar's tests and the pinning and replay rules, explained from the consumer's side.",
-      hostFit: "A How X uses Y post on the consumer's host; the relation is not yet registered in the portfolio facts, so the post stays out of indexes.",
+      hostFit: "The registered runtime:clankdar:algal:scores-puzzles-with relation carries the detail sentence this post explains, on the consumer's host.",
       nearestUrls: [
         { url: "/blog/introducing-clankdar", distinction: "The introduction covers the product; this post covers only the ALGAL integration." },
         { url: "https://algal.computer/blog/built-on-algal/", distinction: "The provider hub lists consumers; this post explains one of them in depth." },
@@ -138,7 +136,7 @@ export const POSTS: readonly BlogPost[] = [
         "The scoring table's four cases are taken from Clankdar's own test file rather than restated from the spec.",
         "The post names the 16 MiB figure as a check on retained memory, not a peak-use limit.",
       ],
-      scores: { readerUtility: 2, originalEvidence: 1, factualConfidence: 2, hostFit: 0, voiceIntegrity: 2, maintenanceValue: 1 },
+      scores: { readerUtility: 2, originalEvidence: 1, factualConfidence: 2, hostFit: 2, voiceIntegrity: 2, maintenanceValue: 1 },
       owner: "Hraness",
       drafting: "ai-from-source",
       review: REVIEW,

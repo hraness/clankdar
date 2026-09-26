@@ -17,8 +17,8 @@ describe("blog", () => {
       expect(post.path).toBe(`/blog/${post.slug}`);
       expect(post.admission.humanReview).toBeNull();
     }
-    expect(indexable.map(post => post.slug)).toEqual(["introducing-clankdar"]);
-    expect(quarantined.map(post => post.slug)).toEqual(["how-clankdar-uses-algal"]);
+    expect(indexable.map(post => post.slug)).toEqual(["introducing-clankdar", "how-clankdar-uses-algal"]);
+    expect(quarantined.map(post => post.slug)).toEqual([]);
   });
 
   test("every post shows the Hraness byline and the recorded AI review", () => {
