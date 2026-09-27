@@ -1,0 +1,48 @@
+{
+  "schema": "hraness-hf-export-v1",
+  "repo_type": "dataset",
+  "repo_id": "hranesscom/clankdar-benchmarks",
+  "rights_status": "approved-owner-cc-by-4.0",
+  "files": [
+    {
+      "source": "site/benchmark/agent-v0/manifest.json",
+      "destination": "data/agent-v0/manifest.json",
+      "sha256": "4aa5ee311dcccaf823f8963b6d6fcec78918f15bb926c6c6d6ced9767523c5ca"
+    },
+    {
+      "source": "site/benchmark/agent-v0/report.json",
+      "destination": "data/agent-v0/report.json",
+      "sha256": "d4882450ab8e462d71f6d57965a51161ce76e5407696c217bc66bf2ae7046b65"
+    },
+    {
+      "source": "site/benchmark/frontier-v0/manifest.json",
+      "destination": "data/frontier-v0/manifest.json",
+      "sha256": "65640321612a4b38d16dac312c2d29a416ea147347489ae26b9334e6d8629873"
+    },
+    {
+      "source": "site/benchmark/frontier-v0/report.json",
+      "destination": "data/frontier-v0/report.json",
+      "sha256": "bdd82932c99bb2fbe0bbb07b1fc926486117b1046a2afef34b3e56b7e6fdc99f"
+    },
+    {
+      "source": "site/benchmark/pilot-v0/manifest.json",
+      "destination": "data/pilot-v0/manifest.json",
+      "sha256": "07ea8518ea5e03855772f9963fa284dfc3717cbf2cb0ac9a44f79ea0cd9c8c68"
+    },
+    {
+      "source": "site/benchmark/pilot-v0/report.json",
+      "destination": "data/pilot-v0/report.json",
+      "sha256": "3b32d571af15ee41b5f02a6ff17bc8348d6599c83dd73cb15447ff4f51da03b2"
+    },
+    {
+      "source": "site/benchmark/v2-calibration-0/manifest.json",
+      "destination": "data/v2-calibration-0/manifest.json",
+      "sha256": "a9d900d7ef456fcf05b47a454e68f92abf3dc9e6e0d400c05823fcb5b9aff12e"
+    },
+    {
+      "source": "site/benchmark/v2-calibration-0/report.json",
+      "destination": "data/v2-calibration-0/report.json",
+      "sha256": "96dd9934d685128312a6a5d951ee367158a8ba892700b27a0920b4bed69ba556"
+    }
+  ]
+}
