@@ -28,7 +28,7 @@ export function practicePuzzles(): PracticePuzzle[] {
 export function renderPractice(): string {
   const puzzles = practicePuzzles();
   const first = puzzles[0];
-  return `<div class="room-heading hraness-material-terminal__bar"><span>Try one puzzle</span><span class="example-label">No signup</span></div>
+  return `<div class="room-heading"><span>Try one puzzle</span></div>
 <div class="sample-body" data-practice="${escapeHtml(JSON.stringify(puzzles))}">
 <p class="practice-task">Keep the numbers above 2. Square them, then add.</p>
 <p class="practice-input"><code data-practice-values>values = ${escapeHtml(JSON.stringify(first.values))}</code></p>
