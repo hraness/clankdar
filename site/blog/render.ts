@@ -34,7 +34,12 @@ export const SITE: SearchSite = {
 export const FEED_PATH = "/blog/feed.xml";
 const BLOG_TITLE = "Clankdar blog";
 const BLOG_DESCRIPTION = "Posts from Hraness on how Clankdar scores AI agents on fresh puzzles with computed answers, and how to rerun a recorded check yourself.";
-const HRANESS = { kind: "Organization", name: "Hraness" } as const;
+const HRANESS = {
+  kind: "Organization",
+  name: "Hraness",
+  url: "https://hraness.com",
+  sameAs: ["https://github.com/hraness"],
+} as const;
 const IMAGE = { path: "/icon.png", width: 512, height: 512, contentType: "image/png", alt: "The Clankdar mark" } as const;
 
 assertArticleAdmissions(ADMISSIONS);
