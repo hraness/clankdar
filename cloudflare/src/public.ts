@@ -11,7 +11,7 @@ const campaignPath = (address: string, id: string) => `${actorPath(address)}/cam
 
 function page(title: string, body: string): Response {
   return new Response(`<!doctype html>
-<html lang="en" data-hraness-theme="paper" data-palette="tokyo-night" data-hraness-material="lantern" data-hraness-pattern="mesh" data-hraness-marketing-preset="editorial"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<html lang="en" data-hraness-theme="paper" data-palette="tokyo-night" data-hraness-material="lantern" data-hraness-pattern="none" data-hraness-marketing-preset="editorial"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="robots" content="noindex,follow"><meta name="color-scheme" content="light dark">
 <meta name="theme-color" media="(prefers-color-scheme: light)" content="#e1e2e7"><meta name="theme-color" media="(prefers-color-scheme: dark)" content="#1a1b26">
 <title>${escape(title)} · Clankdar</title>

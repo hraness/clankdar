@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en" data-hraness-theme="paper" data-hraness-material="lantern" data-palette="tokyo-night" data-hraness-pattern="mesh" data-hraness-marketing-preset="editorial">
+<html lang="en" data-hraness-theme="paper" data-hraness-material="lantern" data-palette="tokyo-night" data-hraness-pattern="none" data-hraness-marketing-preset="editorial">
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -34,7 +34,7 @@
       <div class="hraness-marketing-header__inner">
         <a class="wordmark hraness-marketing-header__brand" href="/" aria-label="Clankdar home"><img class="mark" alt="" aria-hidden="true" src="/marks/clankdar.svg" width="24" height="24">clankdar</a>
         <nav class="site-nav hraness-marketing-header__nav" aria-label="Site"><a href="/docs/">Docs</a><a href="/benchmark/">Benchmark</a><a href="/blog/">Blog</a><a class="source-link" href="https://github.com/hraness/clankdar">GitHub <svg aria-hidden="true" viewBox="0 0 16 16"><path d="M4 12 12 4M4 4h8v8"/></svg></a></nav>
-        <div class="header-actions hraness-marketing-header__actions"><div class="hraness-design-theme-toggle" data-hraness-appearance-menu data-presentation="menu" data-ready="false">
+        <div class="header-actions hraness-marketing-header__actions"><a class="header-cta" href="/docs/#quickstart">Run a check</a><div class="hraness-design-theme-toggle" data-hraness-appearance-menu data-presentation="menu" data-ready="false">
           <button type="button" class="hraness-design-theme-toggle__trigger" aria-label="Appearance: System" aria-haspopup="menu" aria-expanded="false" aria-controls="appearance-menu"><span data-current-appearance-icon="system" aria-hidden="true">◐</span></button>
           <div class="hraness-design-theme-toggle__popover" hidden>
             <div class="hraness-design-theme-toggle__menu" id="appearance-menu" role="menu" aria-label="Appearance">
@@ -48,60 +48,89 @@
     </header>
     <div class="page">
       <main id="main">
-        <section class="introduction hraness-material-wall" data-hraness-hero aria-labelledby="title">
+        <section class="introduction" data-hraness-hero aria-labelledby="title">
           <div class="opening">
             <p class="eyebrow">Agent capability checks</p>
-            <h1 id="title">Check what your<br>agent can solve.</h1>
+            <h1 id="title">Check what your agent <span class="title-accent">can solve.</span></h1>
             <p class="description">Fresh puzzles, exact scoring, and a signed receipt anyone can recheck.</p>
             <div class="actions">
-              <a class="primary-link" href="/docs/#quickstart">Run a check <span aria-hidden="true">→</span></a>
-              <a href="/docs/#verification">Verify a receipt</a>
+              <a class="button-primary" href="/docs/#quickstart">Run a check</a>
+              <a class="text-link" href="/docs/#verification">Verify a receipt <span aria-hidden="true">→</span></a>
             </div>
+            <p class="hero-facts">Local demo: Bun 1.3.14, no account or API token · Hosted API by invitation</p>
           </div>
-          <aside class="room hraness-material-terminal" id="try" aria-label="Try an ALGAL puzzle">{{PRACTICE}}</aside>
+          <aside class="room" id="try" aria-label="Try an ALGAL puzzle">{{PRACTICE}}</aside>
+        </section>
+
+        <section class="section" id="how" aria-labelledby="how-title">
+          <div class="section-head">
+            <p class="eyebrow">How a check works</p>
+            <h2 class="section-title" id="how-title">Fresh puzzles in, a signed receipt out.</h2>
+          </div>
+          <ol class="steps">
+            <li><h3>Clankdar issues fresh puzzles.</h3><p>Each check draws new puzzles with a deadline. The default policy asks four puzzles, requires three passes, and allows 180 seconds.</p></li>
+            <li><h3>Your agent answers.</h3><p>You connect the agent or model that answers and choose its provider. Clankdar doesn’t call a model for you.</p></li>
+            <li><h3>Every answer is scored exactly.</h3><p>A program computes each reference answer, so a reply is right or wrong. There is no judge model.</p></li>
+            <li><h3>You get a signed receipt.</h3><p>The receipt is signed JSON that records the answers, the deadline, and the policy. Anyone with the issuer’s public key can check it and rescore the answers.</p></li>
+          </ol>
         </section>
 
         <section class="section" id="local" aria-labelledby="local-title">
-          <span id="approach" class="anchor-alias" aria-hidden="true"></span>
-          <h2 class="section-title" id="local-title">Make your first signed receipt.</h2>
-          <div class="duet">
-            <div class="approach-copy">
-              <p>The demo runs a whole check on your machine. It creates four fresh puzzles, answers them with an included script, signs the result, verifies it, and saves the receipt as JSON.</p>
-              <p>You need Bun 1.3.14, but no API token or model account. Because a script supplies the answers, the score only shows that the flow works; it is not a model benchmark.</p>
-              <p><a href="/docs/#quickstart">Connect your own solver <span aria-hidden="true">→</span></a></p>
-            </div>
-            <pre class="code"><code>git clone https://github.com/hraness/clankdar.git
+          <div class="section-head">
+            <span id="approach" class="anchor-alias" aria-hidden="true"></span>
+            <p class="eyebrow">Get started</p>
+            <h2 class="section-title" id="local-title">Make your first signed receipt.</h2>
+          </div>
+          <div class="section-body">
+            <p>The demo runs a whole check on your machine: four fresh puzzles, answered by an included script, then signed, verified, and saved as JSON. You need Bun 1.3.14, but no API token or model account.</p>
+            <pre class="code" tabindex="0" aria-label="Commands and sample output"><code>git clone https://github.com/hraness/clankdar.git
 cd clankdar
 bun install --frozen-lockfile --ignore-scripts
-bun run try</code></pre>
+bun run try
+<span class="code-output">Running a fresh local ALGAL check with the scripted demo solver…
+PASS · 4/4 passed · 3 required · signature and scores independently verified
+Receipt: …/results/try-Im1uFM/receipt.json
+Verification record: …/results/try-Im1uFM/verification.json</span></code></pre>
+            <p class="note">A script supplies the answers, so this score only shows that the flow works. It is not a model score.</p>
+            <p class="section-link"><a class="text-link" href="/docs/#own-solver">Connect your own solver <span aria-hidden="true">→</span></a></p>
           </div>
         </section>
 
         <section class="section integrations" id="integrate" aria-labelledby="integrations-title">
-          <h2 class="section-title" id="integrations-title">Use checks in your app.</h2>
-          <p class="context">Your app connects the agent or model that answers. Clankdar issues fresh puzzles, scores the answers exactly, and returns a signed receipt you can store and share.</p>
-          <dl class="evidence-list">
-            <div><dt>Before a job</dt><dd>Ask an agent for a fresh result before offering work.</dd></div>
-            <div><dt>Before a release</dt><dd>Compare a changed endpoint with your recorded baseline.</dd></div>
-            <div><dt>On a listing</dt><dd>Show what an agent solved, when, and under which conditions.</dd></div>
-          </dl>
-          <div class="actions">
-            <a class="primary-link" href="/docs/#integrate">Use the API <span aria-hidden="true">→</span></a>
-            <a href="https://github.com/hraness/clankdar/issues/new?title=Hosted%20API%20access">Request hosted access</a>
+          <div class="section-head">
+            <p class="eyebrow">In your app</p>
+            <h2 class="section-title" id="integrations-title">Use checks where you decide about agents.</h2>
           </div>
-          <p class="release-note">The hosted API is an experimental staging service, open by invitation. Keep your token on your server.</p>
+          <div class="section-body">
+            <p>Your server issues a check, passes the puzzles to your agent, submits the answers, and stores the signed receipt.</p>
+            <dl class="evidence-list">
+              <div><dt>Before a job</dt><dd>Ask an agent for a fresh result before offering work.</dd></div>
+              <div><dt>Before a release</dt><dd>Compare a changed endpoint with your recorded baseline.</dd></div>
+              <div><dt>On a listing</dt><dd>Show what an agent solved, when, and under which conditions.</dd></div>
+            </dl>
+            <p class="section-link"><a class="text-link" href="/docs/#integrate">Use the API <span aria-hidden="true">→</span></a> <a href="https://github.com/hraness/clankdar/issues/new?title=Hosted%20API%20access">Request hosted access</a></p>
+            <p class="note">The hosted API is an experimental staging service, open by invitation. Keep your token on your server.</p>
+          </div>
         </section>
 
         <section class="section" id="results" aria-labelledby="results-title">
-          <span id="comparison" class="anchor-alias" aria-hidden="true"></span>
-          <h2 class="section-title" id="results-title">Check the receipt yourself.</h2>
-          <p class="context">A receipt records the submitted answers, their deadline, and the policy they were scored under: the puzzle types, how many must pass, and the time limit. With the issuer’s public key, you can check the signature and rescore the recorded answers. A receipt doesn’t show which model answered or give an agent permission to act.</p>
-          <p class="section-link"><a href="/docs/#verification">How verification works</a> · <a href="/docs/#comparison">Compare approaches</a> · <a href="/benchmark/">Model benchmark</a></p>
+          <div class="section-head">
+            <span id="comparison" class="anchor-alias" aria-hidden="true"></span>
+            <p class="eyebrow">Verify</p>
+            <h2 class="section-title" id="results-title">Check the receipt yourself.</h2>
+          </div>
+          <div class="section-body">
+            <p>From the repository checkout, check the signature and rescore the recorded answers offline, with an issuer key from your own configuration. Then confirm the policy, the date, and that the check passed.</p>
+            <pre class="code" tabindex="0" aria-label="Verify a receipt"><code>bun cloudflare/examples/verify-receipt.mjs receipt.json \
+  --issuer "$EXPECTED_ISSUER_PUBLIC_KEY"</code></pre>
+            <p class="note">A receipt doesn’t show which model answered or give an agent permission to act. <a href="/docs/#security">What a check can’t prove</a></p>
+            <p class="section-link"><a class="text-link" href="/docs/#verification">How verification works <span aria-hidden="true">→</span></a> <a href="/benchmark/">Model benchmark</a></p>
+          </div>
         </section>
       </main>
       <div class="project-footer">
-        <p>Check what your agent can solve.</p>
-        <a href="/docs/#security">What a check can’t prove <span aria-hidden="true">→</span></a>
+        <p>Fresh puzzles for AI agents, scored exactly, with a signed receipt.</p>
+        <a href="/docs/#quickstart">Run your first check <span aria-hidden="true">→</span></a>
       </div>
       <!-- hraness-site-footer -->
     </div>

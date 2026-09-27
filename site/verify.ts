@@ -57,10 +57,18 @@ async function verifyChrome(page: Page, width: number): Promise<void> {
     };
   });
   const initial = await geometry();
+  if (width > 960) {
+    const sectionOffsets = await page.locator(".section").evaluateAll((sections) => sections.flatMap((section) => {
+      const heading = section.querySelector(":scope > .section-head");
+      const body = section.querySelector(":scope > .section-body");
+      return heading && body ? [Math.abs(heading.getBoundingClientRect().top - body.getBoundingClientRect().top)] : [];
+    }));
+    for (const offset of sectionOffsets) expect(offset).toBeLessThanOrEqual(2);
+  }
   expect(initial.header.position).toBe("sticky");
   expect(initial.header.top).toBeCloseTo(0, 0);
-  expect(initial.footer.position).toBe("fixed");
-  expect(initial.footer.bottom).toBeCloseTo(initial.viewportHeight, 0);
+  expect(["static", "relative"]).toContain(initial.footer.position);
+  expect(initial.footer.top).toBeGreaterThanOrEqual(initial.header.bottom);
   expect(initial.footerFootprint).toBeGreaterThanOrEqual(initial.footer.height - 1);
   expect(Math.abs(initial.brand.center - initial.appearance.center)).toBeLessThanOrEqual(2);
   expect(initial.appearance.right).toBeGreaterThan(initial.brand.right);
@@ -75,7 +83,7 @@ async function verifyChrome(page: Page, width: number): Promise<void> {
   await expect.poll(async () => (await geometry()).scrollY).toBeGreaterThan(0);
   const scrolled = await geometry();
   expect(scrolled.header.top).toBeCloseTo(0, 0);
-  expect(scrolled.footer.bottom).toBeCloseTo(scrolled.viewportHeight, 0);
+  expect(scrolled.footer.top + scrolled.scrollY).toBeCloseTo(initial.footer.top + initial.scrollY, 0);
 
   const anchor = page.locator("#main h2[id], #main section[id]").first();
   const anchorId = await anchor.getAttribute("id");
@@ -93,7 +101,7 @@ async function verifyChrome(page: Page, width: number): Promise<void> {
 
 try {
   browser = await chromium.launch({ channel: values.channel, headless: true });
-  for (const width of [1280, 608, 390, 320]) {
+  for (const width of [1440, 1280, 608, 390, 320]) {
     for (const theme of ["light", "dark"] as const) {
       const context = await browser.newContext({ viewport: { width, height: 900 }, colorScheme: theme, reducedMotion: "reduce", serviceWorkers: "block" });
       await context.route("**/*", (route) => {
@@ -228,7 +236,7 @@ try {
   await expect(page.locator('#method a[href$="/report.json"]')).toBeVisible();
   await noScript.close();
   expect(errors).toEqual([]);
-  console.log(JSON.stringify({ pagesChecked: checked, widths: [1280, 608, 390, 320], themes: ["light", "dark"], noScript: true, browserErrors: errors.length, screenshots }, null, 2));
+  console.log(JSON.stringify({ pagesChecked: checked, widths: [1440, 1280, 608, 390, 320], themes: ["light", "dark"], noScript: true, browserErrors: errors.length, screenshots }, null, 2));
 } catch (error) {
   if (activePage && !activePage.isClosed()) await activePage.screenshot({ path: resolve(screenshots, "failure.png") }).catch(() => {});
   throw error;
