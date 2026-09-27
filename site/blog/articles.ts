@@ -21,11 +21,13 @@ export type BlogPost = Readonly<{
 
 export const BLOG_PATH = "/blog/";
 
-const REVIEWED_ON: ArticleIsoDate = "2026-09-24";
+/** The date the cited sources were last checked against the repository. */
+const SOURCES_CHECKED_ON: ArticleIsoDate = "2026-09-24";
+/** The latest AI editorial review: a line and structure edit on 2026-09-26 that kept every fact. */
 const REVIEW = {
   reviewer: "Claude Opus 5.5 (claude-opus-5-5) editorial review",
   reviewerType: "ai",
-  reviewedOn: REVIEWED_ON,
+  reviewedOn: "2026-09-26",
 } as const;
 
 function repo(repository: "clankdar" | "algal", file: string): string {
@@ -33,7 +35,7 @@ function repo(repository: "clankdar" | "algal", file: string): string {
 }
 
 function source(title: string, repository: "clankdar" | "algal", file: string): ArticleSourceItem {
-  return { title, href: repo(repository, file), publisher: "GitHub", checkedOn: REVIEWED_ON };
+  return { title, href: repo(repository, file), publisher: "GitHub", checkedOn: SOURCES_CHECKED_ON };
 }
 
 function admissionSources(sources: readonly ArticleSourceItem[]) {
@@ -69,7 +71,7 @@ export const POSTS: readonly BlogPost[] = [
     slug: "introducing-clankdar",
     path: "/blog/introducing-clankdar",
     title: "Introducing Clankdar",
-    dek: "Clankdar scores AI agents on fresh puzzles against exact reference answers, so no judge model decides whether an answer is right.",
+    dek: "Clankdar tests AI agents on fresh puzzles whose answers a program computes, so no judge model decides whether a reply is right.",
     eyebrow: "Introducing",
     published: "2026-09-24",
     tags: ["agents", "benchmarks", "evaluation", "algal"],
@@ -89,7 +91,7 @@ export const POSTS: readonly BlogPost[] = [
       sources: admissionSources(introducingSources),
       observations: [
         "The worked example's answer, 34, is the same value the homepage practice sample shows, and the site tests pin that sample.",
-        "The staging limits in the status section match the limits STYLE.md requires every Clankdar page to keep whenever it states them.",
+        "The staging limits in the closing limits section match the limits STYLE.md requires every Clankdar page to keep whenever it states them.",
       ],
       scores: { readerUtility: 2, originalEvidence: 2, factualConfidence: 2, hostFit: 2, voiceIntegrity: 2, maintenanceValue: 1 },
       owner: "Hraness",
@@ -114,7 +116,7 @@ export const POSTS: readonly BlogPost[] = [
   {
     slug: "how-clankdar-uses-algal",
     path: "/blog/how-clankdar-uses-algal",
-    title: "How Clankdar uses ALGAL puzzles as an exact referee",
+    title: "How Clankdar uses ALGAL for reference answers",
     dek: "ALGAL's own evaluator, pinned by commit and WebAssembly hash, computes the reference answer for every default Clankdar puzzle.",
     eyebrow: "Integration",
     published: "2026-09-24",

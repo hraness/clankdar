@@ -33,7 +33,7 @@ export const SITE: SearchSite = {
 };
 export const FEED_PATH = "/blog/feed.xml";
 const BLOG_TITLE = "Clankdar blog";
-const BLOG_DESCRIPTION = "Notes from Hraness on how Clankdar checks what AI agents can solve and how to rerun each check.";
+const BLOG_DESCRIPTION = "Posts from Hraness on how Clankdar scores AI agents on fresh puzzles with computed answers, and how to rerun a recorded check yourself.";
 const HRANESS = { kind: "Organization", name: "Hraness" } as const;
 const IMAGE = { path: "/icon.png", width: 512, height: 512, contentType: "image/png", alt: "The Clankdar mark" } as const;
 
