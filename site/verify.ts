@@ -1,15 +1,15 @@
 import { renderActorProfile, renderCampaignProfile } from "../cloudflare/src/public.ts";
 import { chromium, expect, type Browser, type Page } from "@playwright/test";
-import { mkdirSync, readFileSync } from "node:fs";
+import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { randomUUID } from "node:crypto";
 import { parseArgs } from "node:util";
 
-const { values } = parseArgs({ args: process.argv.slice(2), options: { channel: { type: "string" } }, strict: true, allowPositionals: false });
+const { values } = parseArgs({ args: process.argv.slice(2), options: { channel: { type: "string" }, production: { type: "boolean", default: false } }, strict: true, allowPositionals: false });
 if (values.channel && !["chrome", "chromium"].includes(values.channel)) throw new Error("channel must be chrome or chromium");
 const root = resolve(import.meta.dir, "dist");
-const files = new Set(new Bun.Glob("**/*").scanSync({ cwd: root, onlyFiles: true }));
-if (!files.has("index.html")) throw new Error("build the site before browser verification");
+const files = new Set(values.production ? [] : new Bun.Glob("**/*").scanSync({ cwd: root, onlyFiles: true }));
+if (!values.production && !files.has("index.html")) throw new Error("build the site before browser verification");
 const config = JSON.parse(readFileSync(resolve(import.meta.dir, "../vercel.json"), "utf8"));
 const headers = Object.fromEntries(config.headers[0].headers.map((header: { key: string; value: string }) => [header.key, header.value]));
 const fixtureAddress = `clank1_${"a".repeat(27)}`;
@@ -19,7 +19,8 @@ const profilePaths = [`/actors/${fixtureAddress}`, `/actors/${fixtureAddress}/ca
 const blogPaths = ["/blog/", "/blog/introducing-clankdar", "/blog/how-clankdar-uses-algal"];
 // A missing address, and a mistyped real one that earns "Did you mean".
 const missingPaths: readonly [string, string | undefined][] = [["/this-page-does-not-exist", undefined], ["/benchmarks/", "/benchmark/"]];
-const server = Bun.serve({
+// Production captures are bounded to the public marketing origin; actor fixtures stay local.
+const server = values.production ? undefined : Bun.serve({
   hostname: "127.0.0.1", port: 0,
   fetch(request) {
     const pathname = new URL(request.url).pathname;
@@ -34,7 +35,7 @@ const server = Bun.serve({
     return new Response(Bun.file(resolve(root, path)), { headers });
   },
 });
-const origin = `http://127.0.0.1:${server.port}`;
+const origin = values.production ? "https://clankdar.com" : `http://127.0.0.1:${server!.port}`;
 const screenshots = resolve(import.meta.dir, `../results/visual-${randomUUID()}`);
 mkdirSync(screenshots, { recursive: true });
 let browser: Browser | undefined;
@@ -101,9 +102,9 @@ async function verifyChrome(page: Page, width: number): Promise<void> {
 
 try {
   browser = await chromium.launch({ channel: values.channel, headless: true });
-  for (const width of [1440, 1280, 608, 390, 320]) {
+  for (const width of [1440, 1280, 608, 390, 360, 320]) {
     for (const theme of ["light", "dark"] as const) {
-      const context = await browser.newContext({ viewport: { width, height: 900 }, colorScheme: theme, reducedMotion: "reduce", serviceWorkers: "block" });
+      const context = await browser.newContext({ viewport: { width, height: width === 390 ? 844 : width <= 360 ? 740 : 900 }, colorScheme: theme, reducedMotion: "reduce", serviceWorkers: "block" });
       await context.route("**/*", (route) => {
         if (new URL(route.request().url()).origin !== origin) { errors.push("unexpected third-party request"); return route.abort(); }
         return route.continue();
@@ -114,13 +115,13 @@ try {
       page.on("console", (message) => {
         // Chrome logs the 404 document itself; the missing-path checks expect that status.
         const source = message.location().url ? new URL(message.location().url).pathname : "";
-        if (message.type() === "error" && !missingPaths.some(([missing]) => missing === source)) errors.push(message.text());
+        if (message.type() === "error" && !missingPaths.some(([missing]) => missing.replace(/\/$/u, "") === source.replace(/\/$/u, ""))) errors.push(message.text());
       });
       page.on("response", (response) => {
         const pathname = new URL(response.url()).pathname;
-        if (response.status() >= 400 && !missingPaths.some(([missing]) => missing === pathname)) errors.push(`HTTP ${response.status()} ${pathname}`);
+        if (response.status() >= 400 && !missingPaths.some(([missing]) => missing.replace(/\/$/u, "") === pathname.replace(/\/$/u, ""))) errors.push(`HTTP ${response.status()} ${pathname}`);
       });
-      for (const path of ["/", "/docs/", "/benchmark/", ...blogPaths, ...profilePaths]) {
+      for (const path of ["/", "/docs/", "/benchmark/", ...blogPaths, ...(values.production ? [] : profilePaths)]) {
         await page.goto(origin + path, { waitUntil: "networkidle" });
         await page.evaluate(async () => { await document.fonts.ready; });
         await expect(page).toHaveTitle(/Clankdar/);
@@ -236,11 +237,13 @@ try {
   await expect(page.locator('#method a[href$="/report.json"]')).toBeVisible();
   await noScript.close();
   expect(errors).toEqual([]);
-  console.log(JSON.stringify({ pagesChecked: checked, widths: [1440, 1280, 608, 390, 320], themes: ["light", "dark"], noScript: true, browserErrors: errors.length, screenshots }, null, 2));
+  const report = { capturedAt: new Date().toISOString(), origin, mode: values.production ? "production" : "local", pagesChecked: checked, widths: [1440, 1280, 608, 390, 360, 320], themes: ["light", "dark"], noScript: true, browserErrors: errors.length, screenshots };
+  writeFileSync(resolve(screenshots, "verification.json"), JSON.stringify(report, null, 2) + "\n");
+  console.log(JSON.stringify(report, null, 2));
 } catch (error) {
   if (activePage && !activePage.isClosed()) await activePage.screenshot({ path: resolve(screenshots, "failure.png") }).catch(() => {});
   throw error;
 } finally {
-  await browser?.close();
-  server.stop(true);
+  try { await browser?.close(); }
+  finally { server?.stop(true); }
 }
