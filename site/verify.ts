@@ -93,7 +93,7 @@ async function verifyChrome(page: Page, width: number): Promise<void> {
 
 try {
   browser = await chromium.launch({ channel: values.channel, headless: true });
-  for (const width of [1280, 608, 390, 320]) {
+  for (const width of [1440, 1280, 608, 390, 320]) {
     for (const theme of ["light", "dark"] as const) {
       const context = await browser.newContext({ viewport: { width, height: 900 }, colorScheme: theme, reducedMotion: "reduce", serviceWorkers: "block" });
       await context.route("**/*", (route) => {
@@ -228,7 +228,7 @@ try {
   await expect(page.locator('#method a[href$="/report.json"]')).toBeVisible();
   await noScript.close();
   expect(errors).toEqual([]);
-  console.log(JSON.stringify({ pagesChecked: checked, widths: [1280, 608, 390, 320], themes: ["light", "dark"], noScript: true, browserErrors: errors.length, screenshots }, null, 2));
+  console.log(JSON.stringify({ pagesChecked: checked, widths: [1440, 1280, 608, 390, 320], themes: ["light", "dark"], noScript: true, browserErrors: errors.length, screenshots }, null, 2));
 } catch (error) {
   if (activePage && !activePage.isClosed()) await activePage.screenshot({ path: resolve(screenshots, "failure.png") }).catch(() => {});
   throw error;
