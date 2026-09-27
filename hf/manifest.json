@@ -2,7 +2,7 @@
   "schema": "hraness-hf-export-v1",
   "repo_type": "dataset",
   "repo_id": "hranesscom/clankdar-benchmarks",
-  "rights_status": "pending-owner-review",
+  "rights_status": "approved-owner-cc-by-4.0",
   "files": [
     {
       "source": "site/benchmark/agent-v0/manifest.json",

@@ -1,4 +1,5 @@
 ---
+license: cc-by-4.0
 pretty_name: Clankdar benchmark reports
 tags:
   - benchmark
@@ -29,6 +30,8 @@ These downloads form an artifact archive with several JSON schemas. Read individ
 
 The [source repository](https://github.com/hraness/clankdar) owns these files. `export-manifest.json` records the source commit and SHA-256 of each file. Existing version folders remain frozen; new public runs receive new folders. Corrections receive a new version with an explanation linking the affected archive.
 
-## Rights
+## License and attribution
 
-No additional license is granted by this mirror. Consult the source repository and the original artifact's terms before redistribution. Publication of this candidate requires the owner to resolve the dataset license.
+The selected aggregate reports and protocols in this archive are by Hraness and licensed under [Creative Commons Attribution 4.0 International](https://creativecommons.org/licenses/by/4.0/). Attribute Hraness and link to the [original benchmark page](https://clankdar.com/benchmark/) and the source revision recorded in `export-manifest.json`.
+
+This license covers the selected files listed in `export-manifest.json` and this card. It does not cover source code, private transcripts, or raw provider responses. Source code retains its original terms.
