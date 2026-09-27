@@ -1,9 +1,9 @@
 :root {
   --hraness-marketing-display-font: var(--font-text);
+  --hraness-site-footer-measure: 1120px;
   --site-header-block-size: 4rem;
   --site-header-clearance: calc(var(--site-header-block-size) + 1rem);
   scroll-padding-block-start: var(--site-header-clearance);
-  scroll-padding-block-end: calc(4rem + env(safe-area-inset-bottom, 0px));
   --paper: var(--background);
   --ink: var(--foreground);
   --selected: var(--hraness-material-warm-plane);
@@ -217,7 +217,7 @@ summary, button, .actions a { scroll-margin-block: 1rem; }
   .masthead .header-actions { grid-column: 2; grid-row: 1; }
   .masthead .site-nav { grid-column: 1 / -1; grid-row: 2; justify-content: flex-start; margin-inline-start: 0; overflow-x: auto; scrollbar-width: none; }
   .masthead .site-nav::-webkit-scrollbar { display: none; }
-  .header-cta { min-height: 40px; }
+  .header-cta { min-height: 44px; }
 }
 
 @media (max-width: 640px) {
@@ -246,9 +246,9 @@ summary, button, .actions a { scroll-margin-block: 1rem; }
   .blog { padding-block-start: 16px; }
 }
 
-/* Very narrow phones keep the brand and appearance menu; the hero carries the same action. */
+/* Very narrow phones retain the header action beside the brand and appearance menu. */
 @media (max-width: 359px) {
-  .header-cta { display: none; }
+  .header-cta { padding-inline: 8px; font-size: 12px; }
   .page { padding: 0 16px; }
   .masthead { --hraness-marketing-gutter: 16px; }
 }

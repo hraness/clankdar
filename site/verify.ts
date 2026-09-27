@@ -59,8 +59,8 @@ async function verifyChrome(page: Page, width: number): Promise<void> {
   const initial = await geometry();
   expect(initial.header.position).toBe("sticky");
   expect(initial.header.top).toBeCloseTo(0, 0);
-  expect(initial.footer.position).toBe("fixed");
-  expect(initial.footer.bottom).toBeCloseTo(initial.viewportHeight, 0);
+  expect(["static", "relative"]).toContain(initial.footer.position);
+  expect(initial.footer.top).toBeGreaterThanOrEqual(initial.header.bottom);
   expect(initial.footerFootprint).toBeGreaterThanOrEqual(initial.footer.height - 1);
   expect(Math.abs(initial.brand.center - initial.appearance.center)).toBeLessThanOrEqual(2);
   expect(initial.appearance.right).toBeGreaterThan(initial.brand.right);
@@ -75,7 +75,7 @@ async function verifyChrome(page: Page, width: number): Promise<void> {
   await expect.poll(async () => (await geometry()).scrollY).toBeGreaterThan(0);
   const scrolled = await geometry();
   expect(scrolled.header.top).toBeCloseTo(0, 0);
-  expect(scrolled.footer.bottom).toBeCloseTo(scrolled.viewportHeight, 0);
+  expect(scrolled.footer.top + scrolled.scrollY).toBeCloseTo(initial.footer.top + initial.scrollY, 0);
 
   const anchor = page.locator("#main h2[id], #main section[id]").first();
   const anchorId = await anchor.getAttribute("id");
