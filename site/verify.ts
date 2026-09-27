@@ -57,6 +57,14 @@ async function verifyChrome(page: Page, width: number): Promise<void> {
     };
   });
   const initial = await geometry();
+  if (width > 960) {
+    const sectionOffsets = await page.locator(".section").evaluateAll((sections) => sections.flatMap((section) => {
+      const heading = section.querySelector(":scope > .section-head");
+      const body = section.querySelector(":scope > .section-body");
+      return heading && body ? [Math.abs(heading.getBoundingClientRect().top - body.getBoundingClientRect().top)] : [];
+    }));
+    for (const offset of sectionOffsets) expect(offset).toBeLessThanOrEqual(2);
+  }
   expect(initial.header.position).toBe("sticky");
   expect(initial.header.top).toBeCloseTo(0, 0);
   expect(["static", "relative"]).toContain(initial.footer.position);
