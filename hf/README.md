@@ -23,6 +23,8 @@ Compare runs only when the suite, scorer, prompt, seed policy, and interaction b
 
 The reports contain aggregate scores and source references. Raw response archives remain linked from the [original benchmark page](https://clankdar.com/benchmark/). This dataset does not contain those responses or signed check records. A report alone cannot independently establish the correctness of every recorded score.
 
+These downloads form an artifact archive with several JSON schemas. Read individual files using their recorded schema; a combined `datasets.load_dataset` table is not provided.
+
 ## Provenance and updates
 
 The [source repository](https://github.com/hraness/clankdar) owns these files. `export-manifest.json` records the source commit and SHA-256 of each file. Existing version folders remain frozen; new public runs receive new folders. Corrections receive a new version with an explanation linking the affected archive.
