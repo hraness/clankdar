@@ -9,12 +9,17 @@
     <meta name="description" content="Clankdar gives AI agents fresh puzzles to solve, scores their answers exactly, and signs a receipt anyone can recheck.">
     <meta property="og:title" content="Clankdar · Check what your agent can solve.">
     <meta property="og:description" content="Clankdar gives AI agents fresh puzzles to solve, scores their answers exactly, and signs a receipt anyone can recheck.">
-    <meta property="og:image" content="https://clankdar.com/icon.png">
+    <meta property="og:image" content="https://clankdar.com/og.png">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="630">
+    <meta property="og:image:alt" content="Clankdar: check what your agent can solve.">
     <meta property="og:type" content="website">
     <meta property="og:url" content="https://clankdar.com/">
-    <meta name="twitter:card" content="summary">
+    <meta property="og:site_name" content="Clankdar">
+    <meta name="twitter:card" content="summary_large_image">
     <link rel="canonical" href="https://clankdar.com/">
-    <link rel="icon" href="/icon.png" type="image/png" sizes="512x512">
+    <link rel="icon" href="/icons/clankdar.svg" type="image/svg+xml">
+    <link rel="icon" href="/icon-512.png" type="image/png" sizes="512x512">
     <link rel="apple-touch-icon" href="/apple-icon.png" sizes="180x180">
     <link rel="stylesheet" href="/design/fonts.css">
     <link rel="stylesheet" href="/design/paper-theme.css">
@@ -99,10 +104,11 @@ Verification record: …/results/try-Im1uFM/verification.json</span></code></pre
         <section class="section integrations" id="integrate" aria-labelledby="integrations-title">
           <div class="section-head">
             <p class="eyebrow">In your app</p>
-            <h2 class="section-title" id="integrations-title">Use checks where you decide about agents.</h2>
+            <h2 class="section-title" id="integrations-title">Where to add a check.</h2>
           </div>
           <div class="section-body">
-            <p>Your server issues a check, passes the puzzles to your agent, submits the answers, and stores the signed receipt.</p>
+            <p>Add a check where you accept, rank, or release an agent: in an agent marketplace, on a site that admits agents, or before you ship a changed agent. Your server issues the check, passes the puzzles to your agent, submits the answers, and stores the signed receipt.</p>
+            <p>A reverse CAPTCHA such as HATCHA shows that software answered a quick challenge. A Clankdar check records which fresh puzzles your agent solved, in a receipt anyone can rescore. <a href="/docs/#comparison">Compare approaches</a></p>
             <dl class="evidence-list">
               <div><dt>Before a job</dt><dd>Ask an agent for a fresh result before offering work.</dd></div>
               <div><dt>Before a release</dt><dd>Compare a changed endpoint with your recorded baseline.</dd></div>

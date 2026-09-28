@@ -6,3 +6,9 @@ Apple touch PNGs are checked by the hashes below.
 
 `icon.png` SHA-256: `669d20930e38a9a8c1c75230f31f4e38d91d3d639ae8622089512aaca9fe4615`.
 `apple-icon.png` SHA-256: `4d688cd825cec40e7c6ab9a18525deec20ba3d5839bfda0f47359fd63fc326ac`.
+`icon-512.png` SHA-256: `23bc8048d830756c4f372b296133f4841cba373e6c5b9ff2ead2f0dd17dfbfbb`.
+`og.png` SHA-256: `12baea2f2d5a6e91b49feb76cbf6f3370a3115a8b68bfc0d6fa31e2e3d704f5a`.
+
+`icon-512.png` and `og.png` are rendered from `icons/clankdar.svg` by
+`bun site/generate-social-image.ts`, which leaves out the two hairline bars
+at the edges of the traced SVG.

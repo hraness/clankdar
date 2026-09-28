@@ -35,7 +35,7 @@ export const FEED_PATH = "/blog/feed.xml";
 const BLOG_TITLE = "Clankdar blog";
 const BLOG_DESCRIPTION = "Posts from Hraness on how Clankdar scores AI agents on fresh puzzles with computed answers, and how to rerun a recorded check yourself.";
 const HRANESS = { kind: "Organization", name: "Hraness", url: "https://hraness.com", sameAs: ["https://github.com/hraness"] } as const;
-const IMAGE = { path: "/icon.png", width: 512, height: 512, contentType: "image/png", alt: "The Clankdar mark" } as const;
+const IMAGE = { path: "/og.png", width: 1200, height: 630, contentType: "image/png", alt: "Clankdar: check what your agent can solve." } as const;
 
 assertArticleAdmissions(ADMISSIONS);
 
@@ -93,7 +93,7 @@ function head(input: { title: string; description: string; path: string; type: "
     `<meta property="og:url" content="${escape(url)}">`,
     `<meta property="og:site_name" content="Clankdar">`,
     input.published === undefined ? "" : `<meta property="article:published_time" content="${input.published}">`,
-    '<meta name="twitter:card" content="summary">',
+    '<meta name="twitter:card" content="summary_large_image">',
     `<link rel="canonical" href="${escape(url)}">`,
     `<script type="application/ld+json">${serializeJsonLd(input.jsonLd)}</script>`,
   ].filter(Boolean).map(line => `    ${line}`).join("\n");

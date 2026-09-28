@@ -9,12 +9,17 @@
     <meta name="description" content="Five models were given the same 500 puzzles on September 17, 2026. See how often each was exactly right, and download the recorded answers to rescore them.">
     <meta property="og:title" content="Clankdar model benchmark">
     <meta property="og:description" content="Five models were given the same 500 puzzles on September 17, 2026. See how often each was exactly right, and download the recorded answers to rescore them.">
-    <meta property="og:image" content="https://clankdar.com/icon.png">
+    <meta property="og:image" content="https://clankdar.com/og.png">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="630">
+    <meta property="og:image:alt" content="Clankdar: check what your agent can solve.">
     <meta property="og:type" content="website">
     <meta property="og:url" content="https://clankdar.com/benchmark/">
-    <meta name="twitter:card" content="summary">
+    <meta property="og:site_name" content="Clankdar">
+    <meta name="twitter:card" content="summary_large_image">
     <link rel="canonical" href="https://clankdar.com/benchmark/">
-    <link rel="icon" href="/icon.png" type="image/png" sizes="512x512">
+    <link rel="icon" href="/icons/clankdar.svg" type="image/svg+xml">
+    <link rel="icon" href="/icon-512.png" type="image/png" sizes="512x512">
     <link rel="apple-touch-icon" href="/apple-icon.png" sizes="180x180">
     <link rel="stylesheet" href="/design/fonts.css">
     <link rel="stylesheet" href="/design/paper-theme.css">
@@ -68,6 +73,7 @@
             <p>The recorded test is <code>clankdar-suite-v2</code>, with scorer <code>clankdar-score-v2</code> and seeds 101–120. The manifest records the suite hash and source revision, and notes that the source had uncommitted changes when the runs were collected; its limitations section explains why. The site build rescores every recorded response before publishing these scores.</p>
             <p><a href="/benchmark/v2-calibration-0/report.json" download>Download the full report</a> · <a href="/benchmark/v2-calibration-0/manifest.json">Inspect the run manifest</a></p>
             {{BENCHMARK_DOWNLOADS}}
+            <p>The reports and manifests for these runs are also on Hugging Face as <a href="https://huggingface.co/datasets/hranesscom/clankdar-benchmarks">Clankdar benchmark reports</a>, licensed CC BY 4.0. The license covers those files, not the recorded model responses.</p>
             <p>Twenty seeds per task setting are an exploratory sample. Public puzzles can be memorized, delegated, or solved with code. These scores describe this run only; they don’t measure general intelligence or safe behavior.</p>
           </details>
           <details class="report-details" id="archive">
