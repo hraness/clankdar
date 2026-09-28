@@ -13,6 +13,8 @@ import { POSTS } from "./blog/articles.ts";
 import { BLOG_PATH } from "./blog/articles.ts";
 import { FEED_PATH, indexablePosts, renderFeed, renderIndexPage, renderLlmsSection, renderPostPage, renderSitemap } from "./blog/render.ts";
 import { STATIC_PAGES, renderNotFound, routeLabel } from "./not-found.ts";
+import { PAGE_JSON_LD } from "./structured-data.ts";
+import { serializeJsonLd } from "@hraness/web-discovery";
 const root = import.meta.dir;
 const output = resolve(root, "dist");
 const kit = dirname(fileURLToPath(import.meta.resolve("@hraness/design-kit/paper-theme.css")));
@@ -32,7 +34,7 @@ const substitutions: Record<string, string> = {
 };
 await rm(output, { recursive: true, force: true });
 await mkdir(resolve(output, "design"), { recursive: true });
-for (const name of ["styles.css", "icon.png", "apple-icon.png", "robots.txt"]) await cp(resolve(root, name), resolve(output, name));
+for (const name of ["styles.css", "icon.png", "icon-512.png", "og.png", "apple-icon.png", "robots.txt"]) await cp(resolve(root, name), resolve(output, name));
 await cp(resolve(root, "../cloudflare/examples/check.mjs"), resolve(output, "clankdar-client.mjs"));
 await cp(resolve(root, "icons"), resolve(output, "icons"), { recursive: true });
 await cp(resolve(root, "marks"), resolve(output, "marks"), { recursive: true });
@@ -42,6 +44,11 @@ for (const page of pages) {
   if (html.split(footerMarker).length !== 2) throw new Error(`Expected one shared footer slot in ${page}.`);
   for (const [marker, content] of Object.entries(substitutions)) html = html.replaceAll(marker, content);
   if (/\{\{[A-Z_]+\}\}/.test(html)) throw new Error(`Unresolved content slot in ${page}`);
+  const jsonLd = PAGE_JSON_LD[page];
+  if (jsonLd !== undefined) {
+    if (html.split("</head>").length !== 2) throw new Error(`Expected one </head> in ${page}.`);
+    html = html.replace("</head>", `  <script type="application/ld+json">${serializeJsonLd(jsonLd())}</script>\n  </head>`);
+  }
   const target = resolve(output, page);
   await mkdir(dirname(target), { recursive: true });
   await writeFile(target, html.replace(footerMarker, supportFooter()));

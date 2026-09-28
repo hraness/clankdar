@@ -9,12 +9,17 @@
     <meta name="description" content="Run a Clankdar check on your machine without credentials, then call the hosted API from your server and verify each signed receipt offline.">
     <meta property="og:title" content="Clankdar docs">
     <meta property="og:description" content="Run a Clankdar check on your machine without credentials, then call the hosted API from your server and verify each signed receipt offline.">
-    <meta property="og:image" content="https://clankdar.com/icon.png">
+    <meta property="og:image" content="https://clankdar.com/og.png">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="630">
+    <meta property="og:image:alt" content="Clankdar: check what your agent can solve.">
     <meta property="og:type" content="website">
     <meta property="og:url" content="https://clankdar.com/docs/">
-    <meta name="twitter:card" content="summary">
+    <meta property="og:site_name" content="Clankdar">
+    <meta name="twitter:card" content="summary_large_image">
     <link rel="canonical" href="https://clankdar.com/docs/">
-    <link rel="icon" href="/icon.png" type="image/png" sizes="512x512">
+    <link rel="icon" href="/icons/clankdar.svg" type="image/svg+xml">
+    <link rel="icon" href="/icon-512.png" type="image/png" sizes="512x512">
     <link rel="apple-touch-icon" href="/apple-icon.png" sizes="180x180">
     <link rel="stylesheet" href="/design/fonts.css">
     <link rel="stylesheet" href="/design/paper-theme.css">
@@ -52,7 +57,7 @@
           <p class="doc-lede">Run a check locally, connect your own solver, and keep the signed result.</p>
         </header>
         <nav class="contents" aria-label="Contents">
-          <a href="#quickstart">Try locally</a><a href="#integrate">Integrate</a><a href="#verification">Verify</a><a href="#recipes">Recipes</a><a href="#api">API</a><a href="#evidence">Evidence</a><a href="#limits">Limits</a>
+          <a href="#quickstart">Try locally</a><a href="#integrate">Integrate</a><a href="#verification">Verify</a><a href="#recipes">Recipes</a><a href="#api">API</a><a href="#evidence">Evidence</a><a href="#comparison">Compare</a><a href="#limits">Limits</a>
         </nav>
 
         <section class="doc-section" id="quickstart" aria-labelledby="quickstart-title">
@@ -167,7 +172,7 @@ jq &#x27;{id, pass, passed, required, receiptUrl, sha256}&#x27; result.json</cod
         </section>
 
         <section class="doc-section" id="evidence" aria-labelledby="evidence-title">
-          <h2 id="evidence-title">See the benchmark, puzzle design, and comparisons.</h2>
+          <h2 id="evidence-title">See the benchmark and puzzle design.</h2>
           <p id="scoring"><span id="scoring-title" class="anchor-alias" aria-hidden="true"></span><span id="profiles" class="anchor-alias" aria-hidden="true"></span><span id="agent" class="anchor-alias" aria-hidden="true"></span><span id="ladder" class="anchor-alias" aria-hidden="true"></span>See the <a href="/benchmark/">model benchmark</a> for recorded scores, test conditions, and downloadable evidence.</p>
           <details class="report-details" id="algal"><summary>How Clankdar uses ALGAL</summary>
             <h3 id="algal-title">A program with a checkable answer.</h3>
@@ -177,21 +182,26 @@ jq &#x27;{id, pass, passed, required, receiptUrl, sha256}&#x27; result.json</cod
             <p>Run this worked example from the repository after installing dependencies. <a href="https://github.com/hraness/clankdar/blob/main/docs/clankdar-algal-v1.md">Inspect the program contract, evaluator pin, and solution</a>.</p>
           </details>
           <details class="report-details harder-example"><summary>Inspect a harder puzzle</summary>{{HARDER_CHALLENGE}}</details>
-          <details class="report-details" id="comparison"><summary>Compare Clankdar with other checks</summary>
-            <h3 class="section-title" id="comparison-title">What each check tells you.</h3>
-          <div class="table-scroll" role="region" aria-label="Clankdar and bot verification approaches" tabindex="0">
+        </section>
+
+        <section class="doc-section" id="comparison" aria-labelledby="comparison-title">
+          <h2 id="comparison-title">How Clankdar compares.</h2>
+          <p>Pick by the question you need answered. Web Bot Auth tells you which registered agent is calling. A reverse CAPTCHA lets software through a form. LiveBench and Reasoning Gym compare models across many task types. Clankdar records which fresh puzzles your own agent solved, in a signed receipt anyone can rescore.</p>
+          <div class="table-scroll" role="region" aria-label="Clankdar compared with other agent checks and benchmarks" tabindex="0">
             <table class="ladder-table comparison-table">
-              <thead><tr><th scope="col">Approach</th><th scope="col">Evidence it gives you</th></tr></thead>
+              <thead><tr><th scope="col">Approach</th><th scope="col">What it tells you</th><th scope="col">Use it when</th></tr></thead>
               <tbody>
-                <tr><th scope="row"><a href="https://developers.cloudflare.com/turnstile/">Turnstile</a> / <a href="https://docs.cloud.google.com/recaptcha/docs/interpret-assessment-website">reCAPTCHA</a></th><td>Browser and interaction risk signals for legitimate traffic versus automation.</td></tr>
-                <tr><th scope="row"><a href="https://github.com/TecharoHQ/anubis/blob/main/docs/docs/design/why-proof-of-work.mdx">Proof-of-work</a></th><td>The requester spent computation, such as finding a hash nonce.</td></tr>
-                <tr><th scope="row"><a href="https://developers.cloudflare.com/bots/reference/bot-verification/web-bot-auth/">Web Bot Auth</a></th><td>A registered agent key signed the request.</td></tr>
-                <tr class="clankdar-row"><th scope="row">Clankdar</th><td>Specific fresh tasks passed, with signed evidence you can independently replay.</td></tr>
+                <tr><th scope="row"><a href="https://developers.cloudflare.com/turnstile/">Turnstile</a> / <a href="https://docs.cloud.google.com/recaptcha/docs/interpret-assessment-website">reCAPTCHA</a></th><td>Browser and interaction risk signals for legitimate traffic versus automation.</td><td>You want to keep automated traffic out of a form meant for people.</td></tr>
+                <tr><th scope="row"><a href="https://github.com/TecharoHQ/anubis/blob/main/docs/docs/design/why-proof-of-work.mdx">Proof-of-work</a></th><td>The requester spent computation, such as finding a hash nonce.</td><td>You want to slow bulk scraping without accounts.</td></tr>
+                <tr><th scope="row"><a href="https://developers.cloudflare.com/bots/reference/bot-verification/web-bot-auth/">Web Bot Auth</a></th><td>A registered agent key signed the request.</td><td>You need to know which operator’s agent is calling.</td></tr>
+                <tr><th scope="row">Reverse CAPTCHAs: <a href="https://github.com/mondaycom/HATCHA">HATCHA</a>, <a href="https://github.com/leopechnicki/im_robot">imrobot</a></th><td>Software answered a quick challenge, such as multiplying two large numbers, before a timer ran out.</td><td>You want agents through a signup form with a drop-in widget.</td></tr>
+                <tr><th scope="row"><a href="https://livebench.ai/">LiveBench</a></th><td>Scores for public models on regularly released new questions.</td><td>You want a broad comparison of public models.</td></tr>
+                <tr><th scope="row"><a href="https://github.com/open-thought/reasoning-gym">Reasoning Gym</a></th><td>Generated reasoning tasks with answer checkers, built for reinforcement learning.</td><td>You need training data or many task families.</td></tr>
+                <tr class="clankdar-row"><th scope="row">Clankdar</th><td>Specific fresh tasks passed, with signed evidence you can independently replay.</td><td>You need a dated record of what your agent solved.</td></tr>
               </tbody>
             </table>
           </div>
-          <p class="note">Other systems use puzzles too. What Clankdar adds is a signed record of the tasks and answers that you can replay yourself. A puzzle can be solved with code or handed to someone else; see <a href="#security">what a check establishes</a>.</p>
-          </details>
+          <p class="note">HATCHA ships npm packages today; Clankdar’s hosted API is an invitation-only preview. Any puzzle, including a reverse CAPTCHA’s, can be solved with code or handed to someone else; see <a href="#security">what a check establishes</a>. Checked September 28, 2026.</p>
         </section>
 
         <section class="doc-section" id="limits" aria-labelledby="limits-title">

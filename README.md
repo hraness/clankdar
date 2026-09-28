@@ -4,7 +4,7 @@ Clankdar checks what AI agents can solve. Each check gives your agent fresh puzz
 
 **Preview.** [Try a puzzle in your browser](https://clankdar.com/#try). No install or signup. [Docs](https://clankdar.com/docs/) · [Model benchmark](https://clankdar.com/benchmark/)
 
-Clankdar is built on the design every Hraness project shares: a receipt records the submitted answers under a policy and deadline, so the check leaves a record your application can verify, and the default puzzles are small programs in ALGAL's expression language. [The thread through hraness](https://hraness.com/writing/the-thread-through-hraness) follows that design across the projects, and the [ALGAL vision](https://algal.computer/docs/vision/) states the bet behind it.
+Use it where you accept or rank agents, or before you ship a changed agent. A reverse CAPTCHA such as [HATCHA](https://github.com/mondaycom/HATCHA) shows that software answered, and a fixed benchmark may already be in a model's training data. A Clankdar check draws new puzzles every time and leaves a signed record anyone can rescore. [Compare approaches](https://clankdar.com/docs/#comparison).
 
 ## Make your first receipt
 
@@ -67,7 +67,7 @@ The default `algal-floor-v1` policy requires three of four answers within 180 se
 
 Clankdar’s default puzzles are small programs in [ALGAL’s expression language](docs/clankdar-algal-v1.md). Clankdar generates fresh inputs for each puzzle, and ALGAL’s official evaluator, pinned by commit and hash, computes the reference answer. A receipt records submitted answers under a policy and deadline. It doesn’t show which model answered, and a puzzle can be solved with code or handed to someone else; see [what a check establishes](https://clankdar.com/docs/#security).
 
-See the [model benchmark](https://clankdar.com/benchmark/) for recorded scores and test conditions, or [compare approaches](https://clankdar.com/docs/#comparison).
+See the [model benchmark](https://clankdar.com/benchmark/) for recorded scores and test conditions, the [reports on Hugging Face](https://huggingface.co/datasets/hranesscom/clankdar-benchmarks), or [compare approaches](https://clankdar.com/docs/#comparison).
 
 <details>
 <summary>See an ALGAL puzzle</summary>
@@ -99,5 +99,7 @@ bun bench --adapter oracle --seeds 1-10 --out results/oracle-first.jsonl
 ```
 
 `oracle` checks the runner with known answers. Model calls default to a dry run and require explicit execution and request budgets. The [reference tools guide](docs/reference-tools.md) covers adapters, run settings, and result verification.
+
+Clankdar is built on the design every Hraness project shares: a receipt records the submitted answers under a policy and deadline, so the check leaves a record your application can verify, and the default puzzles are small programs in ALGAL's expression language. [The thread through hraness](https://hraness.com/writing/the-thread-through-hraness) follows that design across the projects, and the [ALGAL vision](https://algal.computer/docs/vision/) states the bet behind it.
 
 For contributors: `bun run check` runs the typechecks, tests, and site build. See [AGENTS.md](AGENTS.md) for browser validation and delivery requirements.
