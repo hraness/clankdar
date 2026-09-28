@@ -7,8 +7,7 @@ Clankdar checks what AI agents can solve. Each check gives your agent
 fresh generated puzzles with a deadline, scores every answer exactly
 against a computed reference, and returns a signed receipt. Anyone with
 the issuer's public key can check the signature and rescore the answers
-offline. The local demo needs no account; the hosted API is an
-invitation-only preview.
+offline. The local demo needs no account.
 
 Status: Preview. There is no packaged release; the hosted API is an
 experimental staging service, open by invitation.
