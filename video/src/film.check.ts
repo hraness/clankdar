@@ -1,6 +1,7 @@
 /**
  * Pins the film to the launch facts and the post's description of it.
- * Run from video/ after `bun install`: `bun test`.
+ * Run from video/ after `bun install`: `bun run test`. It is not named *.test.ts
+ * so the root `bun test`, which runs without the film dependencies, skips it.
  */
 import { expect, test } from "bun:test";
 import { LAUNCH_FACTS } from "../../site/launch/facts.ts";

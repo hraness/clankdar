@@ -15,6 +15,7 @@
     "render:portrait": "bun src/build.ts --aspect 9:16 && slopcamera html render --input out/9x16/scene.json --json > out/9x16/export.json",
     "deliver": "slopcamera html deliver out/16x9/export.json --basename clankdar-launch --poster-at 18 --social-at 18 --cuts 1:1 --beats out/16x9/beats.json --per-beat-clips --output out/deliver",
     "deliver:portrait": "slopcamera html deliver out/9x16/export.json --basename clankdar-launch-vertical --poster-at 18 --social-at 18 --beats out/9x16/beats.json --per-beat-clips --output out/deliver-vertical",
+    "test": "bun test ./src/film.check.ts",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
