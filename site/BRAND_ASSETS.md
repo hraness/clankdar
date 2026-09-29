@@ -12,3 +12,7 @@ Apple touch PNGs are checked by the hashes below.
 `icon-512.png` and `og.png` are rendered from `icons/clankdar.svg` by
 `bun site/generate-social-image.ts`, which leaves out the two hairline bars
 at the edges of the traced SVG.
+
+## Hraness network footer mark
+
+`marks/hraness.svg` is the exact inline Ra artwork rendered by immutable `@hraness/site-footer` v0.20.1 (`60d6ba5baad35f4a7abdc6fe2e693ddd7bf00476`), extracted as a same-origin mask so the existing image CSP remains intact. SHA-256: `fd4f6259d35372f5896c72d51bf40582a8509386ff0a3e47e68cf511b82ef9ef`.

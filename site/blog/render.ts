@@ -108,7 +108,7 @@ function page(template: string, headHtml: string, main: string, blogIndex: boole
 
 export function renderPostMain(post: BlogPost): string {
   const { html, toc } = renderBody(post);
-  // Cards keep the compact name-and-role treatment without repeating the site mark.
+  // Marks are data: URLs, which the site CSP (img-src 'self') blocks, so cards show name and role only.
   const related = relatedFor("clankdar").map(item => ({ href: item.href, name: item.name, role: item.role, relationship: item.relationship }));
   const after = [
     renderArticleSourcesHtml({ sources: post.sources }),

@@ -260,3 +260,6 @@ summary, button, .actions a { scroll-margin-block: 1rem; }
 @media (forced-colors: active) {
   .room, .header-cta, .button-primary { border: 1px solid CanvasText; }
 }
+
+/* Keep the network mark same-origin under the existing image policy. */
+.hraness-site-footer__mark-paint { mask-image: url("/marks/hraness.svg"); }
