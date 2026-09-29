@@ -36,7 +36,7 @@ main { flex: 1; min-width: 0; }
 /* Header: brand, plain links, one action, then the shared appearance menu. */
 .masthead { --hraness-marketing-header-measure: 1248px; --hraness-marketing-header-height: 4rem; --hraness-marketing-gutter: 64px; }
 .wordmark { text-decoration: none; font-size: 1.125rem; font-weight: 600; letter-spacing: -0.01em; display: inline-flex; align-items: center; gap: 0.5rem; white-space: nowrap; }
-.mark { width: 24px; height: 24px; flex: none; }
+.mark { --hraness-foil-mask: url("/marks/clankdar.svg"); --hraness-foil-size: 24px; width: 24px; height: 24px; flex: none; }
 .site-nav { font-size: 14px; }
 .site-nav a { text-decoration: none; }
 .site-nav a[aria-current="page"] { color: var(--focus); }
@@ -260,3 +260,6 @@ summary, button, .actions a { scroll-margin-block: 1rem; }
 @media (forced-colors: active) {
   .room, .header-cta, .button-primary { border: 1px solid CanvasText; }
 }
+
+/* Keep the network mark same-origin under the existing image policy. */
+.hraness-site-footer__mark-paint { mask-image: url("/marks/hraness.svg"); }
