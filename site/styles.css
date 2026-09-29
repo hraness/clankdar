@@ -1,3 +1,5 @@
+@import url("/design/syntax-highlighting.css");
+
 :root {
   --hraness-marketing-display-font: var(--font-text);
   --hraness-site-footer-measure: 1120px;
@@ -72,7 +74,7 @@ h1 { font-family: var(--font-text); font-size: clamp(2.25rem, 1.2rem + 4.4vw, 4.
 .answer-reveal { margin-top: 20px; border-top: 1px solid var(--line); padding-top: 12px; }
 summary { cursor: pointer; font-size: 13px; line-height: 1.6; min-height: 32px; display: list-item; padding-block: 6px; }
 summary:focus-visible { outline: 2px solid var(--focus); outline-offset: 4px; }
-.answer-reveal code { display: block; margin-top: 16px; padding: 10px 12px; color: var(--focus); font-size: 18px; }
+.answer-reveal > code { display: block; margin-top: 16px; padding: 10px 12px; color: var(--focus); font-size: 18px; }
 .room .code { margin-top: 14px; padding: 14px 16px; }
 .room .code code, .harder-example .code code { font-size: 13px; line-height: 1.7; white-space: pre-wrap; overflow-wrap: anywhere; }
 .practice-task { font-size: 18px; line-height: 1.5; color: var(--ink); }
@@ -121,6 +123,8 @@ code { font-family: var(--font-mono, ui-monospace, "SFMono-Regular", Consolas, m
 .code { margin-top: 16px; padding: 16px 20px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); overflow-x: auto; }
 .code:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
 .code code { background: none; padding: 0; border-radius: 0; font-size: .875rem; line-height: 1.7; display: block; }
+.section-body .hraness-marketing-proof-frame { margin-top: 16px; }
+.hraness-marketing-proof-frame .code { margin: 0; border: 0; border-radius: 0; padding: 16px 20px; }
 .note { margin-top: 14px; color: var(--muted); font-size: 13px; line-height: 1.6; }
 .release-note { margin-top: 23px; font: 13px/1.7 var(--font-text); color: var(--muted); }
 

@@ -4,7 +4,7 @@ import { dirname, resolve } from "node:path";
 import { createHash } from "node:crypto";
 import { renderPractice } from "./practice-data.ts";
 import { supportFooter } from "./support-footer.ts";
-import { renderBenchmarkDownloads, renderModelBenchmark, renderChallenge, renderHarderChallenge } from "./content.ts";
+import { renderBenchmarkDownloads, renderModelBenchmark, renderChallenge, renderHarderChallenge, renderCode } from "./content.ts";
 import { verifyPilot } from "../bench/pilot.ts";
 import { verifyCalibration } from "../bench/archive.ts";
 import { verifyAdmissionArchive } from "../bench/admission-archive.ts";
@@ -26,6 +26,8 @@ verifyCalibration(resolve(root, "benchmark/agent-v0"));
 const admissionDir = resolve(root, "benchmark/admissions-opus5-2026-09-19");
 verifyAdmissionArchive(admissionDir);
 const substitutions: Record<string, string> = {
+  "{{LOCAL_DEMO_COMMANDS}}": renderCode("git clone https://github.com/hraness/clankdar.git\ncd clankdar\nbun install --frozen-lockfile --ignore-scripts\nbun run try", "shell", "span"),
+  "{{VERIFY_COMMAND}}": renderCode('bun cloudflare/examples/verify-receipt.mjs receipt.json \\\n  --issuer "$EXPECTED_ISSUER_PUBLIC_KEY"', "shell"),
   "{{PRACTICE}}": renderPractice(),
   "{{ALGAL_CHALLENGE}}": renderChallenge(),
   "{{HARDER_CHALLENGE}}": renderHarderChallenge(),

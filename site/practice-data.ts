@@ -1,6 +1,6 @@
 import { algalWorkedExample, solveAlgalPuzzle } from "../ladder/families/algal.ts";
 import { scoreAnswer } from "../ladder/family.ts";
-import { ALGAL_EXAMPLE_CODE, escapeHtml } from "./content.ts";
+import { ALGAL_EXAMPLE_CODE, escapeHtml, renderCode } from "./content.ts";
 
 export interface PracticePuzzle {
   values: number[];
@@ -35,7 +35,7 @@ export function renderPractice(): string {
 <fieldset class="practice-choices" data-practice-controls hidden><legend>What is the answer?</legend>${first.choices.map(choice => `<button type="button" data-practice-answer>${escapeHtml(choice)}</button>`).join("")}</fieldset>
 <p class="practice-feedback" data-practice-feedback role="status" aria-live="polite" aria-atomic="true"></p>
 <div class="practice-next" data-practice-next hidden><a class="primary-link" href="/docs/#quickstart">Run a complete check <span aria-hidden="true">→</span></a><button type="button" data-practice-another>Another puzzle</button></div>
-<details class="answer-reveal"><summary>See the ALGAL code and solution</summary><pre class="code algal-code"><code>${escapeHtml(ALGAL_EXAMPLE_CODE)}</code></pre><code data-practice-solution>${escapeHtml(first.answer)}</code><p data-practice-explanation>${escapeHtml(first.explanation)}</p></details>
-<p class="sample-note">Public practice, scored in this page. No receipt is issued. The puzzle is a small program in ALGAL’s expression language, and each answer comes from running it when the site is built.</p>
+<details class="answer-reveal"><summary>See the ALGAL expression and solution</summary><pre class="code algal-code">${renderCode(ALGAL_EXAMPLE_CODE, "json")}</pre><code data-practice-solution>${escapeHtml(first.answer)}</code><p data-practice-explanation>${escapeHtml(first.explanation)}</p></details>
+<p class="sample-note">Public practice. No receipt is issued. This ALGAL expression is written as JSON; its answers come from running it when the site is built.</p>
 </div>`;
 }

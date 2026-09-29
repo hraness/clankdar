@@ -3,9 +3,15 @@ import { FAMILIES, familyByName, poolForVersion, SUITE_VERSION } from "../ladder
 import type { AgentDiagnostics, CalibrationReport } from "../bench/report.ts";
 import { CAPABILITY_PROFILES, profileReport } from "../bench/profiles.ts";
 import type { AdmissionArchiveManifest, AdmissionArchiveReport } from "../bench/admission-archive.ts";
+import { highlightCode, type SyntaxLanguage } from "@hraness/design-kit/syntax-highlighting";
 
 export const escapeHtml = (value: string | number): string => String(value).replace(/[&<>"']/g, (char) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[char]!);
 const pct = (value: number | null) => value === null ? "—" : `${(value * 100).toFixed(1)}%`;
+
+export function renderCode(source: string, language: SyntaxLanguage, tag: "code" | "span" = "code"): string {
+  const code = highlightCode(source, language, { styles: "classes" });
+  return `<${tag} class="${code.className}" data-language="${code.language}">${code.html}</${tag}>`;
+}
 
 export const ALGAL_EXAMPLE_CODE = `["fold",
   ["map",
@@ -20,7 +26,7 @@ export function renderChallenge(): string {
   if (JSON.stringify(JSON.parse(ALGAL_EXAMPLE_CODE)) !== JSON.stringify(example.expr.program)) throw new Error("displayed ALGAL program drifted from executable example");
   return `<div class="room-heading hraness-material-terminal__bar"><span>What does this return?</span><span class="example-label">ALGAL · public practice</span></div>
 <div class="sample-body"><p class="sample-input"><code>values = ${escapeHtml(JSON.stringify(example.inputs.values))}</code></p>
-<pre class="code algal-code"><code>${escapeHtml(ALGAL_EXAMPLE_CODE)}</code></pre>
+<pre class="code algal-code">${renderCode(ALGAL_EXAMPLE_CODE, "json")}</pre>
 <details class="answer-reveal"><summary>See the solution</summary><code>${escapeHtml(example.answer)}</code><p>Keep 3 and 5, square each, then add: 9 + 25 = 34.</p></details>
 <p class="sample-note">Executed by the same ALGAL evaluator used for checks. This public example does not issue a receipt.</p></div>`;
 }
