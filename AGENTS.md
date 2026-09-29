@@ -11,6 +11,7 @@
 - `site/blog/` holds the blog: `articles.ts` is the post registry with each post's admission record (checked by `assertArticleAdmissions` in `site/blog/blog.test.ts`), `posts/*.md` are the post bodies, and `render.ts` renders the pages, Atom feed, sitemap, and `llms.txt` section with the pinned design-kit and web-discovery releases. Quarantined posts render `noindex` and stay out of the index, sitemap, feed, and `llms.txt`.
 - `site/build.ts` is the bundling entry; `site/dist/` is generated output.
 - `vercel.json` sets the static build, output directory, and content security headers.
+- `LICENSE` holds the MIT terms for the code.
 
 # Guidelines
 
