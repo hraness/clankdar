@@ -5,8 +5,10 @@ import { resolve } from "node:path";
 import { randomUUID } from "node:crypto";
 import { parseArgs } from "node:util";
 
-const { values } = parseArgs({ args: process.argv.slice(2), options: { channel: { type: "string" }, production: { type: "boolean", default: false } }, strict: true, allowPositionals: false });
+const { values } = parseArgs({ args: process.argv.slice(2), options: { channel: { type: "string" }, production: { type: "boolean", default: false }, concurrency: { type: "string", default: "2" } }, strict: true, allowPositionals: false });
 if (values.channel && !["chrome", "chromium"].includes(values.channel)) throw new Error("channel must be chrome or chromium");
+const concurrency = Number(values.concurrency);
+if (!Number.isInteger(concurrency) || concurrency < 1 || concurrency > 12) throw new Error("concurrency must be an integer from 1 to 12");
 const root = resolve(import.meta.dir, "dist");
 const files = new Set(values.production ? [] : new Bun.Glob("**/*").scanSync({ cwd: root, onlyFiles: true }));
 if (!values.production && !files.has("index.html")) throw new Error("build the site before browser verification");
@@ -38,6 +40,7 @@ const server = values.production ? undefined : Bun.serve({
 const origin = values.production ? "https://clankdar.com" : `http://127.0.0.1:${server!.port}`;
 const screenshots = resolve(import.meta.dir, `../results/visual-${randomUUID()}`);
 mkdirSync(screenshots, { recursive: true });
+const widths = [1440, 1280, 608, 390, 360, 320];
 let browser: Browser | undefined;
 let activePage: Page | undefined;
 const errors: string[] = [];
@@ -100,129 +103,147 @@ async function verifyChrome(page: Page, width: number): Promise<void> {
   await page.evaluate(() => scrollTo(0, 0));
 }
 
+// One width/theme pass in its own isolated context. Passes run through a small pool.
+async function verifyContext(browser: Browser, width: number, theme: "light" | "dark"): Promise<void> {
+  const context = await browser.newContext({ viewport: { width, height: width === 390 ? 844 : width <= 360 ? 740 : 900 }, colorScheme: theme, reducedMotion: "reduce", serviceWorkers: "block" });
+  await context.route("**/*", (route) => {
+    if (new URL(route.request().url()).origin !== origin) { errors.push("unexpected third-party request"); return route.abort(); }
+    return route.continue();
+  });
+  const page = await context.newPage();
+  try {
+    page.on("pageerror", (error) => errors.push(error.message));
+    page.on("console", (message) => {
+      // Chrome logs the 404 document itself; the missing-path checks expect that status.
+      const source = message.location().url ? new URL(message.location().url).pathname : "";
+      if (message.type() === "error" && !missingPaths.some(([missing]) => missing.replace(/\/$/u, "") === source.replace(/\/$/u, ""))) errors.push(message.text());
+    });
+    page.on("response", (response) => {
+      const pathname = new URL(response.url()).pathname;
+      if (response.status() >= 400 && !missingPaths.some(([missing]) => missing.replace(/\/$/u, "") === pathname.replace(/\/$/u, ""))) errors.push(`HTTP ${response.status()} ${pathname}`);
+    });
+    for (const path of ["/", "/docs/", "/benchmark/", ...blogPaths, ...(values.production ? [] : profilePaths)]) {
+      await page.goto(origin + path, { waitUntil: "load" });
+      await page.evaluate(async () => { await document.fonts.ready; });
+      await expect(page).toHaveTitle(/Clankdar/);
+      await expect(page.locator("html")).toHaveAttribute("data-hraness-theme", "paper");
+      expect(await page.locator("body").evaluate((body) => getComputedStyle(body).fontFamily)).toContain("Nebula Sans");
+      await expect(page.locator("h1")).toHaveCount(1);
+      await expect(page.locator("#hraness-site-footer")).toHaveCount(1);
+      if (!profilePaths.includes(path)) await expect(page.locator('link[rel="canonical"]')).toHaveAttribute("href", `https://clankdar.com${path}`);
+      else await expect(page.locator(".record-facts")).toContainText("5 responded · 2 missed");
+      expect(await page.locator("form, iframe").count()).toBe(0);
+      expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1)).toBe(true);
+      if (width === 1280 && theme === "light" && !profilePaths.includes(path)) {
+        const anchors = await page.locator('a[href^="#"]').evaluateAll((links) => links.map((link) => link.getAttribute("href")!.slice(1)));
+        for (const id of anchors) expect(await page.locator(`[id="${id}"]`).count()).toBe(1);
+        const paths = await page.locator('a[href^="/"]').evaluateAll((links) => [...new Set(links.map((link) => link.getAttribute("href")!.split("#")[0]))]);
+        for (const href of paths) expect((await context.request.get(origin + href)).status()).toBe(200);
+      }
+      await verifyChrome(page, width);
+      if (path === "/") {
+        const choices = page.locator("[data-practice-answer]");
+        await expect(page.locator("[data-practice-next]")).toBeHidden();
+        await choices.filter({ hasText: /^34$/ }).click();
+        await expect(page.locator("[data-practice-feedback]")).toContainText("Correct. The answer is 34.");
+        for (const choice of await choices.all()) await expect(choice).toBeDisabled();
+        await expect(page.locator("[data-practice-next] a")).toHaveAttribute("href", "/docs/#quickstart");
+        await page.locator("[data-practice-another]").click();
+        await expect(page.locator("[data-practice-values]")).toHaveText("values = [2,4,1,3]");
+        await choices.filter({ hasText: /^16$/ }).click();
+        await expect(page.locator("[data-practice-feedback]")).toContainText("doesn’t match");
+        await expect(page.locator("[data-practice-feedback]")).toContainText("25");
+        await page.locator(".room .answer-reveal summary").click();
+        await expect(page.locator("[data-practice-solution]")).toHaveText("25");
+        await page.locator("[data-practice-another]").click();
+        await expect(choices.first()).toBeFocused();
+        // Practice controls scroll into view; capture sticky chrome from the page top.
+        await page.evaluate(() => scrollTo(0, 0));
+        await expect.poll(() => page.evaluate(() => scrollY)).toBe(0);
+      }
+      const slug = path === "/" ? "home" : profilePaths.includes(path) ? (path === profilePaths[0] ? "actor" : "campaign") : path.replaceAll("/", "");
+      await page.screenshot({ path: resolve(screenshots, `${slug}-${width}-${theme}.png`), fullPage: path === "/" });
+      if (path.startsWith("/blog/")) {
+        await expect(page.locator(".plain-publication")).toHaveCount(1);
+        if (path !== "/blog/") {
+          await expect(page.locator(".plain-publication__byline")).toHaveText("By Hraness");
+          await expect(page.locator(".plain-publication__provenance")).toHaveText("Drafted with AI from the source code and reviewed by Claude Opus 5.5 (claude-opus-5-5) editorial review.");
+          await expect(page.locator('meta[name="robots"]')).toHaveCount(0);
+        }
+      }
+      if (path === "/benchmark/") {
+        const comparison = page.locator("#results .benchmark-snapshot");
+        await expect(comparison.locator("tbody tr")).toHaveCount(5);
+        await expect(comparison).toContainText("437/499");
+        await expect(page.locator("table:visible")).toHaveCount(1);
+        await comparison.scrollIntoViewIfNeeded();
+        await page.screenshot({ path: resolve(screenshots, `benchmark-table-${width}-${theme}.png`) });
+        const method = page.locator("#method > details").first();
+        await method.locator("summary").click();
+        await expect(method.locator('a[href$="/report.json"]')).toBeVisible();
+        await method.locator("summary").click();
+        const archive = page.locator("#archive");
+        await archive.locator("summary").click();
+        await expect(archive.locator('a[href="/benchmark/agent-v0/manifest.json"]')).toBeVisible();
+      }
+      checked++;
+    }
+    for (const [path, suggestion] of missingPaths) {
+      const response = await page.goto(origin + path, { waitUntil: "load" });
+      expect(response!.status()).toBe(404);
+      await expect(page).toHaveTitle("Page not found · Clankdar");
+      await expect(page.locator('meta[name="robots"]')).toHaveAttribute("content", "noindex");
+      await expect(page.locator("h1")).toHaveText("We can’t find that page");
+      await expect(page.locator(".hraness-status-page__action")).toHaveAttribute("href", "/docs/#quickstart");
+      await expect(page.locator(".hraness-status-page__next-link")).toHaveCount(3);
+      await expect(page.locator(".hraness-status-page")).toHaveAttribute("data-hraness-status-field", "live");
+      const hint = page.locator(".hraness-status-page__hint");
+      if (suggestion === undefined) await expect(hint).toBeHidden();
+      else await expect(hint.locator("a")).toHaveAttribute("href", suggestion);
+      await expect(page.locator("#hraness-site-footer")).toHaveCount(1);
+      await expect(page.locator(".masthead .site-nav a")).toHaveText(["Docs", "Benchmark", "Blog", "GitHub"]);
+      expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1)).toBe(true);
+      await page.screenshot({ path: resolve(screenshots, `not-found${suggestion === undefined ? "" : "-hint"}-${width}-${theme}.png`) });
+      checked++;
+    }
+    if (width === 1280 && theme === "light") {
+      await page.goto(origin);
+      const trigger = page.locator("[data-hraness-appearance-menu] > button");
+      const before = await page.locator('meta[name="theme-color"][data-hraness-design-theme-color-sync-active]').getAttribute("content");
+      await trigger.click();
+      await page.locator('[role="menuitemradio"][data-theme-value="dark"]').click();
+      await expect(page.locator('[role="menuitemradio"][data-theme-value="dark"]')).toHaveAttribute("aria-checked", "true");
+      expect(await page.locator('meta[name="theme-color"][data-hraness-design-theme-color-sync-active]').getAttribute("content")).not.toBe(before);
+      await trigger.focus();
+      await trigger.press("Enter");
+      await expect(trigger).toHaveAttribute("aria-expanded", "true");
+      await page.keyboard.press("Escape");
+      await expect(trigger).toHaveAttribute("aria-expanded", "false");
+      await expect(trigger).toBeFocused();
+    }
+  } catch (error) {
+    if (!page.isClosed()) await page.screenshot({ path: resolve(screenshots, `failure-${width}-${theme}.png`) }).catch(() => {});
+    throw error;
+  } finally {
+    await context.close();
+  }
+}
+
 try {
   browser = await chromium.launch({ channel: values.channel, headless: true });
-  for (const width of [1440, 1280, 608, 390, 360, 320]) {
-    for (const theme of ["light", "dark"] as const) {
-      const context = await browser.newContext({ viewport: { width, height: width === 390 ? 844 : width <= 360 ? 740 : 900 }, colorScheme: theme, reducedMotion: "reduce", serviceWorkers: "block" });
-      await context.route("**/*", (route) => {
-        if (new URL(route.request().url()).origin !== origin) { errors.push("unexpected third-party request"); return route.abort(); }
-        return route.continue();
-      });
-      const page = await context.newPage();
-      activePage = page;
-      page.on("pageerror", (error) => errors.push(error.message));
-      page.on("console", (message) => {
-        // Chrome logs the 404 document itself; the missing-path checks expect that status.
-        const source = message.location().url ? new URL(message.location().url).pathname : "";
-        if (message.type() === "error" && !missingPaths.some(([missing]) => missing.replace(/\/$/u, "") === source.replace(/\/$/u, ""))) errors.push(message.text());
-      });
-      page.on("response", (response) => {
-        const pathname = new URL(response.url()).pathname;
-        if (response.status() >= 400 && !missingPaths.some(([missing]) => missing.replace(/\/$/u, "") === pathname.replace(/\/$/u, ""))) errors.push(`HTTP ${response.status()} ${pathname}`);
-      });
-      for (const path of ["/", "/docs/", "/benchmark/", ...blogPaths, ...(values.production ? [] : profilePaths)]) {
-        await page.goto(origin + path, { waitUntil: "networkidle" });
-        await page.evaluate(async () => { await document.fonts.ready; });
-        await expect(page).toHaveTitle(/Clankdar/);
-        await expect(page.locator("html")).toHaveAttribute("data-hraness-theme", "paper");
-        expect(await page.locator("body").evaluate((body) => getComputedStyle(body).fontFamily)).toContain("Nebula Sans");
-        await expect(page.locator("h1")).toHaveCount(1);
-        await expect(page.locator("#hraness-site-footer")).toHaveCount(1);
-        if (!profilePaths.includes(path)) await expect(page.locator('link[rel="canonical"]')).toHaveAttribute("href", `https://clankdar.com${path}`);
-        else await expect(page.locator(".record-facts")).toContainText("5 responded · 2 missed");
-        expect(await page.locator("form, iframe").count()).toBe(0);
-        expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1)).toBe(true);
-        if (width === 1280 && theme === "light" && !profilePaths.includes(path)) {
-          const anchors = await page.locator('a[href^="#"]').evaluateAll((links) => links.map((link) => link.getAttribute("href")!.slice(1)));
-          for (const id of anchors) expect(await page.locator(`[id="${id}"]`).count()).toBe(1);
-          const paths = await page.locator('a[href^="/"]').evaluateAll((links) => [...new Set(links.map((link) => link.getAttribute("href")!.split("#")[0]))]);
-          for (const href of paths) expect((await context.request.get(origin + href)).status()).toBe(200);
-        }
-        await verifyChrome(page, width);
-        if (path === "/") {
-          const choices = page.locator("[data-practice-answer]");
-          await expect(page.locator("[data-practice-next]")).toBeHidden();
-          await choices.filter({ hasText: /^34$/ }).click();
-          await expect(page.locator("[data-practice-feedback]")).toContainText("Correct. The answer is 34.");
-          for (const choice of await choices.all()) await expect(choice).toBeDisabled();
-          await expect(page.locator("[data-practice-next] a")).toHaveAttribute("href", "/docs/#quickstart");
-          await page.locator("[data-practice-another]").click();
-          await expect(page.locator("[data-practice-values]")).toHaveText("values = [2,4,1,3]");
-          await choices.filter({ hasText: /^16$/ }).click();
-          await expect(page.locator("[data-practice-feedback]")).toContainText("doesn’t match");
-          await expect(page.locator("[data-practice-feedback]")).toContainText("25");
-          await page.locator(".room .answer-reveal summary").click();
-          await expect(page.locator("[data-practice-solution]")).toHaveText("25");
-          await page.locator("[data-practice-another]").click();
-          await expect(choices.first()).toBeFocused();
-          // Practice controls scroll into view; capture sticky chrome from the page top.
-          await page.evaluate(() => scrollTo(0, 0));
-          await expect.poll(() => page.evaluate(() => scrollY)).toBe(0);
-        }
-        const slug = path === "/" ? "home" : profilePaths.includes(path) ? (path === profilePaths[0] ? "actor" : "campaign") : path.replaceAll("/", "");
-        await page.screenshot({ path: resolve(screenshots, `${slug}-${width}-${theme}.png`), fullPage: path === "/" });
-        if (path.startsWith("/blog/")) {
-          await expect(page.locator(".plain-publication")).toHaveCount(1);
-          if (path !== "/blog/") {
-            await expect(page.locator(".plain-publication__byline")).toHaveText("By Hraness");
-            await expect(page.locator(".plain-publication__provenance")).toHaveText("Drafted with AI from the source code and reviewed by Claude Opus 5.5 (claude-opus-5-5) editorial review.");
-            await expect(page.locator('meta[name="robots"]')).toHaveCount(0);
-          }
-        }
-        if (path === "/benchmark/") {
-          const comparison = page.locator("#results .benchmark-snapshot");
-          await expect(comparison.locator("tbody tr")).toHaveCount(5);
-          await expect(comparison).toContainText("437/499");
-          await expect(page.locator("table:visible")).toHaveCount(1);
-          await comparison.scrollIntoViewIfNeeded();
-          await page.screenshot({ path: resolve(screenshots, `benchmark-table-${width}-${theme}.png`) });
-          const method = page.locator("#method > details").first();
-          await method.locator("summary").click();
-          await expect(method.locator('a[href$="/report.json"]')).toBeVisible();
-          await method.locator("summary").click();
-          const archive = page.locator("#archive");
-          await archive.locator("summary").click();
-          await expect(archive.locator('a[href="/benchmark/agent-v0/manifest.json"]')).toBeVisible();
-        }
-        checked++;
-      }
-      for (const [path, suggestion] of missingPaths) {
-        const response = await page.goto(origin + path, { waitUntil: "networkidle" });
-        expect(response!.status()).toBe(404);
-        await expect(page).toHaveTitle("Page not found · Clankdar");
-        await expect(page.locator('meta[name="robots"]')).toHaveAttribute("content", "noindex");
-        await expect(page.locator("h1")).toHaveText("We can’t find that page");
-        await expect(page.locator(".hraness-status-page__action")).toHaveAttribute("href", "/docs/#quickstart");
-        await expect(page.locator(".hraness-status-page__next-link")).toHaveCount(3);
-        await expect(page.locator(".hraness-status-page")).toHaveAttribute("data-hraness-status-field", "live");
-        const hint = page.locator(".hraness-status-page__hint");
-        if (suggestion === undefined) await expect(hint).toBeHidden();
-        else await expect(hint.locator("a")).toHaveAttribute("href", suggestion);
-        await expect(page.locator("#hraness-site-footer")).toHaveCount(1);
-        await expect(page.locator(".masthead .site-nav a")).toHaveText(["Docs", "Benchmark", "Blog", "GitHub"]);
-        expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1)).toBe(true);
-        await page.screenshot({ path: resolve(screenshots, `not-found${suggestion === undefined ? "" : "-hint"}-${width}-${theme}.png`) });
-        checked++;
-      }
-      if (width === 1280 && theme === "light") {
-        await page.goto(origin);
-        const trigger = page.locator("[data-hraness-appearance-menu] > button");
-        const before = await page.locator('meta[name="theme-color"][data-hraness-design-theme-color-sync-active]').getAttribute("content");
-        await trigger.click();
-        await page.locator('[role="menuitemradio"][data-theme-value="dark"]').click();
-        await expect(page.locator('[role="menuitemradio"][data-theme-value="dark"]')).toHaveAttribute("aria-checked", "true");
-        expect(await page.locator('meta[name="theme-color"][data-hraness-design-theme-color-sync-active]').getAttribute("content")).not.toBe(before);
-        await trigger.focus();
-        await trigger.press("Enter");
-        await expect(trigger).toHaveAttribute("aria-expanded", "true");
-        await page.keyboard.press("Escape");
-        await expect(trigger).toHaveAttribute("aria-expanded", "false");
-        await expect(trigger).toBeFocused();
-      }
-      await context.close();
+  const passes = widths.flatMap((width) => (["light", "dark"] as const).map((theme) => ({ width, theme })));
+  let next = 0;
+  let failure: unknown;
+  // Stop handing out passes after the first failure, let running passes finish, then report it.
+  const worker = async (): Promise<void> => {
+    while (failure === undefined && next < passes.length) {
+      const { width, theme } = passes[next++]!;
+      try { await verifyContext(browser!, width, theme); }
+      catch (error) { failure ??= error; }
     }
-  }
+  };
+  await Promise.all(Array.from({ length: Math.min(concurrency, passes.length) }, worker));
+  if (failure !== undefined) throw failure;
   const noScript = await browser.newContext({ javaScriptEnabled: false, viewport: { width: 390, height: 844 } });
   const page = await noScript.newPage();
   activePage = page;
@@ -237,7 +258,7 @@ try {
   await expect(page.locator('#method a[href$="/report.json"]')).toBeVisible();
   await noScript.close();
   expect(errors).toEqual([]);
-  const report = { capturedAt: new Date().toISOString(), origin, mode: values.production ? "production" : "local", pagesChecked: checked, widths: [1440, 1280, 608, 390, 360, 320], themes: ["light", "dark"], noScript: true, browserErrors: errors.length, screenshots };
+  const report = { capturedAt: new Date().toISOString(), origin, mode: values.production ? "production" : "local", pagesChecked: checked, widths, themes: ["light", "dark"], noScript: true, browserErrors: errors.length, screenshots };
   writeFileSync(resolve(screenshots, "verification.json"), JSON.stringify(report, null, 2) + "\n");
   console.log(JSON.stringify(report, null, 2));
 } catch (error) {
