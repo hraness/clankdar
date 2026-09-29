@@ -49,9 +49,12 @@ export function socialImageMeta(image: SocialImage, origin = "https://clankdar.c
   ];
 }
 
-/** Rasterizes the shared template for this site with satori and resvg. */
+/**
+ * Rasterizes the shared template for this site with satori and resvg. Strict:
+ * the build fails when copy would be shortened, resized, or stripped.
+ */
 export async function renderSocialImage(page?: SocialImagePage): Promise<Uint8Array> {
-  const card = createSocialImageCard(socialImageSiteDetails(socialSite, page));
+  const card = createSocialImageCard({ ...socialImageSiteDetails(socialSite, page), strict: true });
   const svg = await satori(card.element, {
     fonts: card.fonts.map(font => ({ data: font.data, name: font.name, style: font.style, weight: font.weight })),
     height: card.height,

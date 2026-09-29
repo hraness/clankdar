@@ -14,6 +14,10 @@ export type BlogPost = Readonly<{
   /** The dek shortened to fit two lines on the share image. */
   cardDek: string;
   eyebrow: string;
+  /** The share image's eyebrow when the page eyebrow would repeat the title. */
+  cardEyebrow?: string;
+  /** The title shortened to fit two lines at the share image's standard size. */
+  cardTitle?: string;
   published: ArticleIsoDate;
   updated?: ArticleIsoDate;
   tags: readonly string[];
@@ -76,6 +80,7 @@ export const POSTS: readonly BlogPost[] = [
     dek: "Clankdar tests AI agents on fresh puzzles whose answers a program computes, so no judge model decides whether a reply is right.",
     cardDek: "Fresh puzzles whose answers a program computes, so no judge model decides what is right.",
     eyebrow: "Introducing",
+    cardEyebrow: "Release",
     published: "2026-09-24",
     tags: ["agents", "benchmarks", "evaluation", "algal"],
     sources: introducingSources,
@@ -122,6 +127,7 @@ export const POSTS: readonly BlogPost[] = [
     title: "How Clankdar uses ALGAL for reference answers",
     dek: "ALGAL's own evaluator, pinned by commit and WebAssembly hash, computes the reference answer for every default Clankdar puzzle.",
     cardDek: "ALGAL's pinned evaluator computes the reference answer for every default Clankdar puzzle.",
+    cardTitle: "How Clankdar uses ALGAL",
     eyebrow: "Integration",
     published: "2026-09-24",
     tags: ["clankdar", "algal", "evaluation", "benchmarks", "replay", "agents"],

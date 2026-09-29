@@ -45,7 +45,7 @@ export const BLOG_SOCIAL_CARD: Readonly<{ path: `/${string}`; page: SocialImageP
 };
 
 export function postSocialCard(post: BlogPost): Readonly<{ path: `/${string}`; page: SocialImagePage }> {
-  return { path: `/og/blog/${post.slug}.png`, page: { eyebrow: post.eyebrow, headline: post.title, description: post.cardDek } };
+  return { path: `/og/blog/${post.slug}.png`, page: { eyebrow: post.cardEyebrow ?? post.eyebrow, headline: post.cardTitle ?? post.title, description: post.cardDek } };
 }
 
 function postImage(post: BlogPost): SocialImage {
