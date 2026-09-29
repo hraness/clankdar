@@ -1,7 +1,8 @@
 import type { ArticleAdmission, ArticleIsoDate, ArticleSourceItem } from "@hraness/design-kit";
 
 /**
- * Clankdar's blog registry. Each post's body lives in `posts/<slug>.md`; this
+ * Clankdar's blog registry. Each post's body lives in `posts/<slug>.md` (the
+ * launch post's body is the beats in site/launch); this
  * file holds its page metadata and its editorial admission record, which
  * decides whether the post may be indexed, listed, and syndicated.
  */
@@ -23,6 +24,8 @@ export type BlogPost = Readonly<{
   tags: readonly string[];
   sources: readonly ArticleSourceItem[];
   admission: ArticleAdmission;
+  /** True for the launch post, whose body is the beats in site/launch rather than a Markdown file. */
+  launch?: true;
 }>;
 
 export const BLOG_PATH = "/blog/";
@@ -36,12 +39,19 @@ const REVIEW = {
   reviewedOn: "2026-09-26",
 } as const;
 
+/** The beat rewrite of the launch post, reviewed against site/launch/facts.ts, the recorded fixtures, and the sources below. */
+const LAUNCH_REVIEW = {
+  reviewer: "Claude Opus 5.5 (claude-opus-5-5) editorial review",
+  reviewerType: "ai",
+  reviewedOn: "2026-09-29",
+} as const;
+
 function repo(repository: "clankdar" | "algal", file: string): string {
   return `https://github.com/hraness/${repository}/blob/main/${file}`;
 }
 
-function source(title: string, repository: "clankdar" | "algal", file: string): ArticleSourceItem {
-  return { title, href: repo(repository, file), publisher: "GitHub", checkedOn: SOURCES_CHECKED_ON };
+function source(title: string, repository: "clankdar" | "algal", file: string, checkedOn: ArticleIsoDate = SOURCES_CHECKED_ON): ArticleSourceItem {
+  return { title, href: repo(repository, file), publisher: "GitHub", checkedOn };
 }
 
 function admissionSources(sources: readonly ArticleSourceItem[]) {
@@ -49,6 +59,9 @@ function admissionSources(sources: readonly ArticleSourceItem[]) {
 }
 
 const introducingSources = [
+  source("Launch facts: every number in the beats and where it comes from", "clankdar", "site/launch/facts.ts", "2026-09-29"),
+  source("Recorded demo, failing and tampered runs behind the mockups", "clankdar", "site/launch/fixtures.ts", "2026-09-29"),
+  source("Offline receipt verifier", "clankdar", "cloudflare/examples/verify-receipt.mjs", "2026-09-29"),
   source("Clankdar README: what the evidence means, policy and staging limits", "clankdar", "README.md"),
   source("Clankdar's ALGAL suite (clankdar-algal-v1)", "clankdar", "docs/clankdar-algal-v1.md"),
   source("ALGAL puzzle generator and reference solver", "clankdar", "ladder/families/algal.ts"),
@@ -76,21 +89,23 @@ export const POSTS: readonly BlogPost[] = [
   {
     slug: "introducing-clankdar",
     path: "/blog/introducing-clankdar",
+    launch: true,
     title: "Introducing Clankdar",
     dek: "Clankdar tests AI agents on fresh puzzles whose answers a program computes, so no judge model decides whether a reply is right.",
     cardDek: "Fresh puzzles whose answers a program computes, so no judge model decides what is right.",
     eyebrow: "Introducing",
     cardEyebrow: "Release",
     published: "2026-09-24",
+    updated: "2026-09-29",
     tags: ["agents", "benchmarks", "evaluation", "algal"],
     sources: introducingSources,
     admission: {
       href: "/blog/introducing-clankdar",
       lifecycle: "indexable",
-      readerJob: "Decide whether Clankdar's exactly scored, rerunnable puzzle checks fit an agent comparison or pre-task check, and run the demo or benchmark runner from source.",
-      nonObviousAnswer: "Clankdar's default puzzles get their reference answers from ALGAL's own Rust evaluator, compiled to WebAssembly and pinned by commit and hash, and a replay regenerates every recorded puzzle and fails the whole run on any mismatch; no ALGAL model scores are published until a separate calibration is recorded.",
-      originalContribution: "A reader-first account of why exact reference answers replace a judge model, with the runnable demo, the solver contract, and the replay rule in one place.",
-      hostFit: "The product's own introduction on its own host, in the Introducing shape from ARTICLE_COPY.md.",
+      readerJob: "Decide in a minute whether Clankdar's exactly scored, signed puzzle checks fit an agent you run or rely on, then solve a practice puzzle or run the local demo.",
+      nonObviousAnswer: "A signed Clankdar result can be rechecked offline by anyone with the issuer's public key, and editing one recorded answer (515 to 514 in the recorded demo) makes the verifier reject the whole file; a wrong solver still gets a signed, failing result.",
+      originalContribution: "Ten standalone beats, each shown with a mockup drawn from real recorded runs: a passing demo, a failing custom solver, and a tampered result the repository's verifier rejects.",
+      hostFit: "The product's own introduction on its own host, in the Introducing (beats) shape from ARTICLE_COPY.md; technical depth stays in the docs and the ALGAL companion post.",
       nearestUrls: [
         { url: "/", distinction: "The homepage lets a reader try a puzzle; the post explains why the scoring needs no judge and who should use it." },
         { url: "/docs/", distinction: "The docs are the integration reference; the post is the reasoning and first run, and links to the docs for limits." },
@@ -98,13 +113,14 @@ export const POSTS: readonly BlogPost[] = [
       ],
       sources: admissionSources(introducingSources),
       observations: [
-        "The worked example's answer, 34, is the same value the homepage practice sample shows, and the site tests pin that sample.",
-        "The staging limits in the closing limits section match the limits STYLE.md requires every Clankdar page to keep whenever it states them.",
+        "Every number in the beats comes from site/launch/facts.ts, which reads the hosted policy, the ALGAL worked example, and the family list from the code; launch.test.ts pins them.",
+        "The mockups render values from recorded bun run try runs in site/launch/fixtures; launch.test.ts verifies the passing and failing receipts with the repository verifier and confirms the tampered one is rejected.",
+        "The staging limits after the beats match the limits STYLE.md requires every Clankdar page to keep whenever it states them.",
       ],
       scores: { readerUtility: 2, originalEvidence: 2, factualConfidence: 2, hostFit: 2, voiceIntegrity: 2, maintenanceValue: 1 },
       owner: "Hraness",
       drafting: "ai-from-source",
-      review: REVIEW,
+      review: LAUNCH_REVIEW,
       humanReview: null,
       reassessOn: "2026-11-05",
       harmIfWrong: "A reader could treat a demo or suite-v2 score as an ALGAL model score, or rely on staging limits that have changed.",

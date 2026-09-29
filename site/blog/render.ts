@@ -12,6 +12,7 @@ import {
   type ArticleTocItem,
 } from "@hraness/design-kit";
 import { relatedFor } from "@hraness/design-kit/portfolio";
+import { renderLaunchBodyHtml } from "../launch/post.tsx";
 import {
   articleJsonLd,
   blogJsonLd,
@@ -81,6 +82,8 @@ export function discovery(post: BlogPost): ArticleDiscovery {
 
 /** Markdown body to trusted HTML. The Markdown is repository content, never reader input. */
 export function renderBody(post: BlogPost): { html: string; toc: ArticleTocItem[] } {
+  // The launch post reads as a thread of standalone beats, so it has no contents list.
+  if (post.launch) return { html: renderLaunchBodyHtml(), toc: [] };
   const markdown = readFileSync(resolve(import.meta.dir, "posts", `${post.slug}.md`), "utf8");
   const html = Bun.markdown.html(markdown, { headings: { ids: true } })
     .replace(/<table>/g, '<div class="table-scroll" tabindex="0" role="region" aria-label="Table"><table>')
