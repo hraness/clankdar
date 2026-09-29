@@ -14,6 +14,7 @@ import { BLOG_PATH } from "./blog/articles.ts";
 import { BLOG_SOCIAL_CARD, FEED_PATH, indexablePosts, postSocialCard, renderFeed, renderIndexPage, renderLlmsSection, renderPostPage, renderSitemap } from "./blog/render.ts";
 import { STATIC_PAGES, renderNotFound, routeLabel } from "./not-found.ts";
 import { PAGE_JSON_LD } from "./structured-data.ts";
+import { renderHomeMockups } from "./launch/home.tsx";
 import { serializeJsonLd } from "@hraness/web-discovery";
 import { PAGE_SOCIAL_IMAGES, renderSocialImage, socialImage, socialImageMeta } from "./social.ts";
 const root = import.meta.dir;
@@ -34,6 +35,7 @@ const substitutions: Record<string, string> = {
   "{{HARDER_CHALLENGE}}": renderHarderChallenge(),
   "{{MODEL_BENCHMARK}}": renderModelBenchmark(v2),
   "{{BENCHMARK_DOWNLOADS}}": renderBenchmarkDownloads(v2),
+  ...renderHomeMockups(),
 };
 await rm(output, { recursive: true, force: true });
 await mkdir(resolve(output, "design"), { recursive: true });
@@ -88,7 +90,9 @@ await writeFile(resolve(output, "llms.txt"), (await readFile(resolve(root, "llms
 for (const archive of ["pilot-v0", "v2-calibration-0", "frontier-v0", "agent-v0", "admissions-opus5-2026-09-19"]) await cp(resolve(root, `benchmark/${archive}`), resolve(output, `benchmark/${archive}`), { recursive: true });
 await writeFile(resolve(output, "benchmark/v2-calibration-0/profiles.json"), JSON.stringify({ schemaVersion: 1, suiteHash: v2.suiteHash, profiles: CAPABILITY_PROFILES, models: profileReport(v2) }, null, 2) + "\n");
 await cp(fileURLToPath(import.meta.resolve("@hraness/site-footer/stylex.css")), resolve(output, "footer.css"));
-const files = ["plain-publication.css", "paper-theme.css", "palette-system.css", "palette-bridge.css", "syntax-highlighting.css", "product-marketing.css", "product-marketing-preset.css", "lantern-material.css", "appearance-menu.css", "status-page.css", "fonts.css"];
+await cp(resolve(root, "launch/mockups.css"), resolve(output, "launch-mockups.css"));
+await cp(resolve(root, "media"), resolve(output, "media"), { recursive: true }).catch((error: NodeJS.ErrnoException) => { if (error.code !== "ENOENT") throw error; });
+const files = ["mockups.css", "plain-publication.css", "paper-theme.css", "palette-system.css", "palette-bridge.css", "syntax-highlighting.css", "product-marketing.css", "product-marketing-preset.css", "lantern-material.css", "appearance-menu.css", "status-page.css", "fonts.css"];
 for (const name of files) await cp(resolve(kit, name), resolve(output, "design", name));
 await cp(resolve(kit, "fonts/nebula-sans"), resolve(output, "design/fonts/nebula-sans"), { recursive: true });
 await cp(resolve(kit, "fonts/instrument-serif"), resolve(output, "design/fonts/instrument-serif"), { recursive: true });
@@ -99,6 +103,8 @@ const result = await Bun.build({ entrypoints: [resolve(root, "appearance.ts")], 
 if (!result.success) throw new AggregateError(result.logs, "Appearance bundle failed");
 const practice = await Bun.build({ entrypoints: [resolve(root, "practice.ts")], outdir: output, naming: "practice.js", target: "browser", format: "iife", minify: true });
 if (!practice.success) throw new AggregateError(practice.logs, "Practice bundle failed");
+const socialKitCopy = await Bun.build({ entrypoints: [resolve(root, "social-kit-copy.ts")], outdir: output, naming: "social-kit-copy.js", target: "browser", format: "iife", minify: true });
+if (!socialKitCopy.success) throw new AggregateError(socialKitCopy.logs, "Social kit bundle failed");
 const statusPage = await Bun.build({ entrypoints: [resolve(root, "status-page.ts")], outdir: output, naming: "status-page.js", target: "browser", format: "iife", minify: true });
 if (!statusPage.success) throw new AggregateError(statusPage.logs, "Status page bundle failed");
 const pkg = JSON.parse(await readFile(resolve(kit, "../package.json"), "utf8"));

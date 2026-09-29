@@ -1,0 +1,23 @@
+{
+  "name": "clankdar-launch-film",
+  "version": "0.1.0",
+  "private": true,
+  "packageManager": "bun@1.3.14",
+  "type": "module",
+  "scripts": {
+    "build": "bun src/build.ts",
+    "build:square": "bun src/build.ts --aspect 1:1",
+    "build:portrait": "bun src/build.ts --aspect 9:16",
+    "draft": "bun src/build.ts --scale 0.5 --fps 15",
+    "still": "bun src/build.ts && slopcamera html still --input out/16x9/scene.json --at 2.5,7,11,13.5,18,22.5,26,30,35 --output out/16x9/stills",
+    "still:portrait": "bun src/build.ts --aspect 9:16 && slopcamera html still --input out/9x16/scene.json --at 2.5,7,11,13.5,18,22.5,26,30,35 --output out/9x16/stills",
+    "render": "bun src/build.ts && slopcamera html render --input out/16x9/scene.json --json > out/16x9/export.json",
+    "render:portrait": "bun src/build.ts --aspect 9:16 && slopcamera html render --input out/9x16/scene.json --json > out/9x16/export.json",
+    "deliver": "slopcamera html deliver out/16x9/export.json --basename clankdar-launch --poster-at 18 --social-at 18 --cuts 1:1 --beats out/16x9/beats.json --per-beat-clips --output out/deliver",
+    "deliver:portrait": "slopcamera html deliver out/9x16/export.json --basename clankdar-launch-vertical --poster-at 18 --social-at 18 --beats out/9x16/beats.json --per-beat-clips --output out/deliver-vertical",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@hraness/slopcamera": "3.7.0"
+  }
+}

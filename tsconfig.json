@@ -11,6 +11,6 @@
     "jsx": "react-jsx",
     "types": ["bun"]
   },
-  "include": ["ladder/**/*.ts", "bench/**/*.ts", "site/**/*.ts", "demo/**/*.ts"],
+  "include": ["ladder/**/*.ts", "bench/**/*.ts", "site/**/*.ts", "site/**/*.tsx", "demo/**/*.ts"],
   "exclude": ["site/dist", "node_modules", "results"]
 }

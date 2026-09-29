@@ -3,7 +3,7 @@ import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { articleProvenanceFromAdmission, articleProvenanceSentence, assertArticleAdmissions, isArticleIndexable } from "@hraness/design-kit";
 import { ADMISSIONS, POSTS } from "./articles.ts";
-import { indexablePosts, renderFeed, renderIndexPage, renderLlmsSection, renderPostPage, renderSitemap } from "./render.ts";
+import { indexablePosts, renderBody, renderFeed, renderIndexPage, renderLlmsSection, renderPostPage, renderSitemap } from "./render.ts";
 
 const template = readFileSync(resolve(import.meta.dir, "page.html"), "utf8");
 const indexable = POSTS.filter(post => isArticleIndexable(post.admission));
@@ -31,7 +31,9 @@ describe("blog", () => {
       expect(html).not.toMatch(/human/i);
       expect(html).toContain(`<link rel="canonical" href="https://clankdar.com${post.path}">`);
       expect(html).toContain('"@type":"BlogPosting"');
-      expect(html).toContain('<nav aria-labelledby="article-title-contents" class="plain-publication__toc">');
+      // The launch post reads as a thread of standalone beats, so only Markdown posts carry a contents list.
+      if (post.launch) expect(html).not.toContain('class="plain-publication__toc"');
+      else expect(html).toContain('<nav aria-labelledby="article-title-contents" class="plain-publication__toc">');
       expect(html.split("<!-- hraness-site-footer -->")).toHaveLength(2);
       expect(html).not.toMatch(/\{\{[A-Z_]+\}\}/);
       expect(html).not.toContain("botcaptcha.dev");
@@ -48,7 +50,7 @@ describe("blog", () => {
     for (const post of indexable) {
       expect(renderPostPage(template, post)).not.toContain('name="robots"');
       for (const surface of [index, feed, sitemap, llms]) expect(surface).toContain(post.path);
-      expect(sitemap).toContain(`<loc>https://clankdar.com${post.path}</loc><lastmod>${post.published}T00:00:00.000Z</lastmod>`);
+      expect(sitemap).toContain(`<loc>https://clankdar.com${post.path}</loc><lastmod>${post.updated ?? post.published}T00:00:00.000Z</lastmod>`);
     }
     for (const post of quarantined) {
       expect(renderPostPage(template, post)).toContain('<meta name="robots" content="noindex, nofollow">');
@@ -66,15 +68,23 @@ describe("blog", () => {
     for (const path of ["/", "/docs/", "/benchmark/", "/blog/"]) expect(sitemap).toContain(`<loc>https://clankdar.com${path}</loc>`);
   });
 
+  test("docs anchors the posts link to exist", () => {
+    const docs = readFileSync(resolve(import.meta.dir, "..", "docs", "index.html"), "utf8");
+    for (const id of ["security", "verification", "own-solver", "integrate"]) expect(docs).toContain(`id="${id}"`);
+  });
+
   test("post links go to manifest posts, live pages, or absolute cross-host URLs", () => {
-    const allowed = new Set(["/#try", "/benchmark/", "/docs/#security", ...POSTS.map(post => post.path)]);
+    const allowed = new Set(["/#try", "/benchmark/", "/docs/#security", "/docs/#verification", "/docs/#own-solver", "/docs/#integrate", ...POSTS.map(post => post.path)]);
     for (const post of POSTS) {
-      const markdown = readFileSync(resolve(import.meta.dir, "posts", `${post.slug}.md`), "utf8");
-      for (const [, href] of markdown.matchAll(/\]\(([^)]+)\)/g)) {
+      const body = post.launch ? renderBody(post).html : readFileSync(resolve(import.meta.dir, "posts", `${post.slug}.md`), "utf8");
+      const hrefs = post.launch ? [...body.matchAll(/<a\b[^>]*\shref="([^"]+)"/g)] : [...body.matchAll(/\]\(([^)]+)\)/g)];
+      if (post.launch) expect(hrefs.length).toBeGreaterThan(0);
+      for (const [, href] of hrefs) {
+        if (href!.startsWith("#")) continue;
         if (href!.startsWith("/")) expect(allowed.has(href!)).toBe(true);
         else expect(href).toMatch(/^https:\/\//);
       }
-      expect(markdown).not.toContain("—");
+      expect(body).not.toContain("—");
     }
   });
 });
