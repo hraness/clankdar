@@ -78,12 +78,14 @@ describe("ALGAL benchmark and portable evidence", () => {
     try {
       const file = join(dir, "receipt.json");
       writeFileSync(file, canonical(admission));
-      const valid = await cli("../cloudflare/examples/verify-receipt.mjs", file, "--issuer", verifier.publicKey, "--context", "algal-test", "--session", issued.session.sessionId);
+      const valid = await cli("../cloudflare/examples/verify-receipt.mjs", file, `--issuer=${verifier.publicKey}`, "--context", "algal-test", "--session", issued.session.sessionId);
       expect(valid.code, valid.stderr).toBe(0);
       expect(JSON.parse(valid.stdout)).toMatchObject({ ok: true, pass: true, passed: 2, required: 2, policy });
-      const foreign = await cli("../cloudflare/examples/verify-receipt.mjs", file, "--issuer", generateVerifier().publicKey);
-      expect(foreign.code).not.toBe(0);
-      expect(JSON.parse(foreign.stdout).ok).toBe(false);
+      for (const foreignKey of [generateVerifier().publicKey, `-${"A".repeat(42)}`]) {
+        const foreign = await cli("../cloudflare/examples/verify-receipt.mjs", file, `--issuer=${foreignKey}`);
+        expect(foreign.code, foreign.stderr).toBe(2);
+        expect(JSON.parse(foreign.stdout)).toEqual({ ok: false, reason: "receipt issuer does not match the pinned key" });
+      }
     } finally { rmSync(dir, { recursive: true }); }
   });
 

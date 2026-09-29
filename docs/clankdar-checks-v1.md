@@ -117,7 +117,7 @@ pin and optional expected context/session/hash checks around that same
 checker:
 
 ```console
-bun cloudflare/examples/verify-receipt.mjs receipt.json --issuer "$EXPECTED_ISSUER_PUBLIC_KEY"
+bun cloudflare/examples/verify-receipt.mjs receipt.json --issuer="$EXPECTED_ISSUER_PUBLIC_KEY"
 ```
 
 It returns `ok` for evidence validity and `pass` for the independently rescored
