@@ -2,7 +2,7 @@ import { describe, expect, test } from "bun:test";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { product } from "@hraness/design-kit/portfolio";
-import { socialImageAlt, socialImageSiteDetails } from "@hraness/web-discovery/social-image/card";
+import { socialImageAlt, socialImageFit, socialImageSiteDetails } from "@hraness/web-discovery/social-image/card";
 import { POSTS } from "./blog/articles.ts";
 import { BLOG_SOCIAL_CARD, postSocialCard, renderIndexPage, renderPostPage } from "./blog/render.ts";
 import { PAGE_SOCIAL_IMAGES, SOCIAL_IMAGE_HEIGHT, SOCIAL_IMAGE_WIDTH, renderSocialImage, socialImage, socialSite } from "./social.ts";
@@ -38,13 +38,31 @@ describe("share images", () => {
     expect(index).toContain(`content="${socialImageAlt(socialSite, BLOG_SOCIAL_CARD.page)}"`);
     for (const post of POSTS) {
       const card = postSocialCard(post);
-      expect(card.page).toEqual({ eyebrow: post.eyebrow, headline: post.title, description: post.cardDek });
+      expect(card.page).toEqual({ eyebrow: post.cardEyebrow ?? post.eyebrow, headline: post.cardTitle ?? post.title, description: post.cardDek });
+      if (post.cardTitle !== undefined) expect(post.title.startsWith(post.cardTitle)).toBe(true);
       expect(post.cardDek.length).toBeLessThanOrEqual(96);
       const html = renderPostPage(template, post);
       expect(html).toContain(`<meta property="og:image" content="https://clankdar.com/og/blog/${post.slug}.png">`);
       expect(html).toContain('<meta property="og:image:width" content="1200">');
       expect(html).toContain('<meta property="og:image:type" content="image/png">');
       expect(html).toContain(`"contentUrl":"https://clankdar.com/og/blog/${post.slug}.png"`);
+    }
+  });
+
+  test("every declared card fits as written in the shared template", () => {
+    const cards = [...Object.values(PAGE_SOCIAL_IMAGES), BLOG_SOCIAL_CARD, ...POSTS.map(postSocialCard)];
+    for (const card of cards) {
+      const fit = socialImageFit(socialImageSiteDetails(socialSite, card.page));
+      expect({ path: card.path, issues: fit.issues }).toEqual({ path: card.path, issues: [] });
+      expect(fit.removed).toEqual([]);
+      expect(fit.headline.lines.length).toBeLessThanOrEqual(2);
+      // A page card shows its own copy, never the home tagline, and its eyebrow survives de-duplication.
+      if (card.page !== undefined) {
+        expect(fit.layout).toBe("page");
+        expect(fit.description?.lines.join(" ")).toBe(card.page.description);
+        expect(card.page.description).not.toBe(socialSite.description);
+        expect(fit.eyebrow).toBe(card.page.eyebrow);
+      }
     }
   });
 
