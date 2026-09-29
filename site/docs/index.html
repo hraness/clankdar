@@ -114,7 +114,7 @@ console.log(result.receiptUrl);</code></pre>
           <h2 id="verification-title">Verify before you rely on a result.</h2>
           <p>From the repository checkout, use the offline verifier with an issuer key from your trusted application configuration:</p>
           <pre class="code"><code>bun cloudflare/examples/verify-receipt.mjs receipt.json \
-  --issuer "$EXPECTED_ISSUER_PUBLIC_KEY"</code></pre>
+  --issuer="$EXPECTED_ISSUER_PUBLIC_KEY"</code></pre>
           <p>The checker verifies the signature and replays the recorded answers. Your app still has to check three things itself: the receipt uses the policy you expect, it is recent enough for your purpose, and it passed. A valid receipt can record a failed check. For the local demo, use the exact verification command printed by <code>bun run try</code>.</p>
           <details class="report-details"><summary>Issuer key, expected context, and replay details</summary><p>Never take the expected issuer key from the receipt you are checking. Optional <code>--context</code>, <code>--session</code>, and <code>--sha256</code> assert your integration’s expected context, check ID, and exact file hash. See the <a href="https://github.com/hraness/clankdar/blob/main/cloudflare/examples/verify-receipt.mjs">verifier source</a> for its output.</p><p>Present, well-formed answers produce challenge receipts with seeds that let a checker regenerate and rescore those puzzles. Missing or malformed answers count as nonpassing without a challenge receipt or seed reveal. A check submitted with every answer blank still verifies, as zero of four passing.</p></details>
         </section>

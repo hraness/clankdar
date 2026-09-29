@@ -27,7 +27,7 @@ const admissionDir = resolve(root, "benchmark/admissions-opus5-2026-09-19");
 verifyAdmissionArchive(admissionDir);
 const substitutions: Record<string, string> = {
   "{{LOCAL_DEMO_COMMANDS}}": renderCode("git clone https://github.com/hraness/clankdar.git\ncd clankdar\nbun install --frozen-lockfile --ignore-scripts\nbun run try", "shell", "span"),
-  "{{VERIFY_COMMAND}}": renderCode('bun cloudflare/examples/verify-receipt.mjs receipt.json \\\n  --issuer "$EXPECTED_ISSUER_PUBLIC_KEY"', "shell"),
+  "{{VERIFY_COMMAND}}": renderCode('bun cloudflare/examples/verify-receipt.mjs receipt.json \\\n  --issuer="$EXPECTED_ISSUER_PUBLIC_KEY"', "shell"),
   "{{PRACTICE}}": renderPractice(),
   "{{ALGAL_CHALLENGE}}": renderChallenge(),
   "{{HARDER_CHALLENGE}}": renderHarderChallenge(),

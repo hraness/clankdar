@@ -39,9 +39,9 @@ export function verifyReceipt(input, { issuerPublicKey, context, sessionId, sha2
 if (import.meta.main) {
   try {
     const { values, positionals } = parseArgs({ args: process.argv.slice(2), options: { issuer: { type: "string" }, context: { type: "string" }, session: { type: "string" }, sha256: { type: "string" }, help: { type: "boolean", short: "h" } }, strict: true, allowPositionals: true });
-    if (values.help) console.log("usage: bun cloudflare/examples/verify-receipt.mjs RECEIPT.json --issuer PUBLIC_KEY [--context STRING] [--session gs_…] [--sha256 HEX]\nValid receipts may have pass:false; callers must require pass:true for admission.");
+    if (values.help) console.log("usage: bun cloudflare/examples/verify-receipt.mjs RECEIPT.json --issuer=PUBLIC_KEY [--context STRING] [--session gs_…] [--sha256 HEX]\nValid receipts may have pass:false; callers must require pass:true for admission.");
     else {
-      if (positionals.length !== 1 || !values.issuer) throw new Error("provide one receipt file and --issuer PUBLIC_KEY (use --help)");
+      if (positionals.length !== 1 || !values.issuer) throw new Error("provide one receipt file and --issuer=PUBLIC_KEY (use --help)");
       const file = statSync(positionals[0]);
       if (!file.isFile() || file.size > 1_048_576) throw new Error("receipt must be a file no larger than 1 MiB");
       const result = verifyReceipt(readFileSync(positionals[0]), { issuerPublicKey: values.issuer, context: values.context, sessionId: values.session, sha256: values.sha256 });
