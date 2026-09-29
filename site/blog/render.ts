@@ -23,6 +23,8 @@ import {
   type SearchSite,
 } from "@hraness/web-discovery";
 import { ADMISSIONS, BLOG_PATH, POSTS, type BlogPost } from "./articles.ts";
+import { socialImage, socialImageMeta, type SocialImage } from "../social.ts";
+import type { SocialImagePage } from "@hraness/web-discovery/social-image/card";
 
 export const SITE: SearchSite = {
   name: "Clankdar",
@@ -35,7 +37,21 @@ export const FEED_PATH = "/blog/feed.xml";
 const BLOG_TITLE = "Clankdar blog";
 const BLOG_DESCRIPTION = "Posts from Hraness on how Clankdar scores AI agents on fresh puzzles with computed answers, and how to rerun a recorded check yourself.";
 const HRANESS = { kind: "Organization", name: "Hraness", url: "https://hraness.com", sameAs: ["https://github.com/hraness"] } as const;
-const IMAGE = { path: "/og.png", width: 1200, height: 630, contentType: "image/png", alt: "Clankdar: check what your agent can solve." } as const;
+
+/** The blog index card and each post's card: page copy only, drawn by the shared template. */
+export const BLOG_SOCIAL_CARD: Readonly<{ path: `/${string}`; page: SocialImagePage }> = {
+  path: "/og/blog.png",
+  page: { eyebrow: "Blog", headline: BLOG_TITLE, description: "How Clankdar scores AI agents on fresh puzzles, and how to rerun a recorded check yourself." },
+};
+
+export function postSocialCard(post: BlogPost): Readonly<{ path: `/${string}`; page: SocialImagePage }> {
+  return { path: `/og/blog/${post.slug}.png`, page: { eyebrow: post.eyebrow, headline: post.title, description: post.cardDek } };
+}
+
+function postImage(post: BlogPost): SocialImage {
+  const card = postSocialCard(post);
+  return socialImage(card.path, card.page);
+}
 
 assertArticleAdmissions(ADMISSIONS);
 
@@ -54,7 +70,7 @@ export function discovery(post: BlogPost): ArticleDiscovery {
     blogPath: BLOG_PATH,
     title: post.title,
     description: post.dek,
-    image: IMAGE,
+    image: postImage(post),
     authors: [HRANESS],
     publisher: HRANESS,
     publishedTime: timestamp(post.published),
@@ -80,7 +96,7 @@ export function renderBody(post: BlogPost): { html: string; toc: ArticleTocItem[
   return { html, toc: toc.length >= 4 ? toc.slice(0, 8) : [] };
 }
 
-function head(input: { title: string; description: string; path: string; type: "article" | "website"; indexable: boolean; jsonLd: unknown; published?: string }): string {
+function head(input: { title: string; description: string; path: string; type: "article" | "website"; indexable: boolean; jsonLd: unknown; image: SocialImage; published?: string }): string {
   const url = `${SITE.origin}${input.path}`;
   return [
     `<title>${escape(input.title)}</title>`,
@@ -88,7 +104,7 @@ function head(input: { title: string; description: string; path: string; type: "
     input.indexable ? "" : '<meta name="robots" content="noindex, nofollow">',
     `<meta property="og:title" content="${escape(input.title)}">`,
     `<meta property="og:description" content="${escape(input.description)}">`,
-    `<meta property="og:image" content="${SITE.origin}${IMAGE.path}">`,
+    ...socialImageMeta(input.image, SITE.origin),
     `<meta property="og:type" content="${input.type}">`,
     `<meta property="og:url" content="${escape(url)}">`,
     `<meta property="og:site_name" content="Clankdar">`,
@@ -137,6 +153,7 @@ export function renderPostPage(template: string, post: BlogPost): string {
     type: "article",
     indexable,
     jsonLd: articleJsonLd(SITE, discovery(post)),
+    image: postImage(post),
     published: timestamp(post.published),
   }), renderPostMain(post), false);
 }
@@ -157,6 +174,7 @@ export function renderIndexPage(template: string): string {
     path: BLOG_PATH,
     type: "website",
     indexable: true,
+    image: socialImage(BLOG_SOCIAL_CARD.path, BLOG_SOCIAL_CARD.page),
     jsonLd: blogJsonLd(SITE, { name: BLOG_TITLE, description: BLOG_DESCRIPTION, path: BLOG_PATH, publisher: HRANESS }, posts.map(discovery)),
   }), main, true);
 }

@@ -11,10 +11,11 @@ import { verifyAdmissionArchive } from "../bench/admission-archive.ts";
 import { CAPABILITY_PROFILES, profileReport } from "../bench/profiles.ts";
 import { POSTS } from "./blog/articles.ts";
 import { BLOG_PATH } from "./blog/articles.ts";
-import { FEED_PATH, indexablePosts, renderFeed, renderIndexPage, renderLlmsSection, renderPostPage, renderSitemap } from "./blog/render.ts";
+import { BLOG_SOCIAL_CARD, FEED_PATH, indexablePosts, postSocialCard, renderFeed, renderIndexPage, renderLlmsSection, renderPostPage, renderSitemap } from "./blog/render.ts";
 import { STATIC_PAGES, renderNotFound, routeLabel } from "./not-found.ts";
 import { PAGE_JSON_LD } from "./structured-data.ts";
 import { serializeJsonLd } from "@hraness/web-discovery";
+import { PAGE_SOCIAL_IMAGES, renderSocialImage, socialImage, socialImageMeta } from "./social.ts";
 const root = import.meta.dir;
 const output = resolve(root, "dist");
 const kit = dirname(fileURLToPath(import.meta.resolve("@hraness/design-kit/paper-theme.css")));
@@ -36,7 +37,7 @@ const substitutions: Record<string, string> = {
 };
 await rm(output, { recursive: true, force: true });
 await mkdir(resolve(output, "design"), { recursive: true });
-for (const name of ["styles.css", "icon.png", "icon-512.png", "og.png", "apple-icon.png", "robots.txt"]) await cp(resolve(root, name), resolve(output, name));
+for (const name of ["styles.css", "icon.png", "icon-512.png", "apple-icon.png", "robots.txt"]) await cp(resolve(root, name), resolve(output, name));
 await cp(resolve(root, "../cloudflare/examples/check.mjs"), resolve(output, "clankdar-client.mjs"));
 await cp(resolve(root, "icons"), resolve(output, "icons"), { recursive: true });
 await cp(resolve(root, "marks"), resolve(output, "marks"), { recursive: true });
@@ -45,6 +46,9 @@ for (const page of pages) {
   let html = await readFile(resolve(root, page), "utf8");
   if (html.split(footerMarker).length !== 2) throw new Error(`Expected one shared footer slot in ${page}.`);
   for (const [marker, content] of Object.entries(substitutions)) html = html.replaceAll(marker, content);
+  const social = PAGE_SOCIAL_IMAGES[page];
+  if (social === undefined || html.split("{{SOCIAL_IMAGE}}").length !== 2) throw new Error(`Expected one social image slot and card for ${page}.`);
+  html = html.replace("{{SOCIAL_IMAGE}}", socialImageMeta(socialImage(social.path, social.page)).join("\n    "));
   if (/\{\{[A-Z_]+\}\}/.test(html)) throw new Error(`Unresolved content slot in ${page}`);
   const jsonLd = PAGE_JSON_LD[page];
   if (jsonLd !== undefined) {
@@ -63,6 +67,13 @@ for (const [page, html] of blogPages) {
   const target = resolve(output, page);
   await mkdir(dirname(target), { recursive: true });
   await writeFile(target, html.replace(footerMarker, supportFooter()));
+}
+// Every share image comes from the shared template through site/social.ts.
+const socialCards = [...Object.values(PAGE_SOCIAL_IMAGES), BLOG_SOCIAL_CARD, ...POSTS.map(postSocialCard)];
+for (const card of socialCards) {
+  const target = resolve(output, card.path.slice(1));
+  await mkdir(dirname(target), { recursive: true });
+  await writeFile(target, await renderSocialImage(card.page));
 }
 await writeFile(resolve(output, FEED_PATH.slice(1)), renderFeed());
 await writeFile(resolve(output, "sitemap.xml"), renderSitemap(STATIC_PAGES.map(page => page.href)));

@@ -106,7 +106,7 @@ describe("public site contract", () => {
 
   test("icon bytes match the maintained brand manifest", () => {
     const manifest = readFileSync(resolve(root, "BRAND_ASSETS.md"), "utf8");
-    const dimensions: Record<string, [number, number]> = { "icon.png": [32, 32], "apple-icon.png": [180, 180], "icon-512.png": [512, 512], "og.png": [1200, 630] };
+    const dimensions: Record<string, [number, number]> = { "icon.png": [32, 32], "apple-icon.png": [180, 180], "icon-512.png": [512, 512] };
     for (const [file, [width, height]] of Object.entries(dimensions)) {
       const bytes = readFileSync(resolve(root, file));
       expect(manifest).toContain(createHash("sha256").update(bytes).digest("hex"));
