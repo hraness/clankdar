@@ -266,7 +266,9 @@ bun run check:browser --channel chrome
 
 The browser check owns a separate ephemeral loopback server and fresh browser
 contexts. Use `bun x playwright install chromium` and omit `--channel chrome`
-when using Playwright's Chromium instead of installed Chrome. Screenshots are
+when using Playwright's Chromium instead of installed Chrome. The six widths
+and two themes run as separate contexts, two at a time by default; pass
+`--concurrency 1` to run them one after another. Screenshots are
 retained in a new ignored `results/visual-*` directory. The site uses the pinned
 Hraness design kit's Paper palette, Lantern material, Nebula Sans and Instrument
 Serif, plus the canonical shared footer with no newsletter or support profile.
