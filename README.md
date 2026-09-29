@@ -103,3 +103,9 @@ bun bench --adapter oracle --seeds 1-10 --out results/oracle-first.jsonl
 Clankdar is built on the design every Hraness project shares: a receipt records the submitted answers under a policy and deadline, so the check leaves a record your application can verify, and the default puzzles are small programs in ALGAL's expression language. [The thread through hraness](https://hraness.com/writing/the-thread-through-hraness) follows that design across the projects, and the [ALGAL vision](https://algal.computer/docs/vision/) states the bet behind it.
 
 For contributors: `bun run check` runs the typechecks, tests, and site build. See [AGENTS.md](AGENTS.md) for browser validation and delivery requirements.
+
+## License
+
+Clankdar's code is available under the [MIT License](LICENSE). The benchmark
+reports on [Hugging Face](https://huggingface.co/datasets/hranesscom/clankdar-benchmarks)
+are licensed under CC BY 4.0.
