@@ -35,7 +35,7 @@
   },
   "dependencies": {
     "@hraness/algal": "github:hraness/algal#723c35d3c60d1ef7b88437a9ddeaf6588a1814cf",
-    "@hraness/design-kit": "github:hraness/design-kit#v0.31.0",
+    "@hraness/design-kit": "github:hraness/design-kit#v0.32.0",
     "@hraness/site-footer": "github:hraness/site-footer#v0.20.1",
     "@hraness/web-discovery": "github:hraness/web-discovery#v0.13.0"
   },

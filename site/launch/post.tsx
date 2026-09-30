@@ -49,7 +49,6 @@ function Film() {
           <track default kind="captions" label="English" src={LAUNCH_FILM.captions} srcLang="en" />
         </video>
       </div>
-      <figcaption className="plain-publication__figure-caption">{LAUNCH_FILM.description}</figcaption>
     </figure>
   );
 }
