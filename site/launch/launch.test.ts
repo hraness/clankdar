@@ -74,7 +74,7 @@ describe("launch post", () => {
   test("every beat has a visual and every social post fits its channel", () => {
     expect(LAUNCH_BEATS.length).toBeGreaterThanOrEqual(6);
     for (const [channel, limit] of [["x", 280], ["bluesky", 300], ["threads", 500]] as const) {
-      expect(LAUNCH_SOCIAL_KIT[channel]).toHaveLength(LAUNCH_BEATS.length);
+      expect(LAUNCH_SOCIAL_KIT[channel]).toHaveLength(LAUNCH_BEATS.filter(beat => beat.part !== "limits").length);
       for (const post of LAUNCH_SOCIAL_KIT[channel]) expect(post.length).toBeLessThanOrEqual(limit);
     }
     expect(LAUNCH_SOCIAL_KIT.productHunt.tagline).toBe("Check what your agent can solve.");

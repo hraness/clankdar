@@ -103,6 +103,7 @@ export const LAUNCH_BEAT_SOURCE: readonly LaunchBeat[] = Object.freeze([
     part: "status",
     headline: "Free to run on your own machine",
     post: "Clankdar is in Preview. The demo runs from source with Bun {bunVersion}, with no account and no API key. The hosted API is an experimental staging service, open by invitation.",
+    socialPost: "Clankdar is in Preview. The demo runs from source with Bun {bunVersion}, with no account and no API key.",
     facts: ["bunVersion"],
     visual: { kind: "mockup", id: "try-run", state: { run: "start" } },
     alt: "A terminal cloning the Clankdar repository and starting the local demo with Bun {bunVersion}, in an illustration.",
