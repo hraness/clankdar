@@ -1,7 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
-import { product } from "@hraness/design-kit/portfolio";
+import { marketing } from "./portfolio-copy";
 import { SOCIAL_IMAGE_MIN_PALETTE_DISTANCE, socialImageAlt, socialImageFit, socialImagePalette, socialImagePaletteDistance, socialImageSitePalette, socialImageSiteDetails, socialImageTypography } from "@hraness/web-discovery/social-image/card";
 import { POSTS } from "./blog/articles.ts";
 import { BLOG_SOCIAL_CARD, postSocialCard, renderIndexPage, renderPostPage } from "./blog/render.ts";
@@ -13,8 +13,8 @@ const template = readFileSync(resolve(root, "blog/page.html"), "utf8");
 describe("share images", () => {
   test("one site declaration carries the registry name, one-liner, domain, mark, and light theme", () => {
     const details = socialImageSiteDetails(socialSite);
-    expect(details.title).toBe(product("clankdar").name);
-    expect(details.description).toBe(`${product("clankdar").oneLiner.replace(/[.!?]$/, "")}.`);
+    expect(details.title).toBe(marketing.names.name);
+    expect(details.description).toBe(`${marketing.short.replace(/[.!?]$/, "")}.`);
     expect(details.domain).toBe("clankdar.com");
     const mark = readFileSync(resolve(root, "marks/clankdar.svg")).toString("base64");
     expect(socialSite.icon).toEqual({ kind: "mark", src: `data:image/svg+xml;base64,${mark}` });
