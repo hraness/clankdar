@@ -1,3 +1,4 @@
+import { marketing, relatedFor, renderMarketingCopy } from "../portfolio-copy";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import {
@@ -11,7 +12,6 @@ import {
   renderArticleSourcesHtml,
   type ArticleTocItem,
 } from "@hraness/design-kit";
-import { relatedFor } from "@hraness/design-kit/portfolio";
 import { renderLaunchBodyHtml } from "../launch/post.tsx";
 import {
   articleJsonLd,
@@ -28,14 +28,14 @@ import { socialImage, socialImageMeta, type SocialImage } from "../social.ts";
 import type { SocialImagePage } from "@hraness/web-discovery/social-image/card";
 
 export const SITE: SearchSite = {
-  name: "Clankdar",
-  title: "Clankdar",
-  description: "Clankdar gives AI agents fresh puzzles to solve, scores their answers exactly, and signs a receipt anyone can recheck.",
+  name: marketing.names.name,
+  title: marketing.names.name,
+  description: marketing.meta,
   origin: "https://clankdar.com",
   language: "en-US",
 };
 export const FEED_PATH = "/blog/feed.xml";
-const BLOG_TITLE = "Clankdar blog";
+const BLOG_TITLE = `${marketing.names.name} blog`;
 const BLOG_DESCRIPTION = "Posts from Hraness on how Clankdar scores AI agents on fresh puzzles with computed answers, and how to rerun a recorded check yourself.";
 const HRANESS = { kind: "Organization", name: "Hraness", url: "https://hraness.com", sameAs: ["https://github.com/hraness"] } as const;
 
@@ -111,7 +111,7 @@ function head(input: { title: string; description: string; path: string; type: "
     ...socialImageMeta(input.image, SITE.origin),
     `<meta property="og:type" content="${input.type}">`,
     `<meta property="og:url" content="${escape(url)}">`,
-    `<meta property="og:site_name" content="Clankdar">`,
+    `<meta property="og:site_name" content="${escape(marketing.names.name)}">`,
     input.published === undefined ? "" : `<meta property="article:published_time" content="${input.published}">`,
     '<meta name="twitter:card" content="summary_large_image">',
     `<link rel="canonical" href="${escape(url)}">`,
@@ -120,7 +120,7 @@ function head(input: { title: string; description: string; path: string; type: "
 }
 
 function page(template: string, headHtml: string, main: string, blogIndex: boolean): string {
-  return template
+  return renderMarketingCopy(template)
     .replace("{{HEAD}}", headHtml)
     .replace("{{BLOG_CURRENT}}", blogIndex ? ' aria-current="page"' : "")
     .replace("{{MAIN}}", main);
@@ -151,7 +151,7 @@ export function renderPostMain(post: BlogPost): string {
 export function renderPostPage(template: string, post: BlogPost): string {
   const indexable = isArticleIndexable(post.admission);
   return page(template, head({
-    title: `${post.title} · Clankdar`,
+    title: `${post.title} · ${marketing.names.name}`,
     description: post.dek,
     path: post.path,
     type: "article",
@@ -173,7 +173,7 @@ export function renderIndexPage(template: string): string {
     items: posts.map(post => ({ href: post.path, title: post.title, dek: post.dek, published: post.published, eyebrow: post.eyebrow, ...(post.updated === undefined ? {} : { updated: post.updated }) })),
   });
   return page(template, head({
-    title: "Blog · Clankdar",
+    title: `Blog · ${marketing.names.name}`,
     description: BLOG_DESCRIPTION,
     path: BLOG_PATH,
     type: "website",

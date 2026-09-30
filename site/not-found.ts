@@ -1,8 +1,9 @@
 import { renderStatusPageHtml, type StatusPageLink } from "@hraness/design-kit";
+import { marketing } from "./portfolio-copy";
 
 /** Pages the sitemap lists, with a label for "Did you mean". */
 export const STATIC_PAGES: readonly StatusPageLink[] = [
-  { href: "/", label: "Clankdar" },
+  { href: "/", label: marketing.names.name },
   { href: "/docs/", label: "Docs" },
   { href: "/benchmark/", label: "Model benchmark" },
 ];
@@ -15,11 +16,11 @@ export function routeLabel(title: string): string {
 /** The shared status page for missing addresses. The primary action matches the homepage hero. */
 export function renderNotFound(routes: readonly StatusPageLink[]): string {
   return renderStatusPageHtml({
-    siteName: "Clankdar",
+    siteName: marketing.names.name,
     rootElement: "div",
-    primaryAction: { href: "/docs/#quickstart", label: "Run a check" },
+    primaryAction: { href: "/docs/#quickstart", label: marketing.hero.primaryAction },
     next: [
-      { href: "/", label: "How Clankdar works", description: "Fresh puzzles, exact scoring, and a signed receipt anyone can recheck." },
+      { href: "/", label: `How ${marketing.names.name} works`, description: marketing.short },
       { href: "/docs/#verification", label: "Verify a receipt", description: "Check the signature and rescore the recorded answers with the issuer’s public key." },
       { href: "/benchmark/", label: "Model benchmark", description: "Recorded model scores, test conditions, and downloadable evidence." },
     ],
