@@ -23,8 +23,9 @@ export const socialSite = defineSocialImageSite({
   // The radar-dish mark behind the header, icon.png and apple-icon.png.
   icon: { kind: "mark", src: `data:image/svg+xml;base64,${mark.toString("base64")}` },
   // Light tokyo-night palette from the pinned design kit, as the site renders it.
-  // The magenta wash keeps the card apart from the other slate-and-navy portfolio sites in a feed.
-  theme: { accent: "#1D4E90", background: "#E1E2E7", foreground: "#1C3161", muted: "#414C76", wash: "#C322B6" },
+  // The radar-amber wash keeps the card apart from the other slate-and-navy portfolio sites in a feed,
+  // and from the pink and lavender washes of Gobstopper and Slopcamera.
+  theme: { accent: "#1D4E90", background: "#E1E2E7", foreground: "#1C3161", muted: "#414C76", wash: "#E68A00" },
 });
 
 export const SOCIAL_IMAGE_WIDTH = 1200;
