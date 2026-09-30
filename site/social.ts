@@ -27,13 +27,20 @@ export const socialSite = defineSocialImageSite({
   palette: "tokyo-night",
 });
 
+export const homeSocialPage = {
+  layout: "product",
+  eyebrow: marketing.category.toUpperCase(),
+  headline: marketing.hero.heading,
+  description: marketing.hero.summary,
+} as const satisfies SocialImagePage;
+
 export const SOCIAL_IMAGE_WIDTH = 1200;
 export const SOCIAL_IMAGE_HEIGHT = 630;
 export const SOCIAL_IMAGE_TYPE = "image/png";
 
 export type SocialImage = Readonly<{ path: `/${string}`; width: number; height: number; contentType: typeof SOCIAL_IMAGE_TYPE; alt: string }>;
 
-/** Where a card is served and what it says. The home card passes no page copy. */
+/** Where a card is served and what it says. */
 export function socialImage(path: `/${string}`, page?: SocialImagePage): SocialImage {
   if (!/^\/og(\/[a-z0-9-]+)*\.png$/.test(path)) throw new Error(`Social image path must be /og.png or /og/…/<name>.png: ${path}`);
   return { path, width: SOCIAL_IMAGE_WIDTH, height: SOCIAL_IMAGE_HEIGHT, contentType: SOCIAL_IMAGE_TYPE, alt: socialImageAlt(socialSite, page) };
@@ -66,7 +73,7 @@ export async function renderSocialImage(page?: SocialImagePage): Promise<Uint8Ar
 
 /** Each static page's card and the copy it passes, short enough for two lines on the card. */
 export const PAGE_SOCIAL_IMAGES: Readonly<Record<string, Readonly<{ path: `/${string}`; page?: SocialImagePage }>>> = {
-  "index.html": { path: "/og.png" },
+  "index.html": { path: "/og.png", page: homeSocialPage },
   "docs/index.html": {
     path: "/og/docs.png",
     page: {

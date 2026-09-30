@@ -5,7 +5,7 @@ import { marketing } from "./portfolio-copy";
 import { socialImageAlt, socialImageFit, socialImageSiteDetails, socialImageTypography } from "@hraness/web-discovery/social-image/card";
 import { POSTS } from "./blog/articles.ts";
 import { BLOG_SOCIAL_CARD, postSocialCard, renderIndexPage, renderPostPage } from "./blog/render.ts";
-import { PAGE_SOCIAL_IMAGES, SOCIAL_IMAGE_HEIGHT, SOCIAL_IMAGE_WIDTH, renderSocialImage, socialImage, socialSite } from "./social.ts";
+import { homeSocialPage, PAGE_SOCIAL_IMAGES, SOCIAL_IMAGE_HEIGHT, SOCIAL_IMAGE_WIDTH, renderSocialImage, socialImage, socialSite } from "./social.ts";
 
 const root = import.meta.dir;
 const template = readFileSync(resolve(root, "blog/page.html"), "utf8");
@@ -31,9 +31,10 @@ describe("share images", () => {
       const html = readFileSync(resolve(root, page), "utf8");
       expect(html.split("{{SOCIAL_IMAGE}}")).toHaveLength(2);
       expect(html).not.toContain('property="og:image"');
-      if (card.page !== undefined) expect(Object.keys(card.page).sort()).toEqual(["description", "eyebrow", "headline"]);
+      if (card.page !== undefined) expect(Object.keys(card.page).sort()).toEqual(page === "index.html" ? ["description", "eyebrow", "headline", "layout"] : ["description", "eyebrow", "headline"]);
     }
-    expect(PAGE_SOCIAL_IMAGES["index.html"]).toEqual({ path: "/og.png" });
+    expect(PAGE_SOCIAL_IMAGES["index.html"]).toEqual({ path: "/og.png", page: homeSocialPage });
+    expect(homeSocialPage).toEqual({ layout: "product", eyebrow: marketing.category.toUpperCase(), headline: marketing.hero.heading, description: marketing.hero.summary });
   });
 
   test("blog pages point at their own card with the template's alt text", () => {
@@ -64,7 +65,7 @@ describe("share images", () => {
       expect(fit.headline.lines.length).toBeLessThanOrEqual(2);
       // A page card shows its own copy, never the home tagline, and its eyebrow survives de-duplication.
       if (card.page !== undefined) {
-        expect(fit.layout).toBe("page");
+        expect(fit.layout).toBe(card.page.layout ?? "page");
         expect(fit.description?.lines.join(" ")).toBe(socialImageTypography(card.page.description ?? ""));
         expect(card.page.description).not.toBe(socialSite.description);
         expect(typeof card.page.eyebrow).toBe("string");
@@ -75,7 +76,7 @@ describe("share images", () => {
 
   test("the rendered card is a 1200x630 PNG", async () => {
     expect(socialImage("/og.png")).toMatchObject({ width: SOCIAL_IMAGE_WIDTH, height: SOCIAL_IMAGE_HEIGHT, contentType: "image/png" });
-    const bytes = Buffer.from(await renderSocialImage());
+    const bytes = Buffer.from(await renderSocialImage(homeSocialPage));
     expect(bytes.subarray(1, 4).toString("latin1")).toBe("PNG");
     expect([bytes.readUInt32BE(16), bytes.readUInt32BE(20)]).toEqual([1200, 630]);
   }, 30_000);
