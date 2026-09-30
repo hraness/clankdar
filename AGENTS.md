@@ -24,8 +24,9 @@
 - Use Bun 1.3.14. Run `bun run check` before handoff: strict Node and Workers typechecks, Bun tests, Cloudflare runtime tests, pilot replay, and static build. Use `bun run check:site` for focused site iteration. Run `wrangler deploy --dry-run --config cloudflare/wrangler.jsonc` for hosted changes; never deploy while the D1 id is the all-zero placeholder or without `ISSUER_JWK`, `SESSION_WRAP_KEY`, and `REGISTRATION_TOKEN` in Cloudflare Secrets.
 - Provision Chromium for the repository's pinned Playwright version, then run `bun run check:browser` without a channel override. The check owns an ephemeral loopback server; retain its ignored screenshots.
 - Deliver post-bootstrap changes through a current-head pull request with passing checks. Keep deployment identity and legacy redirects intact.
-- Keep pages static HTML with no client framework, no forms, and no third-party
-  requests; the deployed CSP forbids all of them.
+- Keep pages static HTML with no client framework and no forms. The only
+  third-party requests are consent-region lookup on account.hraness.com and
+  cookieless analytics ingestion on us.i.posthog.com. Bundle analytics code first-party.
 - Load presentation only from the pinned `@hraness/design-kit` release and the
   pinned `@hraness/site-footer` release; never vendor or fork their files.
 - Every page contains exactly one `<!-- hraness-site-footer -->` marker; the

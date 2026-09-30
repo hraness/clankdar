@@ -1,3 +1,4 @@
+import { withAnalytics } from "./analytics-site";
 import { renderMarketingCopy } from "./portfolio-copy";
 import { cp, mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
@@ -60,7 +61,7 @@ for (const page of pages) {
   }
   const target = resolve(output, page);
   await mkdir(dirname(target), { recursive: true });
-  await writeFile(target, html.replace(footerMarker, supportFooter()));
+  await writeFile(target, withAnalytics(html.replace(footerMarker, supportFooter())));
 }
 const blogTemplate = await readFile(resolve(root, "blog/page.html"), "utf8");
 if (blogTemplate.split(footerMarker).length !== 2) throw new Error("Expected one shared footer slot in blog/page.html.");
@@ -69,7 +70,7 @@ for (const [page, html] of blogPages) {
   if (/\{\{[A-Z_]+\}\}/.test(html)) throw new Error(`Unresolved content slot in ${page}`);
   const target = resolve(output, page);
   await mkdir(dirname(target), { recursive: true });
-  await writeFile(target, html.replace(footerMarker, supportFooter()));
+  await writeFile(target, withAnalytics(html.replace(footerMarker, supportFooter())));
 }
 // Every share image comes from the shared template through site/social.ts.
 const socialCards = [...Object.values(PAGE_SOCIAL_IMAGES), BLOG_SOCIAL_CARD, ...POSTS.map(postSocialCard)];
@@ -86,7 +87,7 @@ if (notFoundTemplate.split(footerMarker).length !== 2) throw new Error("Expected
 const notFoundRoutes = [...STATIC_PAGES, { href: BLOG_PATH, label: "Blog" }, ...indexablePosts().map(post => ({ href: post.path, label: routeLabel(post.title) }))];
 const notFound = notFoundTemplate.replace("{{STATUS_PAGE}}", renderNotFound(notFoundRoutes));
 if (/\{\{[A-Z_]+\}\}/.test(notFound)) throw new Error("Unresolved content slot in 404.html");
-await writeFile(resolve(output, "404.html"), notFound.replace(footerMarker, supportFooter()));
+await writeFile(resolve(output, "404.html"), withAnalytics(notFound.replace(footerMarker, supportFooter()), true));
 await writeFile(resolve(output, "llms.txt"), (await readFile(resolve(root, "llms.txt"), "utf8")).trimEnd() + "\n" + renderLlmsSection());
 for (const archive of ["pilot-v0", "v2-calibration-0", "frontier-v0", "agent-v0", "admissions-opus5-2026-09-19"]) await cp(resolve(root, `benchmark/${archive}`), resolve(output, `benchmark/${archive}`), { recursive: true });
 await writeFile(resolve(output, "benchmark/v2-calibration-0/profiles.json"), JSON.stringify({ schemaVersion: 1, suiteHash: v2.suiteHash, profiles: CAPABILITY_PROFILES, models: profileReport(v2) }, null, 2) + "\n");
@@ -111,3 +112,6 @@ if (!statusPage.success) throw new AggregateError(statusPage.logs, "Status page 
 const pkg = JSON.parse(await readFile(resolve(kit, "../package.json"), "utf8"));
 await writeFile(resolve(output, "design/source.json"), JSON.stringify({ package: pkg.name, version: pkg.version, files: Object.fromEntries(await Promise.all(files.map(async name => [name, createHash("sha256").update(await readFile(resolve(output, "design", name))).digest("hex")]))) }, null, 2));
 console.log(`Built Clankdar (${pages.length + blogPages.length + 1} pages) with ${pkg.name}@${pkg.version}.`);
+
+const analytics = await Bun.build({ entrypoints: [resolve(root, "analytics.ts")], outdir: output, naming: "analytics.js", target: "browser", format: "iife", minify: true, define: { "process.env.NODE_ENV": '"production"' } });
+if (!analytics.success) throw new AggregateError(analytics.logs, "Analytics bundle failed");

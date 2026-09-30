@@ -1,0 +1,38 @@
+import { ctaClickedProperties } from "@hraness/posthog/event";
+import { expect, test } from "bun:test";
+import { readFileSync } from "node:fs";
+import { classifyAnalyticsRoute } from "@hraness/posthog";
+import { checkPostHogContract } from "@hraness/posthog/testing";
+import { analyticsSite, withAnalytics, analyticsCtaForUrl } from "./analytics-site";
+
+test("real SDK preserves the portfolio analytics contract", () => {
+  expect(checkPostHogContract({ site: analyticsSite, sensitivePath: "/account", customEvents: [{ event: "cta clicked", properties: { cta: "quickstart", placement: "nav" } }, { event: "outbound link opened", properties: { target_host: "github.com", placement: "nav" } }, { event: "download started", properties: { platform: "web", artifact: "benchmark", placement: "inline" } }] }).violations).toEqual([]);
+});
+test("routes retain public paths and reject preview hosts", () => {
+  expect(classifyAnalyticsRoute(analyticsSite, "https://clankdar.com/docs/")?.page_kind).toBe("docs");
+  expect(classifyAnalyticsRoute(analyticsSite, "https://clankdar.com/blog/example")?.content_slug).toBe("example");
+  expect(classifyAnalyticsRoute(analyticsSite, "https://clankdar-preview.vercel.app/")).toBeNull();
+});
+test("every page-writing path adds analytics, including the 404", () => {
+  const build = readFileSync(new URL("./build.ts", import.meta.url), "utf8");
+  expect(build.match(/withAnalytics\(html\.replace/g)?.length).toBe(2);
+  expect(build).toContain("withAnalytics(notFound.replace(footerMarker, supportFooter()), true)");
+  const html = withAnalytics("<html><head></head><body></body></html>", true);
+  expect(html).toContain('src="/analytics.js"');
+  expect(html).toContain('data-analytics-not-found="true"');
+  expect(() => withAnalytics("<body>missing head</body>")).toThrow();
+});
+test("CSP permits only same-origin code and the two required services", () => {
+  const config = JSON.parse(readFileSync(new URL("../vercel.json", import.meta.url), "utf8"));
+  const csp = config.headers[0].headers.find((h: { key: string }) => h.key === "Content-Security-Policy").value;
+  expect(csp).toContain("script-src 'self'");
+  expect(csp).toContain("connect-src 'self' https://us.i.posthog.com https://account.hraness.com");
+});
+
+test("CTA identifiers describe known destinations and satisfy the bounded event schema", () => {
+  for (const [path, expected] of [["https://github.com/hraness/repo", "github"], ["/install", "install"], ["/docs/guide", "docs"], ["/compare/tool", "compare"], ["/#use", "use_cases"], ["/", "get_started"]]) {
+    const cta = analyticsCtaForUrl(new URL(path!, `https://${analyticsSite.canonicalDomain}`));
+    expect(cta).toBe(expected!);
+    expect(ctaClickedProperties({ cta, placement: "nav" })).not.toBeNull();
+  }
+});
