@@ -116,7 +116,6 @@ export function ScoreSplit({ describe, theme }: Readonly<{ describe: string; the
             </li>
           ))}
         </ul>
-        <p className="cdm-note">Exact match against the computed answer. No model grades the reply.</p>
       </div>
     </MockupRoot>
   );
