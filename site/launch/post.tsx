@@ -9,7 +9,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { LaunchBeats, SocialKitPanel } from "@hraness/design-kit/react";
 import { LAUNCH_BEATS, LAUNCH_SOCIAL_KIT } from "./beats.ts";
 import { beatVisual } from "./mockups.tsx";
-import { LAUNCH_FACTS, LAUNCH_RELEASE } from "./facts.ts";
+import { LAUNCH_FACTS } from "./facts.ts";
 
 const f = (key: keyof typeof LAUNCH_FACTS) => LAUNCH_FACTS[key].value;
 
@@ -57,10 +57,10 @@ function Film() {
 export function renderLaunchBodyHtml(): string {
   return renderToStaticMarkup(
     <>
-      <p>Clankdar is in {LAUNCH_RELEASE.status}. It checks what an AI agent can actually solve: it hands the agent fresh puzzles that each have one right answer, computed by a program, and signs the result so anyone can recheck it. Each section below stands on its own.</p>
+      <p>Clankdar checks what an AI agent can actually solve: it hands the agent fresh puzzles that each have one right answer, computed by a program, and signs the result so anyone can recheck it. Each section below stands on its own.</p>
       {filmDelivered() ? <Film /> : null}
       <LaunchBeats beats={LAUNCH_BEATS} renderVisual={beat => beatVisual(beat)} />
-      <p>The hosted limits in full: the hosted API is an experimental staging service, open by invitation. The default check asks {f("policyPuzzles")} puzzles, needs {f("policyPasses")} right, and allows {f("policySeconds")} seconds. Staging allows {f("stagingTotal")} issued checks over its lifetime and {f("stagingPerMinute")} per fixed UTC minute across the whole service, and the first accepted submission fixes the result, including a failed one.</p>
+      <p>The hosted limits in full: the default check asks {f("policyPuzzles")} puzzles, needs {f("policyPasses")} right, and allows {f("policySeconds")} seconds. Staging allows {f("stagingTotal")} issued checks over its lifetime and {f("stagingPerMinute")} per fixed UTC minute across the whole service, and the first accepted submission fixes the result, including a failed one.</p>
       <h2 id="go-deeper">Go deeper</h2>
       <ul>
         {GO_DEEPER.map(link => <li key={link.href}><a href={link.href}>{link.label}</a></li>)}

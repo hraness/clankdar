@@ -26,7 +26,8 @@ describe("blog", () => {
       const html = renderPostPage(template, post);
       expect(html).toContain('<span class="plain-publication__byline" data-author-kind="organization">By <a href="https://hraness.com" rel="author">Hraness</a></span>');
       const sentence = articleProvenanceSentence(articleProvenanceFromAdmission(post.admission));
-      expect(sentence).toBe("Drafted with AI from the source code and reviewed by Claude Opus 5.5 (claude-opus-5-5) editorial review.");
+      expect(post.admission.review?.reviewerType).toBe("ai");
+      expect(sentence).toBe(`Drafted with AI from the source code and reviewed by ${post.admission.review!.reviewer}.`);
       expect(html).toContain(sentence);
       expect(html).not.toMatch(/human/i);
       expect(html).toContain(`<link rel="canonical" href="https://clankdar.com${post.path}">`);

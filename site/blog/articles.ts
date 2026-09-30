@@ -39,11 +39,16 @@ const REVIEW = {
   reviewedOn: "2026-09-26",
 } as const;
 
-/** The beat rewrite of the launch post, reviewed against site/launch/facts.ts, the recorded fixtures, and the sources below. */
+/**
+ * The launch post's independent AI review on 2026-09-30, by an agent that did
+ * not draft or edit the post: it scored 10 of 12 with no zero, rechecked every
+ * number against site/launch/facts.ts and its code source, and asked for the
+ * single status statement and standalone social wording applied the same day.
+ */
 const LAUNCH_REVIEW = {
-  reviewer: "Claude Opus 5.5 (claude-opus-5-5) editorial review",
+  reviewer: "Claude Opus 5.5 (claude-opus-5-5) independent AI review",
   reviewerType: "ai",
-  reviewedOn: "2026-09-29",
+  reviewedOn: "2026-09-30",
 } as const;
 
 function repo(repository: "clankdar" | "algal", file: string): string {
@@ -96,14 +101,14 @@ export const POSTS: readonly BlogPost[] = [
     eyebrow: "Introducing",
     cardEyebrow: "Release",
     published: "2026-09-24",
-    updated: "2026-09-29",
+    updated: "2026-09-30",
     tags: ["agents", "benchmarks", "evaluation", "algal"],
     sources: introducingSources,
     admission: {
       href: "/blog/introducing-clankdar",
       lifecycle: "indexable",
       readerJob: "Decide in a minute whether Clankdar's exactly scored, signed puzzle checks fit an agent you run or rely on, then solve a practice puzzle or run the local demo.",
-      nonObviousAnswer: "A signed Clankdar result can be rechecked offline by anyone with the issuer's public key, and editing one recorded answer (515 to 514 in the recorded demo) makes the verifier reject the whole file; a wrong solver still gets a signed, failing result.",
+      nonObviousAnswer: "A signed Clankdar result can be rechecked offline by anyone with the issuer's public key, and editing one recorded answer (515 to 514 in the recorded demo) makes the verifier reject the whole file; an agent that guesses wrong still gets a signed, failing result.",
       originalContribution: "Ten standalone beats, each shown with a mockup drawn from real recorded runs: a passing demo, a failing custom solver, and a tampered result the repository's verifier rejects.",
       hostFit: "The product's own introduction on its own host, in the Introducing (beats) shape from ARTICLE_COPY.md; technical depth stays in the docs and the ALGAL companion post.",
       nearestUrls: [
@@ -117,7 +122,7 @@ export const POSTS: readonly BlogPost[] = [
         "The mockups render values from recorded bun run try runs in site/launch/fixtures; launch.test.ts verifies the passing and failing receipts with the repository verifier and confirms the tampered one is rejected.",
         "The staging limits after the beats match the limits STYLE.md requires every Clankdar page to keep whenever it states them.",
       ],
-      scores: { readerUtility: 2, originalEvidence: 2, factualConfidence: 2, hostFit: 2, voiceIntegrity: 2, maintenanceValue: 1 },
+      scores: { readerUtility: 2, originalEvidence: 2, factualConfidence: 2, hostFit: 2, voiceIntegrity: 1, maintenanceValue: 1 },
       owner: "Hraness",
       drafting: "ai-from-source",
       review: LAUNCH_REVIEW,

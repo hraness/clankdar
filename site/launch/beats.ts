@@ -32,6 +32,7 @@ export const LAUNCH_BEAT_SOURCE: readonly LaunchBeat[] = Object.freeze([
     part: "does",
     headline: "Right or wrong, with no judge model",
     post: "Take {exampleValues}, keep the numbers over {exampleCutoff}, square them and add them up. The answer is {exampleAnswer}. An agent that says {exampleWrong} fails, however sure it sounds. A program computes every answer.",
+    socialPost: "Here is a Clankdar puzzle: take {exampleValues}, keep the numbers over {exampleCutoff}, square them and add them up. The answer is {exampleAnswer}. An agent that says {exampleWrong} fails, however sure it sounds. A program computes every answer.",
     facts: ["exampleValues", "exampleCutoff", "exampleAnswer", "exampleWrong"],
     visual: { kind: "mockup", id: "score-split", state: {} },
     alt: "One puzzle scored twice, in an illustration: the reply {exampleAnswer} passes and the reply {exampleWrong} fails.",
@@ -59,6 +60,7 @@ export const LAUNCH_BEAT_SOURCE: readonly LaunchBeat[] = Object.freeze([
     part: "does",
     headline: "Change one answer and the signature breaks",
     post: "Edit a single answer in a signed result, say {tamperFrom} to {tamperTo}, and the verifier rejects the whole file. Nobody can quietly improve a score after the check closes.",
+    socialPost: "Change a single answer in a signed result, even by one, and the verifier rejects the whole file. Nobody can quietly improve a score after the check closes.",
     facts: ["tamperFrom", "tamperTo"],
     visual: { kind: "mockup", id: "verify", state: { file: "tampered" } },
     alt: "A result with one answer changed from {tamperFrom} to {tamperTo}, in an illustration of a recorded run: the verifier rejects it.",
@@ -67,7 +69,7 @@ export const LAUNCH_BEAT_SOURCE: readonly LaunchBeat[] = Object.freeze([
     id: "how",
     part: "how",
     headline: "Your agent, your model, your keys",
-    post: "Clankdar never calls a model for you. Your code fetches the puzzles, hands them to whatever agent you run, and sends back its answers once. A solver that guesses wrong gets a failing result, signed all the same.",
+    post: "Clankdar never calls a model for you. Your code fetches the puzzles, hands them to whatever agent you run, and sends back its answers once. An agent that guesses wrong gets a failing result, signed all the same.",
     visual: { kind: "mockup", id: "try-run", state: { run: "own-solver" } },
     alt: "A custom solver that answers every puzzle wrong, in an illustration of a recorded run: the check reports FAIL.",
     detailHref: "/docs/#own-solver",
@@ -117,9 +119,12 @@ export const LAUNCH_SOCIAL_KIT: SocialKit = buildSocialKit(LAUNCH_BEATS, LAUNCH_
 
 /**
  * The one known kit problem: the registry's canonical meta description (the
- * Product Hunt description) says "receipt", which the kit lists as internal
- * vocabulary. Clankdar's messaging record is owner-authored, so the beats avoid
- * the word and this exception waits for an owner decision rather than an edit.
+ * Product Hunt description) says "receipt", which the shared kit lists as
+ * internal vocabulary. For Clankdar the word is deliberate public copy:
+ * STYLE.md ("Repository additions") names *receipt* as the public name for a
+ * check's signed result, and the meta line comes from the portfolio registry
+ * (portfolio-messaging.generated.json), so it is not edited here. The beats
+ * still say "signed result" so each post stands alone without the gloss.
  */
 export const KNOWN_KIT_PROBLEMS: readonly string[] = Object.freeze([
   'Product Hunt description uses the internal word "receipt".',
