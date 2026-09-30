@@ -3,12 +3,12 @@ import { chromium, expect, type Browser, type Page } from "@playwright/test";
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { randomUUID } from "node:crypto";
-import { parseArgs } from "node:util";
+import { ownedChromiumLaunchOptions, parseBrowserVerificationArgs, pinnedChromiumDefinition, verifyOwnedChromium } from "./browser-launch.ts";
 
-const { values } = parseArgs({ args: process.argv.slice(2), options: { channel: { type: "string" }, production: { type: "boolean", default: false }, concurrency: { type: "string", default: "2" } }, strict: true, allowPositionals: false });
-if (values.channel && !["chrome", "chromium"].includes(values.channel)) throw new Error("channel must be chrome or chromium");
-const concurrency = Number(values.concurrency);
-if (!Number.isInteger(concurrency) || concurrency < 1 || concurrency > 12) throw new Error("concurrency must be an integer from 1 to 12");
+const values = parseBrowserVerificationArgs(process.argv.slice(2));
+const { concurrency } = values;
+const definition = pinnedChromiumDefinition();
+const launchOptions = ownedChromiumLaunchOptions(chromium.executablePath(), definition.defaultArgs);
 const root = resolve(import.meta.dir, "dist");
 const files = new Set(values.production ? [] : new Bun.Glob("**/*").scanSync({ cwd: root, onlyFiles: true }));
 if (!values.production && !files.has("index.html")) throw new Error("build the site before browser verification");
@@ -45,6 +45,7 @@ let browser: Browser | undefined;
 let activePage: Page | undefined;
 const errors: string[] = [];
 let checked = 0;
+let browserIdentity: { executable: string; browserVersion: string } | undefined;
 
 async function verifyChrome(page: Page, width: number): Promise<void> {
   const geometry = () => page.evaluate(() => {
@@ -230,7 +231,9 @@ async function verifyContext(browser: Browser, width: number, theme: "light" | "
 }
 
 try {
-  browser = await chromium.launch({ channel: values.channel, headless: true });
+  browser = await chromium.launch(launchOptions);
+  browserIdentity = await verifyOwnedChromium(browser, launchOptions.executablePath, definition.expectedVersion);
+  console.log(JSON.stringify(browserIdentity));
   const passes = widths.flatMap((width) => (["light", "dark"] as const).map((theme) => ({ width, theme })));
   let next = 0;
   let failure: unknown;
@@ -258,7 +261,7 @@ try {
   await expect(page.locator('#method a[href$="/report.json"]')).toBeVisible();
   await noScript.close();
   expect(errors).toEqual([]);
-  const report = { capturedAt: new Date().toISOString(), origin, mode: values.production ? "production" : "local", pagesChecked: checked, widths, themes: ["light", "dark"], noScript: true, browserErrors: errors.length, screenshots };
+  const report = { capturedAt: new Date().toISOString(), origin, mode: values.production ? "production" : "local", ...browserIdentity, pagesChecked: checked, widths, themes: ["light", "dark"], noScript: true, browserErrors: errors.length, screenshots };
   writeFileSync(resolve(screenshots, "verification.json"), JSON.stringify(report, null, 2) + "\n");
   console.log(JSON.stringify(report, null, 2));
 } catch (error) {

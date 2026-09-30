@@ -1,12 +1,12 @@
 // Renders icon-512.png from icons/clankdar.svg. Share images come from site/social.ts.
-// Usage: bun site/generate-icon-512.ts [--channel chrome]
+// Usage: bun site/generate-icon-512.ts (after provisioning pinned Playwright Chromium)
 import { readFile } from "node:fs/promises";
 import { resolve } from "node:path";
 import { chromium } from "@playwright/test";
+import { ownedChromiumLaunchOptions, parseIconGenerationArgs, pinnedChromiumDefinition, verifyOwnedChromium } from "./browser-launch.ts";
 
 const root = import.meta.dir;
-const channelIndex = process.argv.indexOf("--channel");
-const channel = channelIndex === -1 ? undefined : process.argv[channelIndex + 1];
+parseIconGenerationArgs(process.argv.slice(2));
 // The traced mark carries two full-height hairline bars at its left and right
 // edges. They vanish at favicon size but frame the mark at raster sizes, so the
 // rendered PNG omits them. The SVG itself stays as the brand catalog ships it.
@@ -20,11 +20,18 @@ html, body { margin: 0; background: transparent; }
 svg { display: block; width: 512px; height: 512px; }
 </style></head><body>${svg}</body></html>`;
 
-const browser = await chromium.launch(channel === undefined ? {} : { channel });
+const definition = pinnedChromiumDefinition();
+const launchOptions = ownedChromiumLaunchOptions(chromium.executablePath(), definition.defaultArgs);
+const browser = await chromium.launch(launchOptions);
 try {
+  console.log("owned_browser", JSON.stringify(await verifyOwnedChromium(browser, launchOptions.executablePath, definition.expectedVersion)));
   const icon = await browser.newPage({ viewport: { width: 512, height: 512 } });
-  await icon.setContent(iconHtml);
-  await icon.screenshot({ path: resolve(root, "icon-512.png"), omitBackground: true });
+  try {
+    await icon.setContent(iconHtml);
+    await icon.screenshot({ path: resolve(root, "icon-512.png"), omitBackground: true });
+  } finally {
+    await icon.close();
+  }
 } finally {
   await browser.close();
 }
