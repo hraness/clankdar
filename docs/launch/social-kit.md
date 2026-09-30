@@ -6,192 +6,174 @@ Posts go out from the @hraness account. The status is Preview: the demo runs fro
 
 ## X thread
 
-Post 1 of 10, 149 characters
+Post 1 of 9, 149 characters
 
 ```text
 Clankdar gives your AI agent fresh puzzles, checks every answer exactly, and signs the result so anyone can recheck it. No second AI grades the work.
 ```
 
-Post 2 of 10, 174 characters
+Post 2 of 9, 174 characters
 
 ```text
 Take 1, 3, 2, 5, keep the numbers over 2, square them and add them up. The answer is 34. An agent that says 33 fails, however sure it sounds. A program computes every answer.
 ```
 
-Post 3 of 10, 177 characters
+Post 3 of 9, 177 characters
 
 ```text
 Each check makes new puzzles from a fresh seed, so an agent can't pass by remembering old answers. The default check asks 4 puzzles, needs 3 right, and closes after 180 seconds.
 ```
 
-Post 4 of 10, 218 characters
+Post 4 of 9, 218 characters
 
 ```text
 When a check ends, Clankdar signs a record of the puzzles, the answers, the deadline, and the verdict. Anyone with the issuer's public key can check the signature offline and see each expected answer next to the reply.
 ```
 
-Post 5 of 10, 156 characters
+Post 5 of 9, 156 characters
 
 ```text
 Edit a single answer in a signed result, say 515 to 514, and the verifier rejects the whole file. Nobody can quietly improve a score after the check closes.
 ```
 
-Post 6 of 10, 211 characters
+Post 6 of 9, 211 characters
 
 ```text
 Clankdar never calls a model for you. Your code fetches the puzzles, hands them to whatever agent you run, and sends back its answers once. A solver that guesses wrong gets a failing result, signed all the same.
 ```
 
-Post 7 of 10, 192 characters
+Post 7 of 9, 192 characters
 
 ```text
 Ask an agent for a fresh result before you give it a job, compare two versions before a release, or show what an agent solved next to its listing. Your app decides which result is good enough.
 ```
 
-Post 8 of 10, 183 characters
+Post 8 of 9, 183 characters
 
 ```text
 Most claims about AI agents are a demo video or a score nobody can rerun. We want every claim to come with evidence you can check yourself, in seconds, without taking our word for it.
 ```
 
-Post 9 of 10, 216 characters
+Post 9 of 9, 123 characters
 
 ```text
-A pass shows that someone answered these puzzles correctly before the deadline. It doesn't show which model answered, that an agent is safe, or that it may act for you. It only scores questions with one right answer.
-```
-
-Post 10 of 10, 194 characters
-
-```text
-Clankdar is in Preview. The demo runs from source with Bun 1.3.14, with no account and no API key. The hosted API is an experimental staging service, open by invitation.
+Clankdar is in Preview. The demo runs from source with Bun 1.3.14, with no account and no API key.
 
 https://clankdar.com/blog/introducing-clankdar
 ```
 
 ## Bluesky thread
 
-Post 1 of 10, 149 characters
+Post 1 of 9, 149 characters
 
 ```text
 Clankdar gives your AI agent fresh puzzles, checks every answer exactly, and signs the result so anyone can recheck it. No second AI grades the work.
 ```
 
-Post 2 of 10, 174 characters
+Post 2 of 9, 174 characters
 
 ```text
 Take 1, 3, 2, 5, keep the numbers over 2, square them and add them up. The answer is 34. An agent that says 33 fails, however sure it sounds. A program computes every answer.
 ```
 
-Post 3 of 10, 177 characters
+Post 3 of 9, 177 characters
 
 ```text
 Each check makes new puzzles from a fresh seed, so an agent can't pass by remembering old answers. The default check asks 4 puzzles, needs 3 right, and closes after 180 seconds.
 ```
 
-Post 4 of 10, 218 characters
+Post 4 of 9, 218 characters
 
 ```text
 When a check ends, Clankdar signs a record of the puzzles, the answers, the deadline, and the verdict. Anyone with the issuer's public key can check the signature offline and see each expected answer next to the reply.
 ```
 
-Post 5 of 10, 156 characters
+Post 5 of 9, 156 characters
 
 ```text
 Edit a single answer in a signed result, say 515 to 514, and the verifier rejects the whole file. Nobody can quietly improve a score after the check closes.
 ```
 
-Post 6 of 10, 211 characters
+Post 6 of 9, 211 characters
 
 ```text
 Clankdar never calls a model for you. Your code fetches the puzzles, hands them to whatever agent you run, and sends back its answers once. A solver that guesses wrong gets a failing result, signed all the same.
 ```
 
-Post 7 of 10, 192 characters
+Post 7 of 9, 192 characters
 
 ```text
 Ask an agent for a fresh result before you give it a job, compare two versions before a release, or show what an agent solved next to its listing. Your app decides which result is good enough.
 ```
 
-Post 8 of 10, 183 characters
+Post 8 of 9, 183 characters
 
 ```text
 Most claims about AI agents are a demo video or a score nobody can rerun. We want every claim to come with evidence you can check yourself, in seconds, without taking our word for it.
 ```
 
-Post 9 of 10, 216 characters
+Post 9 of 9, 146 characters
 
 ```text
-A pass shows that someone answered these puzzles correctly before the deadline. It doesn't show which model answered, that an agent is safe, or that it may act for you. It only scores questions with one right answer.
-```
-
-Post 10 of 10, 217 characters
-
-```text
-Clankdar is in Preview. The demo runs from source with Bun 1.3.14, with no account and no API key. The hosted API is an experimental staging service, open by invitation.
+Clankdar is in Preview. The demo runs from source with Bun 1.3.14, with no account and no API key.
 
 https://clankdar.com/blog/introducing-clankdar
 ```
 
 ## Threads thread
 
-Post 1 of 10, 149 characters
+Post 1 of 9, 149 characters
 
 ```text
 Clankdar gives your AI agent fresh puzzles, checks every answer exactly, and signs the result so anyone can recheck it. No second AI grades the work.
 ```
 
-Post 2 of 10, 174 characters
+Post 2 of 9, 174 characters
 
 ```text
 Take 1, 3, 2, 5, keep the numbers over 2, square them and add them up. The answer is 34. An agent that says 33 fails, however sure it sounds. A program computes every answer.
 ```
 
-Post 3 of 10, 177 characters
+Post 3 of 9, 177 characters
 
 ```text
 Each check makes new puzzles from a fresh seed, so an agent can't pass by remembering old answers. The default check asks 4 puzzles, needs 3 right, and closes after 180 seconds.
 ```
 
-Post 4 of 10, 218 characters
+Post 4 of 9, 218 characters
 
 ```text
 When a check ends, Clankdar signs a record of the puzzles, the answers, the deadline, and the verdict. Anyone with the issuer's public key can check the signature offline and see each expected answer next to the reply.
 ```
 
-Post 5 of 10, 156 characters
+Post 5 of 9, 156 characters
 
 ```text
 Edit a single answer in a signed result, say 515 to 514, and the verifier rejects the whole file. Nobody can quietly improve a score after the check closes.
 ```
 
-Post 6 of 10, 211 characters
+Post 6 of 9, 211 characters
 
 ```text
 Clankdar never calls a model for you. Your code fetches the puzzles, hands them to whatever agent you run, and sends back its answers once. A solver that guesses wrong gets a failing result, signed all the same.
 ```
 
-Post 7 of 10, 192 characters
+Post 7 of 9, 192 characters
 
 ```text
 Ask an agent for a fresh result before you give it a job, compare two versions before a release, or show what an agent solved next to its listing. Your app decides which result is good enough.
 ```
 
-Post 8 of 10, 183 characters
+Post 8 of 9, 183 characters
 
 ```text
 Most claims about AI agents are a demo video or a score nobody can rerun. We want every claim to come with evidence you can check yourself, in seconds, without taking our word for it.
 ```
 
-Post 9 of 10, 216 characters
+Post 9 of 9, 146 characters
 
 ```text
-A pass shows that someone answered these puzzles correctly before the deadline. It doesn't show which model answered, that an agent is safe, or that it may act for you. It only scores questions with one right answer.
-```
-
-Post 10 of 10, 217 characters
-
-```text
-Clankdar is in Preview. The demo runs from source with Bun 1.3.14, with no account and no API key. The hosted API is an experimental staging service, open by invitation.
+Clankdar is in Preview. The demo runs from source with Bun 1.3.14, with no account and no API key.
 
 https://clankdar.com/blog/introducing-clankdar
 ```
@@ -215,9 +197,7 @@ Ask an agent for a fresh result before you give it a job, compare two versions b
 
 Most claims about AI agents are a demo video or a score nobody can rerun. We want every claim to come with evidence you can check yourself, in seconds, without taking our word for it.
 
-A pass shows that someone answered these puzzles correctly before the deadline. It doesn't show which model answered, that an agent is safe, or that it may act for you. It only scores questions with one right answer.
-
-Clankdar is in Preview. The demo runs from source with Bun 1.3.14, with no account and no API key. The hosted API is an experimental staging service, open by invitation.
+Clankdar is in Preview. The demo runs from source with Bun 1.3.14, with no account and no API key.
 
 https://clankdar.com/blog/introducing-clankdar
 ```
@@ -244,8 +224,7 @@ Topics: Developer Tools, Artificial Intelligence, Open Source
 - Edit a single answer in a signed result, say 515 to 514, and the verifier rejects the whole file. Nobody can quietly improve a score after the check closes.
 - Clankdar never calls a model for you. Your code fetches the puzzles, hands them to whatever agent you run, and sends back its answers once. A solver that guesses wrong gets a failing result, signed all the same.
 - Ask an agent for a fresh result before you give it a job, compare two versions before a release, or show what an agent solved next to its listing. Your app decides which result is good enough.
-- A pass shows that someone answered these puzzles correctly before the deadline. It doesn't show which model answered, that an agent is safe, or that it may act for you. It only scores questions with one right answer.
-- Clankdar is in Preview. The demo runs from source with Bun 1.3.14, with no account and no API key. The hosted API is an experimental staging service, open by invitation.
+- Clankdar is in Preview. The demo runs from source with Bun 1.3.14, with no account and no API key.
 - Preview. https://clankdar.com/blog/introducing-clankdar
 
 ## Beats
