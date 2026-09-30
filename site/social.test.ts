@@ -2,7 +2,7 @@ import { describe, expect, test } from "bun:test";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { product } from "@hraness/design-kit/portfolio";
-import { socialImageAlt, socialImageFit, socialImageSiteDetails } from "@hraness/web-discovery/social-image/card";
+import { SOCIAL_IMAGE_MIN_PALETTE_DISTANCE, socialImageAlt, socialImageFit, socialImagePalette, socialImagePaletteDistance, socialImageSitePalette, socialImageSiteDetails, socialImageTypography } from "@hraness/web-discovery/social-image/card";
 import { POSTS } from "./blog/articles.ts";
 import { BLOG_SOCIAL_CARD, postSocialCard, renderIndexPage, renderPostPage } from "./blog/render.ts";
 import { PAGE_SOCIAL_IMAGES, SOCIAL_IMAGE_HEIGHT, SOCIAL_IMAGE_WIDTH, renderSocialImage, socialImage, socialSite } from "./social.ts";
@@ -14,11 +14,14 @@ describe("share images", () => {
   test("one site declaration carries the registry name, one-liner, domain, mark, and light theme", () => {
     const details = socialImageSiteDetails(socialSite);
     expect(details.title).toBe(product("clankdar").name);
-    expect(details.description).toBe(product("clankdar").oneLiner);
+    expect(details.description).toBe(`${product("clankdar").oneLiner.replace(/[.!?]$/, "")}.`);
     expect(details.domain).toBe("clankdar.com");
     const mark = readFileSync(resolve(root, "marks/clankdar.svg")).toString("base64");
     expect(socialSite.icon).toEqual({ kind: "mark", src: `data:image/svg+xml;base64,${mark}` });
-    expect(Object.keys(socialSite.theme ?? {}).sort()).toEqual(["accent", "background", "foreground", "muted"]);
+    expect(Object.keys(socialSite.theme ?? {}).sort()).toEqual(["accent", "background", "foreground", "muted", "wash"]);
+    // Without the wash the card shares the slate-and-navy look of System One and Sloptrade.
+    const { wash: _wash, ...slate } = socialSite.theme ?? {};
+    expect(socialImagePaletteDistance(socialImageSitePalette(socialSite), socialImagePalette(slate))).toBeGreaterThanOrEqual(SOCIAL_IMAGE_MIN_PALETTE_DISTANCE);
     for (const colour of Object.values(socialSite.theme ?? {})) expect(colour).toMatch(/^#[0-9A-F]{6}$/);
   });
 
@@ -54,14 +57,17 @@ describe("share images", () => {
     for (const card of cards) {
       const fit = socialImageFit(socialImageSiteDetails(socialSite, card.page));
       expect({ path: card.path, issues: fit.issues }).toEqual({ path: card.path, issues: [] });
+      // Findings include the review codes strict mode ignores (reduced, repeated or ellipsized copy, missing eyebrows).
+      expect({ path: card.path, findings: fit.findings }).toEqual({ path: card.path, findings: [] });
       expect(fit.removed).toEqual([]);
       expect(fit.headline.lines.length).toBeLessThanOrEqual(2);
       // A page card shows its own copy, never the home tagline, and its eyebrow survives de-duplication.
       if (card.page !== undefined) {
         expect(fit.layout).toBe("page");
-        expect(fit.description?.lines.join(" ")).toBe(card.page.description);
+        expect(fit.description?.lines.join(" ")).toBe(socialImageTypography(card.page.description ?? ""));
         expect(card.page.description).not.toBe(socialSite.description);
-        expect(fit.eyebrow).toBe(card.page.eyebrow);
+        expect(typeof card.page.eyebrow).toBe("string");
+        expect(fit.eyebrow).toBe(card.page.eyebrow as string);
       }
     }
   });

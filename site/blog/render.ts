@@ -42,7 +42,8 @@ const HRANESS = { kind: "Organization", name: "Hraness", url: "https://hraness.c
 /** The blog index card and each post's card: page copy only, drawn by the shared template. */
 export const BLOG_SOCIAL_CARD: Readonly<{ path: `/${string}`; page: SocialImagePage }> = {
   path: "/og/blog.png",
-  page: { eyebrow: "Blog", headline: BLOG_TITLE, description: "How Clankdar scores AI agents on fresh puzzles, and how to rerun a recorded check yourself." },
+  // The lockup already names Clankdar, so the headline says what the posts cover.
+  page: { eyebrow: "Blog", headline: "Posts on fresh puzzles", description: "How Clankdar scores AI agents, and how to rerun a check yourself." },
 };
 
 export function postSocialCard(post: BlogPost): Readonly<{ path: `/${string}`; page: SocialImagePage }> {
