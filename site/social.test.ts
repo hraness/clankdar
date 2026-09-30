@@ -19,6 +19,7 @@ describe("share images", () => {
     const mark = readFileSync(resolve(root, "marks/clankdar.svg")).toString("base64");
     expect(socialSite.icon).toEqual({ kind: "mark", src: `data:image/svg+xml;base64,${mark}` });
     expect(Object.keys(socialSite.theme ?? {}).sort()).toEqual(["accent", "background", "foreground", "muted", "wash"]);
+    expect(socialSite.theme?.wash).toBe("#E68A00");
     // Without the wash the card shares the slate-and-navy look of System One and Sloptrade.
     const { wash: _wash, ...slate } = socialSite.theme ?? {};
     expect(socialImagePaletteDistance(socialImageSitePalette(socialSite), socialImagePalette(slate))).toBeGreaterThanOrEqual(SOCIAL_IMAGE_MIN_PALETTE_DISTANCE);
