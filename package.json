@@ -36,12 +36,12 @@
   "dependencies": {
     "@hraness/algal": "github:hraness/algal#723c35d3c60d1ef7b88437a9ddeaf6588a1814cf",
     "@hraness/design-kit": "github:hraness/design-kit#v0.35.0",
-    "@hraness/site-footer": "https://github.com/hraness/site-footer/releases/download/v0.20.4/hraness-site-footer-0.20.4.tgz",
+    "@hraness/site-footer": "https://github.com/hraness/site-footer/releases/download/v0.20.5/hraness-site-footer-0.20.5.tgz",
     "@hraness/web-discovery": "github:hraness/web-discovery#v0.13.0"
   },
   "devDependencies": {
     "@cloudflare/vitest-pool-workers": "0.22.0",
-    "@hraness/posthog": "https://github.com/hraness/posthog/releases/download/v0.3.6/hraness-posthog-0.3.6.tgz",
+    "@hraness/posthog": "https://github.com/hraness/posthog/releases/download/v0.3.9/hraness-posthog-0.3.9.tgz",
     "@hraness/ui": "github:hraness/ui#v0.5.18",
     "@playwright/test": "1.58.2",
     "@resvg/resvg-js": "2.6.2",
