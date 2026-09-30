@@ -13,11 +13,11 @@ export function renderHomeMockups(): Record<`{{MOCKUP_${string}}}`, string> {
   return {
     "{{MOCKUP_EXACT}}": figure(
       renderToStaticMarkup(<ScoreSplit describe="One puzzle scored twice: the computed answer passes and a reply one lower fails." />),
-      "Illustration from Clankdar's worked example. Each reply is right or wrong; no model grades it.",
+      "Each reply is right or wrong; no model grades it.",
     ),
     "{{MOCKUP_TAMPER}}": figure(
       renderToStaticMarkup(<Verify describe="A terminal verifies a result after one answer was edited, and the verifier rejects it." file="tampered" />),
-      "Illustration from a recorded demo run: change one answer and the signature no longer matches.",
+      "Change one answer and the signature no longer matches.",
     ),
   };
 }
