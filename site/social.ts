@@ -18,12 +18,14 @@ const mark = readFileSync(resolve(import.meta.dir, "marks/clankdar.svg"));
 
 export const socialSite = defineSocialImageSite({
   name: clankdar.name,
-  description: clankdar.oneLiner,
+  // The registry one-liner has no end stop; every other card sentence ends in a period.
+  description: `${clankdar.oneLiner.replace(/[.!?]$/, "")}.`,
   domain: "clankdar.com",
   // The radar-dish mark behind the header, icon.png and apple-icon.png.
   icon: { kind: "mark", src: `data:image/svg+xml;base64,${mark.toString("base64")}` },
   // Light tokyo-night palette from the pinned design kit, as the site renders it.
-  theme: { accent: "#1D4E90", background: "#E1E2E7", foreground: "#1C3161", muted: "#414C76" },
+  // The magenta wash keeps the card apart from the other slate-and-navy portfolio sites in a feed.
+  theme: { accent: "#1D4E90", background: "#E1E2E7", foreground: "#1C3161", muted: "#414C76", wash: "#C322B6" },
 });
 
 export const SOCIAL_IMAGE_WIDTH = 1200;
@@ -69,7 +71,7 @@ export const PAGE_SOCIAL_IMAGES: Readonly<Record<string, Readonly<{ path: `/${st
   "docs/index.html": {
     path: "/og/docs.png",
     page: {
-      eyebrow: "Docs",
+      eyebrow: "Documentation",
       headline: "Your first check",
       description: "Run a check without credentials, then call the hosted API and verify each receipt offline.",
     },
@@ -79,7 +81,7 @@ export const PAGE_SOCIAL_IMAGES: Readonly<Record<string, Readonly<{ path: `/${st
     page: {
       eyebrow: "Benchmark",
       headline: "Model benchmark",
-      description: "Five models, the same 500 puzzles, scored exactly. Download the answers and rescore them.",
+      description: "Five models, the same 500 puzzles, and how often each was exactly right.",
     },
   },
 };
