@@ -3,6 +3,7 @@ import { chromium, expect, type Browser, type Page } from "@playwright/test";
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { randomUUID } from "node:crypto";
+import { POSTS } from "./blog/articles.ts";
 import { ownedChromiumLaunchOptions, parseBrowserVerificationArgs, pinnedChromiumDefinition, verifyOwnedChromium } from "./browser-launch.ts";
 
 const values = parseBrowserVerificationArgs(process.argv.slice(2));
@@ -168,7 +169,9 @@ async function verifyContext(browser: Browser, width: number, theme: "light" | "
         await expect(page.locator(".plain-publication")).toHaveCount(1);
         if (path !== "/blog/") {
           await expect(page.locator(".plain-publication__byline")).toHaveText("By Hraness");
-          await expect(page.locator(".plain-publication__provenance")).toHaveText("Drafted with AI from the source code and reviewed by Claude Opus 5.5 (claude-opus-5-5) editorial review.");
+          const reviewer = POSTS.find(post => post.path === path.replace(/\/$/u, ""))?.admission.review?.reviewer;
+          if (reviewer === undefined) throw new Error(`No review record for ${path}`);
+          await expect(page.locator(".plain-publication__provenance")).toHaveText(`Drafted with AI from the source code and reviewed by ${reviewer}.`);
           await expect(page.locator('meta[name="robots"]')).toHaveCount(0);
         }
       }
