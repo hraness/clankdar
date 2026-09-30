@@ -1,3 +1,4 @@
+import { renderMarketingCopy } from "./portfolio-copy";
 import { cp, mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 import { dirname, resolve } from "node:path";
@@ -45,7 +46,7 @@ await cp(resolve(root, "icons"), resolve(output, "icons"), { recursive: true });
 await cp(resolve(root, "marks"), resolve(output, "marks"), { recursive: true });
 const footerMarker = "<!-- hraness-site-footer -->";
 for (const page of pages) {
-  let html = await readFile(resolve(root, page), "utf8");
+  let html = renderMarketingCopy(await readFile(resolve(root, page), "utf8"));
   if (html.split(footerMarker).length !== 2) throw new Error(`Expected one shared footer slot in ${page}.`);
   for (const [marker, content] of Object.entries(substitutions)) html = html.replaceAll(marker, content);
   const social = PAGE_SOCIAL_IMAGES[page];
@@ -80,7 +81,7 @@ for (const card of socialCards) {
 await writeFile(resolve(output, FEED_PATH.slice(1)), renderFeed());
 await writeFile(resolve(output, "sitemap.xml"), renderSitemap(STATIC_PAGES.map(page => page.href)));
 // Vercel serves 404.html with status 404 for any path without a file. "Did you mean" draws on the sitemap's pages.
-const notFoundTemplate = await readFile(resolve(root, "404.html"), "utf8");
+const notFoundTemplate = renderMarketingCopy(await readFile(resolve(root, "404.html"), "utf8"));
 if (notFoundTemplate.split(footerMarker).length !== 2) throw new Error("Expected one shared footer slot in 404.html.");
 const notFoundRoutes = [...STATIC_PAGES, { href: BLOG_PATH, label: "Blog" }, ...indexablePosts().map(post => ({ href: post.path, label: routeLabel(post.title) }))];
 const notFound = notFoundTemplate.replace("{{STATUS_PAGE}}", renderNotFound(notFoundRoutes));

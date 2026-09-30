@@ -1,10 +1,10 @@
+import { marketing } from "./portfolio-copy";
 // The one declaration every Clankdar share image comes from. The card design
 // lives in @hraness/web-discovery; pages pass copy only.
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { Resvg } from "@resvg/resvg-js";
 import satori from "satori";
-import { product } from "@hraness/design-kit/portfolio";
 import {
   createSocialImageCard,
   defineSocialImageSite,
@@ -13,13 +13,12 @@ import {
   type SocialImagePage,
 } from "@hraness/web-discovery/social-image/card";
 
-const clankdar = product("clankdar");
 const mark = readFileSync(resolve(import.meta.dir, "marks/clankdar.svg"));
 
 export const socialSite = defineSocialImageSite({
-  name: clankdar.name,
-  // The registry one-liner has no end stop; every other card sentence ends in a period.
-  description: `${clankdar.oneLiner.replace(/[.!?]$/, "")}.`,
+  name: marketing.names.name,
+  // The shared card uses a full sentence; its wording is canonical marketing copy.
+  description: `${marketing.short.replace(/[.!?]$/, "")}.`,
   domain: "clankdar.com",
   // The radar-dish mark behind the header, icon.png and apple-icon.png.
   icon: { kind: "mark", src: `data:image/svg+xml;base64,${mark.toString("base64")}` },
