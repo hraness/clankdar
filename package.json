@@ -41,7 +41,7 @@
   },
   "devDependencies": {
     "@cloudflare/vitest-pool-workers": "0.22.0",
-    "@hraness/posthog": "github:hraness/posthog#f0e9f89bcca2b8f4536d6bec2eef8762a688502c",
+    "@hraness/posthog": "https://github.com/hraness/posthog/releases/download/v0.3.5/hraness-posthog-0.3.5.tgz",
     "@hraness/ui": "github:hraness/ui#v0.5.18",
     "@playwright/test": "1.58.2",
     "@resvg/resvg-js": "2.6.2",
