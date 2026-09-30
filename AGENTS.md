@@ -1,3 +1,9 @@
+<!-- browser-automation:start -->
+- Ordinary owned automated browser runs use versioned Chrome for Testing or the browser provisioned for the pinned Playwright version. Reject the installed auto-updating Chrome application, including explicit executable overrides and symlinks; never fall back to it when provisioning is missing. Report the resolved executable and browser version, and close owned contexts and browsers gracefully in cleanup. Attaching to an explicitly authorized user-owned browser is a separate operation: preserve its profile and lifetime. Keep regression checks for browser selection in the existing required checks; see [browser automation](https://github.com/hraness/.github/blob/main/BROWSER_AUTOMATION.md).
+- Never start the system Chrome app directly from an agent shell; use the repository's browser tooling and respect its scheduler and browser custody controls. For owned launches, pass `--mute-audio` and merge `PaintHolding,MacAppCodeSignClone` into any existing `--disable-features` value instead of adding a second switch. Finish owned process, context, and profile cleanup before releasing the browser lane. Never signal another holder or manipulate its lease to obtain a slot.
+- The sole native-runtime exception is Slopcamera’s documented signature-verified, version-bound, immutable task-owned Chrome snapshot, never a direct launch of the installed application. Its current integrity-bound launch contract must disable `MacAppCodeSignClone`; retain vendor identity verification, browser custody, graceful cleanup, and regression checks. Qualify the native fix with live clone-growth and cleanup evidence before activating this exception. It is not an executable override or fallback for ordinary automation; see [the native-runtime exception](https://github.com/hraness/.github/blob/main/BROWSER_AUTOMATION.md#slopcamera-native-runtime-exception).
+<!-- browser-automation:end -->
+
 # Contents
 
 - `ladder/` owns versioned deterministic benchmark generators, typed scoring, and the experimental keyed commitment helper. `FAMILIES` is the frozen published v2 pool; `FRONTIER_FAMILIES` (deeper unaided cells) and `AGENT_FAMILIES` (bounded tool-agent cells with server-side `env` tools) are the current published pools. The `*_V0` constants are frozen pools that exactly regenerate the published `frontier-v0`/`agent-v0` archives; `poolForVersion` must keep every published suite version regenerable forever.
@@ -16,7 +22,7 @@
 # Guidelines
 
 - Use Bun 1.3.14. Run `bun run check` before handoff: strict Node and Workers typechecks, Bun tests, Cloudflare runtime tests, pilot replay, and static build. Use `bun run check:site` for focused site iteration. Run `wrangler deploy --dry-run --config cloudflare/wrangler.jsonc` for hosted changes; never deploy while the D1 id is the all-zero placeholder or without `ISSUER_JWK`, `SESSION_WRAP_KEY`, and `REGISTRATION_TOKEN` in Cloudflare Secrets.
-- Run `bun run check:browser --channel chrome` on machines with Chrome, or install Playwright Chromium and omit the channel flag. The check owns an ephemeral loopback server; retain its ignored screenshots.
+- Provision Chromium for the repository's pinned Playwright version, then run `bun run check:browser` without a channel override. The check owns an ephemeral loopback server; retain its ignored screenshots.
 - Deliver post-bootstrap changes through a current-head pull request with passing checks. Keep deployment identity and legacy redirects intact.
 - Keep pages static HTML with no client framework, no forms, and no third-party
   requests; the deployed CSP forbids all of them.
