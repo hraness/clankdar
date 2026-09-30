@@ -5,6 +5,7 @@ import { resolve } from "node:path";
 import { randomUUID } from "node:crypto";
 import { POSTS } from "./blog/articles.ts";
 import { ownedChromiumLaunchOptions, parseBrowserVerificationArgs, pinnedChromiumDefinition, verifyOwnedChromium } from "./browser-launch.ts";
+import { classifyVerificationRequest } from "./verification-network.ts";
 
 const values = parseBrowserVerificationArgs(process.argv.slice(2));
 const { concurrency } = values;
@@ -108,8 +109,20 @@ async function verifyChrome(page: Page, width: number): Promise<void> {
 // One width/theme pass in its own isolated context. Passes run through a small pool.
 async function verifyContext(browser: Browser, width: number, theme: "light" | "dark"): Promise<void> {
   const context = await browser.newContext({ viewport: { width, height: width === 390 ? 844 : width <= 360 ? 740 : 900 }, colorScheme: theme, reducedMotion: "reduce", serviceWorkers: "block" });
+  let consentRegionReads = 0;
   await context.route("**/*", (route) => {
-    if (new URL(route.request().url()).origin !== origin) { errors.push("unexpected third-party request"); return route.abort(); }
+    const kind = classifyVerificationRequest(route.request().url(), route.request().method(), origin);
+    // The shared footer reads a public region policy on production hosts. Hold
+    // consent unaccepted so this run must never send analytics or load an SDK.
+    if (kind === "consent-region") {
+      consentRegionReads += 1;
+      return route.fulfill({
+        status: 200, contentType: "application/json",
+        headers: { "access-control-allow-origin": origin },
+        body: JSON.stringify({ region: "DE", required: true }),
+      });
+    }
+    if (kind === "blocked") { errors.push("unexpected third-party request"); return route.abort(); }
     return route.continue();
   });
   const page = await context.newPage();
@@ -126,6 +139,7 @@ async function verifyContext(browser: Browser, width: number, theme: "light" | "
     });
     for (const path of ["/", "/docs/", "/benchmark/", ...blogPaths, ...(values.production ? [] : profilePaths)]) {
       await page.goto(origin + path, { waitUntil: "load" });
+      if (values.production && path === "/") await expect.poll(() => consentRegionReads).toBeGreaterThan(0);
       await page.evaluate(async () => { await document.fonts.ready; });
       await expect(page).toHaveTitle(/Clankdar/);
       await expect(page.locator("html")).toHaveAttribute("data-hraness-theme", "paper");
@@ -264,7 +278,7 @@ try {
   await expect(page.locator('#method a[href$="/report.json"]')).toBeVisible();
   await noScript.close();
   expect(errors).toEqual([]);
-  const report = { capturedAt: new Date().toISOString(), origin, mode: values.production ? "production" : "local", ...browserIdentity, pagesChecked: checked, widths, themes: ["light", "dark"], noScript: true, browserErrors: errors.length, screenshots };
+  const report = { capturedAt: new Date().toISOString(), origin, mode: values.production ? "production" : "local", consent: values.production ? "required-unaccepted" : "not-applicable-local", ...browserIdentity, pagesChecked: checked, widths, themes: ["light", "dark"], noScript: true, browserErrors: errors.length, screenshots };
   writeFileSync(resolve(screenshots, "verification.json"), JSON.stringify(report, null, 2) + "\n");
   console.log(JSON.stringify(report, null, 2));
 } catch (error) {
