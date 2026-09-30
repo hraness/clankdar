@@ -20,12 +20,11 @@ export const socialSite = defineSocialImageSite({
   // The shared card uses a full sentence; its wording is canonical marketing copy.
   description: `${marketing.short.replace(/[.!?]$/, "")}.`,
   domain: "clankdar.com",
-  // The radar-dish mark behind the header, icon.png and apple-icon.png.
-  icon: { kind: "mark", src: `data:image/svg+xml;base64,${mark.toString("base64")}` },
-  // Light tokyo-night palette from the pinned design kit, as the site renders it.
-  // The radar-amber wash keeps the card apart from the other slate-and-navy portfolio sites in a feed,
-  // and from the pink and lavender washes of Gobstopper and Slopcamera.
-  theme: { accent: "#1D4E90", background: "#E1E2E7", foreground: "#1C3161", muted: "#414C76", wash: "#E68A00" },
+  // The header shows the radar-dish mark in foil beside the lower-case name.
+  brand: marketing.names.name.toLowerCase(),
+  brandMark: `data:image/svg+xml;base64,${mark.toString("base64")}`,
+  // The site's html data-palette; the card takes its light-theme header and hero colours.
+  palette: "tokyo-night",
 });
 
 export const SOCIAL_IMAGE_WIDTH = 1200;

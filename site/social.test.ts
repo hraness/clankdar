@@ -2,7 +2,7 @@ import { describe, expect, test } from "bun:test";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { marketing } from "./portfolio-copy";
-import { SOCIAL_IMAGE_MIN_PALETTE_DISTANCE, socialImageAlt, socialImageFit, socialImagePalette, socialImagePaletteDistance, socialImageSitePalette, socialImageSiteDetails, socialImageTypography } from "@hraness/web-discovery/social-image/card";
+import { socialImageAlt, socialImageFit, socialImageSiteDetails, socialImageTypography } from "@hraness/web-discovery/social-image/card";
 import { POSTS } from "./blog/articles.ts";
 import { BLOG_SOCIAL_CARD, postSocialCard, renderIndexPage, renderPostPage } from "./blog/render.ts";
 import { PAGE_SOCIAL_IMAGES, SOCIAL_IMAGE_HEIGHT, SOCIAL_IMAGE_WIDTH, renderSocialImage, socialImage, socialSite } from "./social.ts";
@@ -11,19 +11,19 @@ const root = import.meta.dir;
 const template = readFileSync(resolve(root, "blog/page.html"), "utf8");
 
 describe("share images", () => {
-  test("one site declaration carries the registry name, one-liner, domain, mark, and light theme", () => {
+  test("one site declaration carries the registry name, one-liner, domain, header mark, and palette", () => {
     const details = socialImageSiteDetails(socialSite);
     expect(details.title).toBe(marketing.names.name);
     expect(details.description).toBe(`${marketing.short.replace(/[.!?]$/, "")}.`);
     expect(details.domain).toBe("clankdar.com");
     const mark = readFileSync(resolve(root, "marks/clankdar.svg")).toString("base64");
-    expect(socialSite.icon).toEqual({ kind: "mark", src: `data:image/svg+xml;base64,${mark}` });
-    expect(Object.keys(socialSite.theme ?? {}).sort()).toEqual(["accent", "background", "foreground", "muted", "wash"]);
-    expect(socialSite.theme?.wash).toBe("#E68A00");
-    // Without the wash the card shares the slate-and-navy look of System One and Sloptrade.
-    const { wash: _wash, ...slate } = socialSite.theme ?? {};
-    expect(socialImagePaletteDistance(socialImageSitePalette(socialSite), socialImagePalette(slate))).toBeGreaterThanOrEqual(SOCIAL_IMAGE_MIN_PALETTE_DISTANCE);
-    for (const colour of Object.values(socialSite.theme ?? {})) expect(colour).toMatch(/^#[0-9A-F]{6}$/);
+    // The card repeats the header: the foil radar-dish mark, the lower-case name, and the tokyo-night palette.
+    expect(socialSite.brandMark).toBe(`data:image/svg+xml;base64,${mark}`);
+    expect(socialSite.brand).toBe("clankdar");
+    expect(socialSite.palette).toBe("tokyo-night");
+    expect(readFileSync(resolve(root, "index.html"), "utf8")).toContain('data-palette="tokyo-night"');
+    expect(socialSite.icon).toBeUndefined();
+    expect(socialSite.theme).toBeUndefined();
   });
 
   test("every static page has one image slot and a card that passes page copy only", () => {
