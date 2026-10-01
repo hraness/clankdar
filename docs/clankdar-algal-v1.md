@@ -54,8 +54,7 @@ The inputs are `{"values":[1,3,2,5]}`. This is the actual program:
 `filter` keeps 3 and 5, `map` squares them, and `fold` adds 9 and 25.
 The result is **34**, using **87 fuel units** in the pinned evaluator.
 The command prints the expression, inputs, budget, answer, and measured fuel.
-It makes no model calls. The site build executes this same example and rejects
-code-display drift.
+It makes no model calls.
 
 An expression is JSON data: the first item of each array names an operation.
 `get` reads an input or lexical binding. `filter`, `map`, and `fold` bind names
@@ -99,7 +98,7 @@ Clankdar seals the fresh generator seed until an answered challenge produces
 a receipt. Verification regenerates the recorded puzzle, executes the same
 ALGAL evaluator, and checks the response and issuer signature. Missing or
 malformed answers remain failures without a per-challenge receipt. A complete
-check is still one `clankdar-gate-v1` signed admission stored as JSON in R2.
+check is one signed JSON result in the `clankdar-gate-v1` format.
 The [check API contract](clankdar-checks-v1.md) defines retries and storage.
 
 ## Compatibility and interpretation
@@ -109,8 +108,7 @@ archives, scores, explicit policies, tickets, and receipts keep their original
 meaning. Selecting `algal` never relabels an old benchmark as an ALGAL run.
 The TypeScript checker in this repository supports `clankdar-algal-v1`. A
 checker that does not recognize the suite must reject its receipts rather than
-accept an unreplayed result. Support in the separate Valhalla Rust
-admission-checker prototype is not claimed.
+accept an unreplayed result. Use the TypeScript checker for this suite.
 
 A program can be solved with code, reasoning, or delegated help. The receipt
 records task performance under an issuer’s conditions; it does not show which

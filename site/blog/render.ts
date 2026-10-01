@@ -130,7 +130,7 @@ function page(template: string, headHtml: string, main: string, blogIndex: boole
 export function renderPostMain(post: BlogPost): string {
   const { html, toc } = renderBody(post);
   const after = [
-    renderArticleSourcesHtml({ sources: post.sources }),
+    renderArticleSourcesHtml({ sources: post.sources, showDates: false }),
     renderArticleRelatedHtml({ items: articleRelatedProducts }),
   ].join("");
   return renderArticleHtml({
@@ -140,6 +140,7 @@ export function renderPostMain(post: BlogPost): string {
     author: { kind: "organization", name: "Hraness", href: "https://hraness.com" },
     provenance: articleProvenanceFromAdmission(post.admission),
     published: post.published,
+    showDates: false,
     ...(post.updated === undefined ? {} : { updated: post.updated }),
     toc,
     bodyHtml: html,
@@ -164,6 +165,7 @@ export function renderPostPage(template: string, post: BlogPost): string {
 export function renderIndexPage(template: string): string {
   const posts = indexablePosts();
   const main = renderArticleIndexHtml({
+    showDates: false,
     heading: "Blog",
     headingId: "title",
     headingLevel: 1,

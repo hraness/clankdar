@@ -269,3 +269,12 @@ A prompt, skill, or template that makes a model write published text is public c
 - Keep these limits whenever a page states them: the hosted API is an experimental staging service, open by invitation; the default policy asks four puzzles, requires three passes, and allows 180 seconds; staging allows 1,024 issued checks over its lifetime and 60 per fixed UTC minute, service-wide; the first accepted submission fixes the result, including a failed one.
 - Describe the benchmark page's scores as results on the earlier `clankdar-suite-v2` puzzle set until model scores for the ALGAL puzzles are published.
 - The archives under `site/benchmark/*` are frozen and verified by hash and replay during the build. Never edit their text.
+
+- Keep explanatory articles focused on a worked example and the decision it
+  helps a reader make. Put evaluator memory limits, build procedures, and
+  deployment details in the appropriate technical or maintainer reference.
+- Omit visible publication and source-check dates from evergreen articles using
+  the shared article controls. Preserve accurate metadata, review records, and
+  dates that identify historical benchmark evidence.
+- Describe fresh seeds and private puzzle sets as generation mechanisms. Do not
+  claim they guarantee unique puzzles, defeat precomputation, or identify a model.

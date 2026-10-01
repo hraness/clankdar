@@ -138,4 +138,4 @@ and result verification.
 - Reference tools: https://github.com/hraness/clankdar/blob/main/docs/reference-tools.md
 - Source: https://github.com/hraness/clankdar
 
-The static site has no tracking, forms, or third-party requests.
+The site uses cookieless analytics with regional consent controls.

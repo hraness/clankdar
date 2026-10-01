@@ -31,25 +31,14 @@ export type BlogPost = Readonly<{
 export const BLOG_PATH = "/blog/";
 
 /** The date the cited sources were last checked against the repository. */
-const SOURCES_CHECKED_ON: ArticleIsoDate = "2026-09-24";
-/** The latest AI editorial review: a line and structure edit on 2026-09-26 that kept every fact. */
+const SOURCES_CHECKED_ON: ArticleIsoDate = "2026-10-01";
+/** Independent source and editorial review of the complete revised bodies. */
 const REVIEW = {
-  reviewer: "Claude Opus 5.5 (claude-opus-5-5) editorial review",
+  reviewer: "Codex",
   reviewerType: "ai",
-  reviewedOn: "2026-09-26",
+  reviewedOn: "2026-10-01",
 } as const;
-
-/**
- * The launch post's independent AI review on 2026-09-30, by an agent that did
- * not draft or edit the post: it scored 10 of 12 with no zero, rechecked every
- * number against site/launch/facts.ts and its code source, and asked for the
- * single status statement and standalone social wording applied the same day.
- */
-const LAUNCH_REVIEW = {
-  reviewer: "Claude Opus 5.5 (claude-opus-5-5) independent AI review",
-  reviewerType: "ai",
-  reviewedOn: "2026-09-30",
-} as const;
+const LAUNCH_REVIEW = REVIEW;
 
 function repo(repository: "clankdar" | "algal", file: string): string {
   return `https://github.com/hraness/${repository}/blob/main/${file}`;
@@ -64,30 +53,20 @@ function admissionSources(sources: readonly ArticleSourceItem[]) {
 }
 
 const introducingSources = [
-  source("Launch facts: every number in the beats and where it comes from", "clankdar", "site/launch/facts.ts", "2026-09-29"),
-  source("Recorded demo, failing and tampered runs behind the mockups", "clankdar", "site/launch/fixtures.ts", "2026-09-29"),
-  source("Offline receipt verifier", "clankdar", "cloudflare/examples/verify-receipt.mjs", "2026-09-29"),
-  source("Clankdar README: what the evidence means, policy and staging limits", "clankdar", "README.md"),
-  source("Clankdar's ALGAL suite (clankdar-algal-v1)", "clankdar", "docs/clankdar-algal-v1.md"),
-  source("ALGAL puzzle generator and reference solver", "clankdar", "ladder/families/algal.ts"),
-  source("Puzzle families and suite versions", "clankdar", "ladder/mod.ts"),
-  source("Replay of recorded runs", "clankdar", "bench/replay.ts"),
-  source("Benchmark and reference tools guide", "clankdar", "docs/reference-tools.md"),
-  source("Model benchmark page", "clankdar", "site/benchmark/index.html"),
+  source("Default policy and worked puzzle", "clankdar", "site/launch/facts.ts"),
+  source("Passing, failing, and edited example results", "clankdar", "site/launch/fixtures.ts"),
+  source("Offline receipt verification", "clankdar", "cloudflare/examples/verify-receipt.mjs"),
+  source("Local setup and hosted access", "clankdar", "README.md"),
+  source("ALGAL puzzle suite", "clankdar", "docs/clankdar-algal-v1.md"),
 ] as const;
 
 const usesSources = [
-  source("ALGAL dependency pinned by commit (@hraness/algal)", "clankdar", "package.json"),
-  source("Puzzle generator; reference answers come from ALGAL execution, never a second implementation", "clankdar", "ladder/families/algal.ts"),
-  source("Evaluator pin: revision, WASM SHA-256, language contract, work budget", "clankdar", "ladder/algal/provenance.ts"),
-  source("Clankdar's ALGAL suite (clankdar-algal-v1): puzzle types, pins, limits, verification, compatibility", "clankdar", "docs/clankdar-algal-v1.md"),
-  source("Hosted default policy algal-floor-v1 and what the evidence means", "clankdar", "README.md"),
-  source("Replay of recorded runs against regenerated puzzles", "clankdar", "bench/replay.ts"),
-  source("Suite versions and frozen pools", "clankdar", "ladder/mod.ts"),
-  source("Exact integer scoring", "clankdar", "ladder/family.ts"),
-  source("Tests: evaluator hash, no host imports, agreement with ALGAL's official loader, scoring cases", "clankdar", "ladder/algal.test.ts"),
-  source("algal.expr.v1 contract: programs as JSON data, one Rust evaluator for every runtime, metered work", "algal", "spec/v1/expr.md"),
-  source("ALGAL README: what ALGAL is", "algal", "README.md"),
+  source("Default puzzle generator and worked example", "clankdar", "ladder/families/algal.ts"),
+  source("Evaluator version and work budget", "clankdar", "ladder/algal/provenance.ts"),
+  source("ALGAL puzzle suite and verification", "clankdar", "docs/clankdar-algal-v1.md"),
+  source("Integer scoring", "clankdar", "ladder/family.ts"),
+  source("Scoring examples and evaluator checks", "clankdar", "ladder/algal.test.ts"),
+  source("Receipt verification and application checks", "clankdar", "cloudflare/examples/verify-receipt.mjs"),
 ] as const;
 
 export const POSTS: readonly BlogPost[] = [
@@ -97,11 +76,11 @@ export const POSTS: readonly BlogPost[] = [
     launch: true,
     title: "Introducing Clankdar",
     dek: "Clankdar tests AI agents on fresh puzzles whose answers a program computes, so no judge model decides whether a reply is right.",
-    cardDek: "Fresh puzzles whose answers a program computes, not a judge model.",
+    cardDek: "Fresh puzzles with computed answers and results you can recheck.",
     eyebrow: "Introducing",
     cardEyebrow: "Release",
     published: "2026-09-24",
-    updated: "2026-09-30",
+    updated: "2026-10-01",
     tags: ["agents", "benchmarks", "evaluation", "algal"],
     sources: introducingSources,
     admission: {
@@ -114,7 +93,7 @@ export const POSTS: readonly BlogPost[] = [
       nearestUrls: [
         { url: "/", distinction: "The homepage lets a reader try a puzzle; the post explains why the scoring needs no judge and who should use it." },
         { url: "/docs/", distinction: "The docs are the integration reference; the post is the reasoning and first run, and links to the docs for limits." },
-        { url: "/benchmark/", distinction: "The benchmark page holds recorded scores; the post says which puzzle set those scores come from." },
+        { url: "/benchmark/", distinction: "The benchmark page compares recorded model responses; the introduction explains an individual check and its result." },
       ],
       sources: admissionSources(introducingSources),
       observations: [
@@ -122,7 +101,7 @@ export const POSTS: readonly BlogPost[] = [
         "The mockups render values from recorded bun run try runs in site/launch/fixtures; launch.test.ts verifies the passing and failing receipts with the repository verifier and confirms the tampered one is rejected.",
         "The staging limits after the beats match the limits STYLE.md requires every Clankdar page to keep whenever it states them.",
       ],
-      scores: { readerUtility: 2, originalEvidence: 2, factualConfidence: 2, hostFit: 2, voiceIntegrity: 1, maintenanceValue: 1 },
+      scores: { readerUtility: 2, originalEvidence: 2, factualConfidence: 2, hostFit: 2, voiceIntegrity: 1, maintenanceValue: 2 },
       owner: "Hraness",
       drafting: "ai-from-source",
       review: LAUNCH_REVIEW,
@@ -146,11 +125,12 @@ export const POSTS: readonly BlogPost[] = [
     slug: "how-clankdar-uses-algal",
     path: "/blog/how-clankdar-uses-algal",
     title: "How Clankdar uses ALGAL for reference answers",
-    dek: "ALGAL's own evaluator, pinned by commit and WebAssembly hash, computes the reference answer for every default Clankdar puzzle.",
+    dek: "Clankdar uses ALGAL to compute puzzle answers and reproduce their scores from a recorded set of rules.",
     cardDek: "ALGAL computes each default puzzle's answer.",
     cardTitle: "How Clankdar uses ALGAL",
     eyebrow: "Integration",
     published: "2026-09-24",
+    updated: "2026-10-01",
     tags: ["clankdar", "algal", "evaluation", "benchmarks", "replay", "agents"],
     sources: usesSources,
     admission: {
@@ -167,9 +147,9 @@ export const POSTS: readonly BlogPost[] = [
       sources: admissionSources(usesSources),
       observations: [
         "The scoring table's four cases are taken from Clankdar's own test file rather than restated from the spec.",
-        "The post names the 16 MiB figure as a check on retained memory, not a peak-use limit.",
+        "The worked example returns 34; the suite fixes its evaluator and generation rules so a recorded puzzle can be regenerated.",
       ],
-      scores: { readerUtility: 2, originalEvidence: 1, factualConfidence: 2, hostFit: 2, voiceIntegrity: 2, maintenanceValue: 1 },
+      scores: { readerUtility: 2, originalEvidence: 1, factualConfidence: 2, hostFit: 2, voiceIntegrity: 2, maintenanceValue: 2 },
       owner: "Hraness",
       drafting: "ai-from-source",
       review: REVIEW,
@@ -182,7 +162,6 @@ export const POSTS: readonly BlogPost[] = [
         "A new suite name replacing clankdar-algal-v1, or a change to its three puzzle types (docs/clankdar-algal-v1.md, ladder/mod.ts)",
         "Change to algal-floor-v1 (four puzzles, three correct, 180 seconds) or to receipt and signed-record behavior (README.md)",
         "Change to integer scoring cases (ladder/family.ts, ladder/algal.test.ts) or replay rules (bench/replay.ts)",
-        "Change to the 64 KiB request and response caps or the 16 MiB retained-memory check",
         "Publication of ALGAL model scores on the benchmark page, or a Clankdar status change from Preview",
         "algal.computer/blog/built-on-algal or hraness.com/reference/correctness/verifying-receipts-offline going live",
         "Change to the worked example's Bun version or commands, or a rename of Clankdar or ALGAL",

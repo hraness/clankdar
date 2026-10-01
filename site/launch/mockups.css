@@ -5,6 +5,7 @@
  * so they follow the page's light or dark scheme the same way.
  */
 .hkm-cdm-card {
+  container-type: inline-size;
   border-radius: 14px;
   background: var(--hkm-card);
   box-shadow: var(--hkm-shadow);
@@ -13,7 +14,8 @@
   font-family: var(--hkm-font);
 }
 
-.cdm-sheet { display: grid; gap: 12px; padding: 20px 22px; }
+.cdm-sheet { display: grid; grid-template-columns: minmax(0, 1fr); gap: 12px; padding: 20px 22px; overflow-wrap: anywhere; }
+.cdm-sheet > * { min-inline-size: 0; }
 .cdm-label { margin: 0; color: var(--hkm-muted); font-size: 12px; font-weight: 600; letter-spacing: 0.02em; }
 .cdm-question { margin: 0; font-size: 17px; line-height: 1.45; }
 .cdm-headline { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: 0; font-size: 17px; font-weight: 600; }
@@ -46,12 +48,12 @@
 .cdm-inputs dt { min-width: 4.5em; color: var(--hkm-muted); font-family: var(--hkm-mono); font-size: 13px; }
 .cdm-inputs dd { margin: 0; }
 
-.cdm-table { width: 100%; border-collapse: collapse; font-size: 14px; }
+.cdm-table { width: 100%; table-layout: fixed; border-collapse: collapse; font-size: 14px; }
 .cdm-table th { padding: 6px 8px; border-bottom: 1px solid var(--hkm-line); color: var(--hkm-muted); font-size: 12px; font-weight: 600; text-align: left; }
 .cdm-table td { padding: 7px 8px; border-bottom: 1px solid var(--hkm-line); }
 .cdm-table tr:last-child td { border-bottom: 0; }
 
-.cdm-columns { display: grid; grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr)); gap: 16px; }
+.cdm-columns { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 12rem), 1fr)); gap: 16px; }
 .cdm-list { display: grid; gap: 6px; margin: 6px 0 0; padding-left: 18px; font-size: 14px; }
 .cdm-list[data-tone="ok"] li::marker { color: var(--hkm-ok); }
 .cdm-list[data-tone="muted"] { color: var(--hkm-muted); }
@@ -65,5 +67,15 @@
 
 @media (max-width: 480px) {
   .cdm-sheet, .cdm-listing { padding: 16px; }
-  .cdm-table th:first-child, .cdm-table td:first-child { white-space: nowrap; }
+}
+
+/* Keep each score intact when a narrow card cannot support four columns. */
+.cdm-cell-label { display: none; }
+.cdm-tier { white-space: nowrap; }
+@container (max-width: 20rem) {
+  .cdm-table, .cdm-table tbody { display: block; }
+  .cdm-table thead { position: absolute; inline-size: 1px; block-size: 1px; margin: -1px; overflow: hidden; clip-path: inset(50%); }
+  .cdm-table tr { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; padding-block: 12px; border-top: 1px solid var(--hkm-line); }
+  .cdm-table td { display: grid; align-content: start; justify-items: start; gap: 4px; min-inline-size: 0; padding: 0; border: 0; }
+  .cdm-cell-label { display: block; color: var(--hkm-muted); font-size: 12px; font-weight: 600; line-height: 1.4; }
 }

@@ -89,22 +89,19 @@ an ALGAL receipt needs a checker that recognizes `clankdar-algal-v1` and its
 pinned evaluator. The top-level score fields repeat values from the signed
 payload for convenience.
 
-The API accepts a result when its create-only R2 write succeeds. Concurrent
-submissions cannot replace it. Every later valid retry returns the first
-committed result, even if the retry supplies different answers. The API
-never returns a locally generated candidate that lost a storage race.
+The first successfully stored result is final. Concurrent submissions cannot
+replace it. Every later valid retry returns that result, even if the retry
+supplies different answers.
 
 If storage fails before acceptance, keep the ticket and answers and retry
 within the original deadline. If a write's outcome is uncertain, the API
 first attempts to recover the stored result. A committed result can be
 recovered after expiry with its valid ticket, or through the public GET.
-There is no background session outbox on this path. An expired, uncommitted
-ticket cannot create a new result.
+An expired ticket cannot create a result that was not already stored.
 
 ## Retrieve, retain, and verify
 
-`GET /v1/checks/:id` returns the exact canonical JSON admission bytes stored
-in R2. It requires no token. A successful response is immutable, carries a
+`GET /v1/checks/:id` returns the exact stored JSON receipt. It requires no token. A successful response is immutable, carries a
 SHA-256 ETag, and can be downloaded or cached. The submission response's
 `sha256` hashes these exact bytes, not the submission wrapper or a
 pretty-printed copy. A 404 means **no committed result**; it does not prove
@@ -142,19 +139,10 @@ must keep its own schedule, issued checks, timeouts, and misses.
 
 ## Storage and operational limits
 
-Each completed check is stored as **one JSON receipt** in the
-`clankdar-evidence-staging` R2 bucket at `checks/<id>.json`. The receipt
-embeds its challenge receipts; no separate receipt objects are written. The
-first successful conditional write becomes the result. The stored receipt is
-immutable and hash-verifiable, but its key is the check ID, not its content
-hash.
-
-Issuance returns an AES-GCM sealed ticket containing the temporary secret
-session. Its authenticated context binds the protocol, environment, issuer,
-and check ID; its encrypted data binds the policy, deadline, and optional
-subject/context. Issuing a check creates no per-check database row or session
-object. One atomic counter in the staging D1 database enforces the issuance
-limits below; it is separate from receipt storage.
+Each completed check has one immutable JSON receipt, including its per-puzzle
+receipts. The ticket binds the check to its policy, deadline, and optional
+subject and context. Keep it private until you have recovered the result or
+it expires.
 
 - Standalone checks share a lifetime limit of 1,024 issued checks and a limit
   of 60 issues per fixed UTC minute. Failed issuance after reservation may consume a
@@ -170,20 +158,3 @@ limits below; it is separate from receipt storage.
 
 Staging has not been load-tested, and its throughput and per-check costs
 have not been measured. Don’t plan production traffic around it.
-
-## Deployment and recovery
-
-The Worker checks invitation tokens against its `REGISTRATION_TOKEN` secret.
-Apply the additive standalone-quota D1 migration before deploying this API.
-It creates a new counter table and leaves actor/anchor data untouched. Keep
-the existing issuer and wrapping secrets, Cloudflare identities, and R2
-bucket. Do not reset counters or overwrite receipt keys. Old `sha256/*`
-evidence, actor events, campaigns, and public pages remain intact.
-
-Before migration, inspect the exact database and preserve an export/recovery
-point. Old code can be restored while leaving the additive quota table and
-any new receipts in place. After deployment, verify issuer continuity,
-passing/failing checks, contradictory concurrent submissions, retry after
-expiry, exact receipt hashes, independent replay, and preservation across a
-redeploy. Qualification controls must be labeled as scripted, not reported
-as model benchmark results.

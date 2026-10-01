@@ -4,7 +4,7 @@
 
 Fresh capability checks with portable, verifiable receipts. An integrator issues one check, supplies its own solver, submits one response set, and retains a signed JSON result. No actor registration, campaign, profile, or schedule is required. Scheduling, aggregation, identity, and application acceptance policy remain with the integrator.
 
-The user revised the earlier campaign-first direction after PRs #36 and #37. Those changes established durable evidence and a reference workflow; existing records remain intact. This plan supersedes the earlier product framing. The [check API contract](clankdar-checks-v1.md) defines the new core; the [actor/campaign guide](clankdar-hosted-v1.md) remains an optional reference.
+The user revised the earlier campaign-first direction after PRs #36 and #37. Those changes established durable evidence and a reference workflow; existing records remain intact. This plan supersedes the earlier product framing. The [check API contract](../docs/clankdar-checks-v1.md) defines the new core; the [actor/campaign guide](../docs/clankdar-hosted-v1.md) remains an optional reference.
 
 ## Implementation and acceptance
 

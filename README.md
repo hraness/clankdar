@@ -4,7 +4,7 @@ Clankdar checks what AI agents can solve. Each check gives your agent fresh puzz
 
 **Preview.** [Try a puzzle in your browser](https://clankdar.com/#try). No install or signup. [Docs](https://clankdar.com/docs/) · [Model benchmark](https://clankdar.com/benchmark/)
 
-Use it where you accept or rank agents, or before you ship a changed agent. A reverse CAPTCHA such as [HATCHA](https://github.com/mondaycom/HATCHA) shows that software answered, and a fixed benchmark may already be in a model's training data. A Clankdar check draws new puzzles every time and leaves a signed record anyone can rescore. [Compare approaches](https://clankdar.com/docs/#comparison).
+Use a recorded check when reviewing an agent for a job, comparing versions, or adding evidence to a listing. Your application decides which puzzle policy fits the task and which issuers to trust. [Compare approaches](https://clankdar.com/docs/#comparison).
 
 ## Make your first receipt
 
@@ -100,7 +100,7 @@ bun bench --adapter oracle --seeds 1-10 --out results/oracle-first.jsonl
 
 `oracle` checks the runner with known answers. Model calls default to a dry run and require explicit execution and request budgets. The [reference tools guide](docs/reference-tools.md) covers adapters, run settings, and result verification.
 
-Clankdar is built on the design every Hraness project shares: a receipt records the submitted answers under a policy and deadline, so the check leaves a record your application can verify, and the default puzzles are small programs in ALGAL's expression language. [The thread through hraness](https://hraness.com/writing/the-thread-through-hraness) follows that design across the projects, and the [ALGAL vision](https://algal.computer/docs/vision/) states the bet behind it.
+Read [how Clankdar uses ALGAL](https://clankdar.com/blog/how-clankdar-uses-algal) to understand how reference answers are computed and reproduced.
 
 For contributors: `bun run check` runs the typechecks, tests, and site build. See [AGENTS.md](AGENTS.md) for browser validation and delivery requirements.
 

@@ -102,7 +102,7 @@ const result = await check({
 await writeFile("receipt.json", result.receiptText);
 console.log(result.receiptUrl);</code></pre>
           <p>The helper issues a check, passes its prompts to your solver, submits the answers, and downloads the signed receipt. You choose the provider your solver calls and pay its costs. Keep the token, and the one-time ticket each check returns, out of browser code. Submitted answers and any <code>context</code> you send become public.</p>
-          <p>The helper checks that the receipt it downloads matches the result returned when you submitted. That doesn’t tell you the issuer is one you trust, or that the check passed, so <a href="#verification">verify the receipt before relying on it</a>.</p>
+          <p>The helper checks that the receipt it downloads matches the result returned when you submitted. Before accepting the result, <a href="#verification">verify it against an issuer key you trust and check that it passed your required policy</a>.</p>
           <details class="report-details"><summary>Recover a submission after a connection failure</summary><p>The first accepted submission fixes the result, even when it fails. Retry that submission to recover the result; creating another check consumes another quota slot. Use the helper’s optional <code>onIssued(record)</code> and <code>checkpoint(record)</code> callbacks to save the ticket privately before solving and the answers before submitting. The <a href="https://github.com/hraness/clankdar/blob/main/cloudflare/examples/check.mjs">helper source</a> and <a href="https://github.com/hraness/clankdar/blob/main/docs/clankdar-checks-v1.md">API contract</a> describe the records and retry behavior.</p></details>
         </section>
 
@@ -183,22 +183,22 @@ jq &#x27;{id, pass, passed, required, receiptUrl, sha256}&#x27; result.json</cod
 
         <section class="doc-section" id="comparison" aria-labelledby="comparison-title">
           <h2 id="comparison-title">How Clankdar compares.</h2>
-          <p>Pick by the question you need answered. Web Bot Auth tells you which registered agent is calling. A reverse CAPTCHA lets software through a form. LiveBench and Reasoning Gym compare models across many task types. Clankdar records which fresh puzzles your own agent solved, in a signed receipt anyone can rescore.</p>
+          <p>Choose according to the decision you need to make: assess traffic, verify a signed request, or evaluate answers to tasks. Clankdar records which generated puzzles were solved and gives you a signed result to rescore.</p>
           <div class="table-scroll" role="region" aria-label="Clankdar compared with other agent checks and benchmarks" tabindex="0">
             <table class="ladder-table comparison-table">
               <thead><tr><th scope="col">Approach</th><th scope="col">What it tells you</th><th scope="col">Use it when</th></tr></thead>
               <tbody>
                 <tr><th scope="row"><a href="https://developers.cloudflare.com/turnstile/">Turnstile</a> / <a href="https://docs.cloud.google.com/recaptcha/docs/interpret-assessment-website">reCAPTCHA</a></th><td>Browser and interaction risk signals for legitimate traffic versus automation.</td><td>You want to keep automated traffic out of a form meant for people.</td></tr>
                 <tr><th scope="row"><a href="https://github.com/TecharoHQ/anubis/blob/main/docs/docs/design/why-proof-of-work.mdx">Proof-of-work</a></th><td>The requester spent computation, such as finding a hash nonce.</td><td>You want to slow bulk scraping without accounts.</td></tr>
-                <tr><th scope="row"><a href="https://developers.cloudflare.com/bots/reference/bot-verification/web-bot-auth/">Web Bot Auth</a></th><td>A registered agent key signed the request.</td><td>You need to know which operator’s agent is calling.</td></tr>
+                <tr><th scope="row"><a href="https://developers.cloudflare.com/bots/reference/bot-verification/web-bot-auth/">Web Bot Auth</a></th><td>A registered agent key signed the request.</td><td>You need to verify a request against a registered agent key.</td></tr>
                 <tr><th scope="row">Reverse CAPTCHAs: <a href="https://github.com/mondaycom/HATCHA">HATCHA</a>, <a href="https://github.com/leopechnicki/im_robot">imrobot</a></th><td>Software answered a quick challenge, such as multiplying two large numbers, before a timer ran out.</td><td>You want agents through a signup form with a drop-in widget.</td></tr>
                 <tr><th scope="row"><a href="https://livebench.ai/">LiveBench</a></th><td>Scores for public models on regularly released new questions.</td><td>You want a broad comparison of public models.</td></tr>
                 <tr><th scope="row"><a href="https://github.com/open-thought/reasoning-gym">Reasoning Gym</a></th><td>Generated reasoning tasks with answer checkers, built for reinforcement learning.</td><td>You need training data or many task families.</td></tr>
-                <tr class="clankdar-row"><th scope="row">Clankdar</th><td>Specific fresh tasks passed, with signed evidence you can independently replay.</td><td>You need a dated record of what your agent solved.</td></tr>
+                <tr class="clankdar-row"><th scope="row">Clankdar</th><td>Specific fresh tasks passed, with signed evidence you can independently replay.</td><td>You need a record of which puzzles your agent solved.</td></tr>
               </tbody>
             </table>
           </div>
-          <p class="note">HATCHA and imrobot ship npm packages you can install today. Clankdar has no packaged release, and its hosted API is an experimental staging service, open by invitation. Any puzzle, including a reverse CAPTCHA’s, can be solved with code or handed to someone else; see <a href="#security">what a check establishes</a>. Checked September 28, 2026.</p>
+          <p>For integration requirements, follow each project’s documentation. Clankdar’s <a href="#quickstart">local demo</a> runs from source; its hosted API is an experimental staging service, open by invitation.</p>
         </section>
 
         <section class="doc-section" id="limits" aria-labelledby="limits-title">
