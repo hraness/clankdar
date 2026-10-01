@@ -21,7 +21,7 @@
 * { box-sizing: border-box; }
 body { margin: 0; }
 ::selection { background: var(--selected); color: var(--ink); }
-a { color: inherit; text-decoration-thickness: 1px; text-underline-offset: 5px; }
+a { color: inherit; text-decoration-style: dotted; text-decoration-color: color-mix(in srgb, currentColor 40%, transparent); text-decoration-thickness: 1px; text-underline-offset: 5px; }
 a:hover { color: var(--focus); }
 a:focus-visible { outline: 2px solid var(--focus); outline-offset: 4px; border-radius: 2px; }
 p, h1, h2, h3, dl, dd, ul, ol, pre, table { margin: 0; }
@@ -64,7 +64,7 @@ main { flex: 1; min-width: 0; }
 h1 { font-family: var(--font-text); font-size: clamp(2.25rem, 1.2rem + 4.4vw, 4.25rem); line-height: 1.05; font-weight: 550; letter-spacing: -0.035em; text-wrap: balance; }
 .title-accent { font-weight: 400; color: var(--focus); }
 .description { margin-top: 24px; max-width: 34rem; font-size: 20px; line-height: 1.55; color: var(--muted); }
-.hero-facts { margin-top: 24px; color: var(--muted); font-size: 13px; line-height: 1.6; }
+.local-install { border-color: color-mix(in srgb, var(--primary) 45%, var(--line)); box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 8%, transparent); }
 
 /* Home: the practice puzzle is the proof beside the hero. */
 .room { align-self: center; min-width: 0; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); }
