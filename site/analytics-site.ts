@@ -1,5 +1,7 @@
 import { type PostHogSiteDefinition, POSTHOG_SCHEMA_VERSION } from "@hraness/posthog";
 
+const privatePaths = [{ match: "prefix", path: "/account" }, { match: "prefix", path: "/auth" }] as const;
+
 export const analyticsSite = {
   id: "clankdar",
   canonicalDomain: "clankdar.com",
@@ -11,7 +13,8 @@ export const analyticsSite = {
     { match: "prefix", path: "/benchmark", pageKind: "research" },
     { match: "prefix", path: "/blog", pageKind: "article", contentGroup: "blog", captureSlug: true },
   ],
-  sensitivePaths: [{ match: "prefix", path: "/account" }, { match: "prefix", path: "/auth" }],
+  sensitivePaths: privatePaths,
+  excludedPaths: privatePaths,
   customEvents: ["cta clicked", "outbound link opened", "download started"],
 } as const satisfies PostHogSiteDefinition;
 

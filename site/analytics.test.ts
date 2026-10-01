@@ -13,6 +13,13 @@ test("routes retain public paths and reject preview hosts", () => {
   expect(classifyAnalyticsRoute(analyticsSite, "https://clankdar.com/blog/example")?.content_slug).toBe("example");
   expect(classifyAnalyticsRoute(analyticsSite, "https://clankdar-preview.vercel.app/")).toBeNull();
 });
+
+test("private account and authentication paths never produce analytics routes", () => {
+  for (const path of ["/account", "/account/private-canary", "/a%63count/private-canary", "/auth", "/auth/callback"]) {
+    expect(classifyAnalyticsRoute(analyticsSite, `https://clankdar.com${path}`)).toBeNull();
+  }
+  expect(classifyAnalyticsRoute(analyticsSite, "https://clankdar.com/docs/")?.page_kind).toBe("docs");
+});
 test("every page-writing path adds analytics, including the 404", () => {
   const build = readFileSync(new URL("./build.ts", import.meta.url), "utf8");
   expect(build.match(/withAnalytics\(html\.replace/g)?.length).toBe(2);
