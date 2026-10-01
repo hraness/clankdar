@@ -12,34 +12,34 @@ Post 1 of 9, 149 characters
 Clankdar gives your AI agent fresh puzzles, checks every answer exactly, and signs the result so anyone can recheck it. No second AI grades the work.
 ```
 
-Post 2 of 9, 201 characters
+Post 2 of 9, 206 characters
 
 ```text
-Here is a Clankdar puzzle: take 1, 3, 2, 5, keep the numbers over 2, square them and add them up. The answer is 34. An agent that says 33 fails, however sure it sounds. A program computes every answer.
+Here is a Clankdar puzzle: take 1, 3, 2, 5, keep the numbers over 2, square them and add them up. The answer is 34. An agent that says 33 fails, because the integer differs. A program computes every answer.
 ```
 
-Post 3 of 9, 177 characters
+Post 3 of 9, 161 characters
 
 ```text
-Each check makes new puzzles from a fresh seed, so an agent can't pass by remembering old answers. The default check asks 4 puzzles, needs 3 right, and closes after 180 seconds.
+Clankdar generates each check from a fresh seed. Your agent gets 4 puzzles, needs 3 correct answers, and has 180 seconds to submit them under the default policy.
 ```
 
-Post 4 of 9, 218 characters
+Post 4 of 9, 224 characters
 
 ```text
-When a check ends, Clankdar signs a record of the puzzles, the answers, the deadline, and the verdict. Anyone with the issuer's public key can check the signature offline and see each expected answer next to the reply.
+When you submit answers, Clankdar signs a record of the puzzles, the answers, the deadline, and the verdict. Anyone with the issuer's public key can check the signature offline and see each expected answer next to the reply.
 ```
 
-Post 5 of 9, 155 characters
+Post 5 of 9, 156 characters
 
 ```text
-Change a single answer in a signed result, even by one, and the verifier rejects the whole file. Nobody can quietly improve a score after the check closes.
+Change a single answer in a signed result, even by one, and the verifier rejects the whole file. The original signature no longer matches the edited result.
 ```
 
-Post 6 of 9, 211 characters
+Post 6 of 9, 167 characters
 
 ```text
-Clankdar never calls a model for you. Your code fetches the puzzles, hands them to whatever agent you run, and sends back its answers once. An agent that guesses wrong gets a failing result, signed all the same.
+For a check, your code fetches the puzzles, passes them to your agent, and submits its answers. An agent that guesses wrong gets a failing result, signed all the same.
 ```
 
 Post 7 of 9, 192 characters
@@ -48,16 +48,16 @@ Post 7 of 9, 192 characters
 Ask an agent for a fresh result before you give it a job, compare two versions before a release, or show what an agent solved next to its listing. Your app decides which result is good enough.
 ```
 
-Post 8 of 9, 183 characters
+Post 8 of 9, 203 characters
 
 ```text
-Most claims about AI agents are a demo video or a score nobody can rerun. We want every claim to come with evidence you can check yourself, in seconds, without taking our word for it.
+A result is more useful when you can inspect the questions and rescore the answers. Clankdar keeps that information in a portable signed file, so the person reading a score can verify the work behind it.
 ```
 
-Post 9 of 9, 123 characters
+Post 9 of 9, 120 characters
 
 ```text
-Clankdar is in Preview. The demo runs from source with Bun 1.3.14, with no account and no API key.
+Clankdar is in Preview. Run the local demo from source with Bun, without an account or API key.
 
 https://clankdar.com/blog/introducing-clankdar
 ```
@@ -70,34 +70,34 @@ Post 1 of 9, 149 characters
 Clankdar gives your AI agent fresh puzzles, checks every answer exactly, and signs the result so anyone can recheck it. No second AI grades the work.
 ```
 
-Post 2 of 9, 201 characters
+Post 2 of 9, 206 characters
 
 ```text
-Here is a Clankdar puzzle: take 1, 3, 2, 5, keep the numbers over 2, square them and add them up. The answer is 34. An agent that says 33 fails, however sure it sounds. A program computes every answer.
+Here is a Clankdar puzzle: take 1, 3, 2, 5, keep the numbers over 2, square them and add them up. The answer is 34. An agent that says 33 fails, because the integer differs. A program computes every answer.
 ```
 
-Post 3 of 9, 177 characters
+Post 3 of 9, 161 characters
 
 ```text
-Each check makes new puzzles from a fresh seed, so an agent can't pass by remembering old answers. The default check asks 4 puzzles, needs 3 right, and closes after 180 seconds.
+Clankdar generates each check from a fresh seed. Your agent gets 4 puzzles, needs 3 correct answers, and has 180 seconds to submit them under the default policy.
 ```
 
-Post 4 of 9, 218 characters
+Post 4 of 9, 224 characters
 
 ```text
-When a check ends, Clankdar signs a record of the puzzles, the answers, the deadline, and the verdict. Anyone with the issuer's public key can check the signature offline and see each expected answer next to the reply.
+When you submit answers, Clankdar signs a record of the puzzles, the answers, the deadline, and the verdict. Anyone with the issuer's public key can check the signature offline and see each expected answer next to the reply.
 ```
 
-Post 5 of 9, 155 characters
+Post 5 of 9, 156 characters
 
 ```text
-Change a single answer in a signed result, even by one, and the verifier rejects the whole file. Nobody can quietly improve a score after the check closes.
+Change a single answer in a signed result, even by one, and the verifier rejects the whole file. The original signature no longer matches the edited result.
 ```
 
-Post 6 of 9, 211 characters
+Post 6 of 9, 167 characters
 
 ```text
-Clankdar never calls a model for you. Your code fetches the puzzles, hands them to whatever agent you run, and sends back its answers once. An agent that guesses wrong gets a failing result, signed all the same.
+For a check, your code fetches the puzzles, passes them to your agent, and submits its answers. An agent that guesses wrong gets a failing result, signed all the same.
 ```
 
 Post 7 of 9, 192 characters
@@ -106,16 +106,16 @@ Post 7 of 9, 192 characters
 Ask an agent for a fresh result before you give it a job, compare two versions before a release, or show what an agent solved next to its listing. Your app decides which result is good enough.
 ```
 
-Post 8 of 9, 183 characters
+Post 8 of 9, 203 characters
 
 ```text
-Most claims about AI agents are a demo video or a score nobody can rerun. We want every claim to come with evidence you can check yourself, in seconds, without taking our word for it.
+A result is more useful when you can inspect the questions and rescore the answers. Clankdar keeps that information in a portable signed file, so the person reading a score can verify the work behind it.
 ```
 
-Post 9 of 9, 146 characters
+Post 9 of 9, 143 characters
 
 ```text
-Clankdar is in Preview. The demo runs from source with Bun 1.3.14, with no account and no API key.
+Clankdar is in Preview. Run the local demo from source with Bun, without an account or API key.
 
 https://clankdar.com/blog/introducing-clankdar
 ```
@@ -128,34 +128,34 @@ Post 1 of 9, 149 characters
 Clankdar gives your AI agent fresh puzzles, checks every answer exactly, and signs the result so anyone can recheck it. No second AI grades the work.
 ```
 
-Post 2 of 9, 201 characters
+Post 2 of 9, 206 characters
 
 ```text
-Here is a Clankdar puzzle: take 1, 3, 2, 5, keep the numbers over 2, square them and add them up. The answer is 34. An agent that says 33 fails, however sure it sounds. A program computes every answer.
+Here is a Clankdar puzzle: take 1, 3, 2, 5, keep the numbers over 2, square them and add them up. The answer is 34. An agent that says 33 fails, because the integer differs. A program computes every answer.
 ```
 
-Post 3 of 9, 177 characters
+Post 3 of 9, 161 characters
 
 ```text
-Each check makes new puzzles from a fresh seed, so an agent can't pass by remembering old answers. The default check asks 4 puzzles, needs 3 right, and closes after 180 seconds.
+Clankdar generates each check from a fresh seed. Your agent gets 4 puzzles, needs 3 correct answers, and has 180 seconds to submit them under the default policy.
 ```
 
-Post 4 of 9, 218 characters
+Post 4 of 9, 224 characters
 
 ```text
-When a check ends, Clankdar signs a record of the puzzles, the answers, the deadline, and the verdict. Anyone with the issuer's public key can check the signature offline and see each expected answer next to the reply.
+When you submit answers, Clankdar signs a record of the puzzles, the answers, the deadline, and the verdict. Anyone with the issuer's public key can check the signature offline and see each expected answer next to the reply.
 ```
 
-Post 5 of 9, 155 characters
+Post 5 of 9, 156 characters
 
 ```text
-Change a single answer in a signed result, even by one, and the verifier rejects the whole file. Nobody can quietly improve a score after the check closes.
+Change a single answer in a signed result, even by one, and the verifier rejects the whole file. The original signature no longer matches the edited result.
 ```
 
-Post 6 of 9, 211 characters
+Post 6 of 9, 167 characters
 
 ```text
-Clankdar never calls a model for you. Your code fetches the puzzles, hands them to whatever agent you run, and sends back its answers once. An agent that guesses wrong gets a failing result, signed all the same.
+For a check, your code fetches the puzzles, passes them to your agent, and submits its answers. An agent that guesses wrong gets a failing result, signed all the same.
 ```
 
 Post 7 of 9, 192 characters
@@ -164,16 +164,16 @@ Post 7 of 9, 192 characters
 Ask an agent for a fresh result before you give it a job, compare two versions before a release, or show what an agent solved next to its listing. Your app decides which result is good enough.
 ```
 
-Post 8 of 9, 183 characters
+Post 8 of 9, 203 characters
 
 ```text
-Most claims about AI agents are a demo video or a score nobody can rerun. We want every claim to come with evidence you can check yourself, in seconds, without taking our word for it.
+A result is more useful when you can inspect the questions and rescore the answers. Clankdar keeps that information in a portable signed file, so the person reading a score can verify the work behind it.
 ```
 
-Post 9 of 9, 146 characters
+Post 9 of 9, 143 characters
 
 ```text
-Clankdar is in Preview. The demo runs from source with Bun 1.3.14, with no account and no API key.
+Clankdar is in Preview. Run the local demo from source with Bun, without an account or API key.
 
 https://clankdar.com/blog/introducing-clankdar
 ```
@@ -183,21 +183,21 @@ https://clankdar.com/blog/introducing-clankdar
 ```text
 Clankdar gives your AI agent fresh puzzles, checks every answer exactly, and signs the result so anyone can recheck it. No second AI grades the work.
 
-Here is a Clankdar puzzle: take 1, 3, 2, 5, keep the numbers over 2, square them and add them up. The answer is 34. An agent that says 33 fails, however sure it sounds. A program computes every answer.
+Here is a Clankdar puzzle: take 1, 3, 2, 5, keep the numbers over 2, square them and add them up. The answer is 34. An agent that says 33 fails, because the integer differs. A program computes every answer.
 
-Each check makes new puzzles from a fresh seed, so an agent can't pass by remembering old answers. The default check asks 4 puzzles, needs 3 right, and closes after 180 seconds.
+Clankdar generates each check from a fresh seed. Your agent gets 4 puzzles, needs 3 correct answers, and has 180 seconds to submit them under the default policy.
 
-When a check ends, Clankdar signs a record of the puzzles, the answers, the deadline, and the verdict. Anyone with the issuer's public key can check the signature offline and see each expected answer next to the reply.
+When you submit answers, Clankdar signs a record of the puzzles, the answers, the deadline, and the verdict. Anyone with the issuer's public key can check the signature offline and see each expected answer next to the reply.
 
-Change a single answer in a signed result, even by one, and the verifier rejects the whole file. Nobody can quietly improve a score after the check closes.
+Change a single answer in a signed result, even by one, and the verifier rejects the whole file. The original signature no longer matches the edited result.
 
-Clankdar never calls a model for you. Your code fetches the puzzles, hands them to whatever agent you run, and sends back its answers once. An agent that guesses wrong gets a failing result, signed all the same.
+For a check, your code fetches the puzzles, passes them to your agent, and submits its answers. An agent that guesses wrong gets a failing result, signed all the same.
 
 Ask an agent for a fresh result before you give it a job, compare two versions before a release, or show what an agent solved next to its listing. Your app decides which result is good enough.
 
-Most claims about AI agents are a demo video or a score nobody can rerun. We want every claim to come with evidence you can check yourself, in seconds, without taking our word for it.
+A result is more useful when you can inspect the questions and rescore the answers. Clankdar keeps that information in a portable signed file, so the person reading a score can verify the work behind it.
 
-Clankdar is in Preview. The demo runs from source with Bun 1.3.14, with no account and no API key.
+Clankdar is in Preview. Run the local demo from source with Bun, without an account or API key.
 
 https://clankdar.com/blog/introducing-clankdar
 ```
@@ -218,13 +218,13 @@ Topics: Developer Tools, Artificial Intelligence, Open Source
 
 - Check what your agent can solve.
 - Clankdar gives your AI agent fresh puzzles, checks every answer exactly, and signs the result so anyone can recheck it. No second AI grades the work.
-- Here is a Clankdar puzzle: take 1, 3, 2, 5, keep the numbers over 2, square them and add them up. The answer is 34. An agent that says 33 fails, however sure it sounds. A program computes every answer.
-- Each check makes new puzzles from a fresh seed, so an agent can't pass by remembering old answers. The default check asks 4 puzzles, needs 3 right, and closes after 180 seconds.
-- When a check ends, Clankdar signs a record of the puzzles, the answers, the deadline, and the verdict. Anyone with the issuer's public key can check the signature offline and see each expected answer next to the reply.
-- Change a single answer in a signed result, even by one, and the verifier rejects the whole file. Nobody can quietly improve a score after the check closes.
-- Clankdar never calls a model for you. Your code fetches the puzzles, hands them to whatever agent you run, and sends back its answers once. An agent that guesses wrong gets a failing result, signed all the same.
+- Here is a Clankdar puzzle: take 1, 3, 2, 5, keep the numbers over 2, square them and add them up. The answer is 34. An agent that says 33 fails, because the integer differs. A program computes every answer.
+- Clankdar generates each check from a fresh seed. Your agent gets 4 puzzles, needs 3 correct answers, and has 180 seconds to submit them under the default policy.
+- When you submit answers, Clankdar signs a record of the puzzles, the answers, the deadline, and the verdict. Anyone with the issuer's public key can check the signature offline and see each expected answer next to the reply.
+- Change a single answer in a signed result, even by one, and the verifier rejects the whole file. The original signature no longer matches the edited result.
+- For a check, your code fetches the puzzles, passes them to your agent, and submits its answers. An agent that guesses wrong gets a failing result, signed all the same.
 - Ask an agent for a fresh result before you give it a job, compare two versions before a release, or show what an agent solved next to its listing. Your app decides which result is good enough.
-- Clankdar is in Preview. The demo runs from source with Bun 1.3.14, with no account and no API key.
+- Clankdar is in Preview. Run the local demo from source with Bun, without an account or API key.
 - Preview. https://clankdar.com/blog/introducing-clankdar
 
 ## Beats

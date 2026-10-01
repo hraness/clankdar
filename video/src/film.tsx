@@ -31,7 +31,7 @@ export const FILM_COPY: FilmCopy = Object.freeze({
   steps: [
     {
       heading: "A fresh puzzle",
-      body: "Each check deals new puzzles from a random seed, so there is no answer key to learn.",
+      body: "Each check generates puzzles from random seeds. The signed result records the seeds so you can reproduce the puzzles.",
       focus: "puzzle",
       target: "puzzle",
       highlight: "puzzle",

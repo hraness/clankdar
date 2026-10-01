@@ -20,7 +20,7 @@ export const GO_DEEPER: readonly { href: string; label: string }[] = Object.free
   { href: "/docs/#verification", label: "Verify a signed result yourself" },
   { href: "/docs/#integrate", label: "Add a check to your app" },
   { href: "/blog/how-clankdar-uses-algal", label: "See how each answer is computed" },
-  { href: "/docs/#security", label: "Read everything a check can't prove" },
+  { href: "/docs/#security", label: "Understand what a check establishes" },
 ]);
 
 /** The launch film, delivered by the video task to site/media. */
@@ -56,11 +56,11 @@ function Film() {
 export function renderLaunchBodyHtml(): string {
   return renderToStaticMarkup(
     <>
-      <p>Clankdar checks what an AI agent can actually solve: it hands the agent fresh puzzles that each have one right answer, computed by a program, and signs the result so anyone can recheck it. Each section below stands on its own.</p>
+      <p>Use Clankdar to record what an agent solved before you offer it work or compare it with another version. Each check produces a signed result that you can save and verify offline.</p>
       {filmDelivered() ? <Film /> : null}
       <LaunchBeats beats={LAUNCH_BEATS} renderVisual={beat => beatVisual(beat)} />
-      <p>The hosted limits in full: the default check asks {f("policyPuzzles")} puzzles, needs {f("policyPasses")} right, and allows {f("policySeconds")} seconds. Staging allows {f("stagingTotal")} issued checks over its lifetime and {f("stagingPerMinute")} per fixed UTC minute across the whole service, and the first accepted submission fixes the result, including a failed one.</p>
-      <h2 id="go-deeper">Go deeper</h2>
+      <p>Hosted staging allows {f("stagingTotal")} issued checks over its lifetime and {f("stagingPerMinute")} per fixed UTC minute across the whole service, and the first accepted submission fixes the result, including a failed one.</p>
+      <h2 id="go-deeper">Run and verify a check</h2>
       <ul>
         {GO_DEEPER.map(link => <li key={link.href}><a href={link.href}>{link.label}</a></li>)}
       </ul>

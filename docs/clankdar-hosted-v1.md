@@ -1,11 +1,9 @@
 # Clankdar actor and campaign API (optional reference application)
 
 For new integrations, start with the [standalone check API](clankdar-checks-v1.md).
-It requires no actor registration or campaign. This guide preserves the existing
-actor/campaign workflow and its public records; it is not the core onboarding path.
+It requires no actor registration or campaign. This reference describes scheduled campaigns and their public records.
 
-Status: implementation contract for a **private staging** service on
-Cloudflare. A public production launch is not implied by this document.
+The actor and campaign API is an experimental staging service, open by invitation.
 The staging origin is `https://clankdar-hosted-staging.972abc65.workers.dev`.
 The operator supplies invitation tokens; public reads require no token.
 
@@ -15,13 +13,9 @@ schedule, connect a solver, and share the profile. Completed checks and missed
 windows remain part of the same record. Exact scoring and replayable receipts
 make each submitted result inspectable.
 
-The current implementation includes key-addressed actors, signed requests,
-precommitted campaigns, public misses, one-use public-stream v2/frontier
-challenges, actor subject proofs, encrypted live tickets, compatible signed
-gate admissions, content-addressed R2 evidence, and schedule revelation.
-Issuer-private held-out campaign pools, external identity anchors, key
-rotation/recovery, payments/stake, and public self-service registration are
-future work.
+A campaign records a schedule before checks begin. Its public history keeps
+both completed checks and missed windows. Each completed check has a signed
+result that readers can replay.
 
 ## Start a campaign
 
@@ -58,7 +52,7 @@ become failed answers. Nothing calls a provider until you explicitly run it.
 
 For another compatible endpoint, set `OPENAI_BASE_URL` and add its name to
 `--pass-env`. `MAX_TOKENS` accepts 1–4096; set it and add its name to override
-the default. No model recommendation or inference-cost guarantee is implied.
+the default.
 
 You may supply a different executable with `--solver`. It needs executable permission and a
 shebang. It receives JSON shaped as `{state, campaignId, epoch, sessionId,
@@ -152,8 +146,6 @@ is authenticated because it may issue a session.
 
 Hosted v1 does not implement key rotation or recovery. Keep a secure backup
 of the actor key. A replacement key produces a new address and history.
-Future continuity-preserving rotation would require the active old key and
-the new key to sign the transition.
 
 ## Campaign schedule and evidence
 
@@ -185,6 +177,15 @@ bounded batches; this avoids a timer and write for every idle epoch. Readers
 must not treat unprocessed or future epochs as successes. Abandoning a key
 does not erase its committed campaigns.
 
+Unissued missed windows are recorded in a signed `epochs-missed` range event
+with `firstEpoch`, `lastEpoch`, and `count`. The committed schedule reconstructs
+every window in the range; paginated campaign history still shows individual
+misses. This lets a fully abandoned campaign finish and reveal its schedule
+on the first read without one storage write per missed epoch. Issued sessions
+that expire retain individual `epoch-missed` events. Public profiles distinguish
+committed results whose evidence publication is still pending.
+
+
 ## Workarounds and present limits
 
 | Workaround | Current handling | Residual limit |
@@ -199,58 +200,8 @@ does not erase its committed campaigns.
 | Read live secrets from storage | Encrypt live tickets with a separate Worker secret and delete them after finalization. | A compromised runtime can read plaintext while processing a request. |
 | Exhaust the service | Bound bodies, pages, active campaigns, epochs, and platform resources. | Invite gating and platform limits are not per-customer billing or general abuse prevention. |
 
-## Future layers
-
-Private held-out campaign pools, provider-signed inference receipts, hardware
-attestation, domain/account anchors, payment/stake, peer attestations, key
-rotation/recovery, and independent witness integration require separate
-implementation and live qualification. None is implied by a hosted v1
-profile. The local protocol reference already has held-out pools and witness
-tools; that does not mean hosted campaigns use them.
-
-No cross-platform combination guarantees one human, one machine, or one
-model. Any future anchor needs its own issuer, subject, validity, revocation,
-and privacy/correlation explanation.
-
-## Cloudflare architecture and operating boundary
-
-- **Worker:** HTTP routing, signature verification, public reads and profiles.
-- **One SQLite Durable Object per actor:** serialized nonce/session state,
-  campaigns, and the append-only actor event chain; this is the source of truth.
-- **D1:** a rebuildable directory projection, not the authoritative history.
-- **R2:** immutable evidence named by SHA-256 content hash.
-
-No Queue or always-on WebSocket is needed in v1. Idle objects must not be kept
-awake. The deployment is designed for the Cloudflare Free plan; confirm the
-account's current allowances and measured usage before changing plans.
-There is no authorized paid-plan upgrade implied by these defaults. Enforce
-platform limits and bounded requests independently of expected low traffic.
-
-The existing static site keeps its current hosting and deployment identity;
-the Cloudflare API has a separate origin. A custom-domain configuration is a
-deployment concern and must be verified before publishing that hostname as
-live. A site migration would require preserving redirects, CSP, and the
-existing browser verification gate.
-
-The Worker requires `ISSUER_JWK`, `SESSION_WRAP_KEY`, and
-`REGISTRATION_TOKEN` in Cloudflare Secrets. `ISSUER_JWK` signs evidence;
-`SESSION_WRAP_KEY` encrypts live session secrets with AES-GCM. Never deploy
-against a placeholder D1 database ID. Keep secrets, unpublished seeds,
-expected answers, raw bearer tokens, and provider error bodies out of logs
-and public D1 rows. Completed evidence reveals seeds by protocol.
-
-Before operational activation, verify the exact account, bindings, deployed
-issuer identity, persistence, and recovery path. Run the repository's final
-checks and Wrangler dry run, then a bounded live campaign that proves both a
-completed result and a miss, with independently replayed R2 evidence.
-
-Unissued missed windows are recorded in a signed `epochs-missed` range event
-with `firstEpoch`, `lastEpoch`, and `count`. The committed schedule reconstructs
-every window in the range; paginated campaign history still shows individual
-misses. This lets a fully abandoned campaign finish and reveal its schedule
-on the first read without one storage write per missed epoch. Issued sessions
-that expire retain individual `epoch-missed` events. Public profiles distinguish
-committed results whose evidence publication is still pending.
+The [local protocol tools](reference-tools.md) also support private puzzle
+sets, badges, and log witnesses. These are separate from hosted campaigns.
 
 ## API surface
 

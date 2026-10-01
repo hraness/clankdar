@@ -15,21 +15,22 @@ The TypeScript reference is `bench/attest.ts` + `bench/gate.ts` + `bench/tlog.ts
 an independent Rust implementation lives in
 [hraness/valhalla](https://github.com/hraness/valhalla/tree/main/prototypes/clankdar-attest).
 
-**Status: experimental reference.** The hosted issuer surface (§16) is a
-reference implementation, not a production deployment; witnessed head
-transport and hardware binding are not implemented. A receipt or admission
-is evidence about one bounded episode — never identity, liveness,
-personhood, or authority.
+**Status: experimental reference.** Section 16 describes the local hosted
+issuer, which is separate from the [staging check API](clankdar-checks-v1.md).
+A receipt records an answer under the issuer’s stated conditions. See the
+[interpretation limits](https://clankdar.com/docs/#security) before using one
+to accept an agent.
 
 ## 1. Primitive
 
-A verifier commits to a fresh unrevealed seed and publishes the generated
-prompt. The instance has never existed publicly, so it cannot be pre-solved or
-looked up. A respondent answers inside a deadline. The verifier regenerates
-the instance from the seed, rescores deterministically, and signs a receipt
-that reveals the seed. Anyone then replays the whole episode: signature, seed
-commitment, regeneration, rescore, timing — no trust in the verifier beyond
-what it signed.
+A verifier commits to a fresh seed and publishes the generated prompt. A
+respondent answers before the deadline. The verifier regenerates the puzzle,
+scores the answer, and signs a receipt that reveals the seed. A checker can
+then verify the signature, seed commitment, regenerated puzzle, score, and
+consistency of the recorded times. The issuer supplies those times; the
+receipt does not independently observe when the work happened. Fresh seeds
+do not guarantee unique puzzles or prevent precomputation over public
+generators.
 
 ## 2. Encoding
 
@@ -389,7 +390,7 @@ refused. `witness` only records the head of a log that itself passes
 proves equivocation in two airtight cases:
 
 - **same count, different tip** — two equal-length chains cannot end at
-  different `entryHash` values, so both heads cannot describe real logs;
+  different `entryHash` values while representing the same history;
 - **same tip, different count** — an `entryHash` commits to its index,
   so one tip cannot close both a count-4 and a count-6 chain.
 
@@ -407,8 +408,7 @@ possible without the underlying logs.
 The limit: the log binds *this* issuer's history under *its own*
 key. It does not stop self-minting — a verifier can always answer its own
 oracle — and a single log cannot detect a fork alone: an issuer could
-show different parties different logs. Fork detection is now implemented
-as local head comparison: `witness` accumulates every head an operator
+show different parties different logs. Local head comparison detects the supported forks: `witness` accumulates every head an operator
 sees and `equivocate` proves the same-count and same-tip cases from the
 signed heads themselves. `witness-serve` (§18) adds explicit common
 intake plus automatic polling of configured providers, and full-log
@@ -429,7 +429,7 @@ session is issuer-claimed only.
   `subjectProof` binds it to a respondent key — but the key holder can still
   relay the challenge to a stronger solver and sign the transcript
   afterward. The proof says who claimed the episode, not who solved it.
-  Friction claims are robust to this; credential claims are not.
+  A receipt does not measure the cost of delegation.
 - **Verifier self-minting.** The verifier knows every expected answer and can
   attest to itself. For self-issued admission this is meaningless by design
   (a service trusting its own gate). Portable third-party badges are checked
@@ -442,11 +442,11 @@ session is issuer-claimed only.
   provider discovery, gossip, witnessed co-signing, or external
   anchoring.
 - **Per-family solver scripts.** Public generators admit canned solvers:
-  a receipt proves "access to a solver for this cell," still real friction
-  for anti-spam, weaker as a competence claim. Held-out pools (§15)
+  a receipt records answers to these cells, without establishing how much
+  work the solver performed. Held-out pools (§15)
   re-parameterize published generators with secret labels so the instance
-  stream is unpublished — they defeat instance lookup and per-cell
-  precomputation, but a general solver for the family still solves them,
+  mapping is private. This does not prevent general solvers or guarantee
+  resistance to precomputation,
   and third-party checkers without the pool cannot replay the score (the
   signature, commitment, timing, and subject proof still verify).
 - **Not sybil resistance.** One strong solver backs unlimited identities;
@@ -573,11 +573,10 @@ Commands (reference: `bench/badge.ts`):
 
 ## 15. Held-out pools (holdout-v1)
 
-A holdout pool re-parameterizes published generator cells with secret
-labels so the issued instance stream is unpublished. It is the
-issuer-side answer to per-cell precomputation: a solver cannot look up or
-pre-solve instances it has never seen a sample of, while the issuer still
-produces receipts under the same sealed-seed attestation protocol.
+A holdout pool changes how public seeds map to generated puzzles by adding
+secret labels. The issuer keeps that mapping private while issuing receipts
+under the same sealed-seed protocol. A checker needs the matching pool to
+regenerate those puzzles.
 
 ### Pool file
 
@@ -638,10 +637,10 @@ could not be independently regenerated.
 ### Limits
 
 - A held-out cell is the *same puzzle family* under an unpublished
-  parameterization. It defeats instance memorization, lookup, and
-  stream-specific tuning; a solver that handles the family class still
-  solves it. Unpublished puzzle *types* require generator delivery
-  outside this document.
+  parameterization. A solver that handles the family class still solves it,
+  and the finite generator can repeat an instance. Keeping labels private
+  does not guarantee resistance to precomputation. Unpublished puzzle types
+  require generator delivery outside this document.
 - Without the pool, `poolKey` commits to *a* pool, not to a *sound* one —
   the issuer could have labeled degenerate cells. Deferred disclosure is
   the accountability hook: publish the pool and every historical

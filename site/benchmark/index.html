@@ -6,9 +6,9 @@
     <meta name="theme-color" media="(prefers-color-scheme: light)" content="#e1e2e7">
     <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#1a1b26">
     <title>Model benchmark · Clankdar</title>
-    <meta name="description" content="Five models were given the same 500 puzzles on September 17, 2026. See how often each was exactly right, and download the recorded answers to rescore them.">
+    <meta name="description" content="Compare five models on the same 500 puzzles, inspect the test conditions, and download the recorded answers to rescore them.">
     <meta property="og:title" content="Clankdar model benchmark">
-    <meta property="og:description" content="Five models were given the same 500 puzzles on September 17, 2026. See how often each was exactly right, and download the recorded answers to rescore them.">
+    <meta property="og:description" content="Compare five models on the same 500 puzzles, inspect the test conditions, and download the recorded answers to rescore them.">
     {{SOCIAL_IMAGE}}
     <meta property="og:type" content="website">
     <meta property="og:url" content="https://clankdar.com/benchmark/">
@@ -67,7 +67,7 @@
             <summary>Method and downloadable evidence</summary>
             <p>Each model received the same 25 task settings and 20 seeds per setting: 500 attempts per model, 2,500 in total. Calls used Vercel AI Gateway with a requested temperature of 0 and a 4,096-token completion budget. The table shows the requested model aliases, not independently verified model identities.</p>
             <p>The scorer compares each complete response with a deterministic reference answer. Provider errors are separate from wrong answers. The report retains counts, confidence intervals, and results for each task; formatting diagnostics are not counted as passes.</p>
-            <p>The recorded test is <code>clankdar-suite-v2</code>, with scorer <code>clankdar-score-v2</code> and seeds 101–120. The manifest records the suite hash and source revision, and notes that the source had uncommitted changes when the runs were collected; its limitations section explains why. The site build rescores every recorded response before publishing these scores.</p>
+            <p>The recorded test is <code>clankdar-suite-v2</code>, with scorer <code>clankdar-score-v2</code> and seeds 101–120. The manifest records the suite hash and source revision, including uncommitted changes present when the runs were collected. Its limitations section describes the gaps in the experiment record. Every published score can be recomputed from the archived responses.</p>
             <p><a href="/benchmark/v2-calibration-0/report.json" download>Download the full report</a> · <a href="/benchmark/v2-calibration-0/manifest.json">Inspect the run manifest</a></p>
             {{BENCHMARK_DOWNLOADS}}
             <p>The reports and manifests for these runs are also on Hugging Face as <a href="https://huggingface.co/datasets/hranesscom/clankdar-benchmarks">Clankdar benchmark reports</a>, licensed CC BY 4.0. The license covers those files, not the recorded model responses.</p>
@@ -97,7 +97,7 @@
         </section>
       </main>
       <div class="project-footer">
-        <p>Every score on this page is recomputed from the recorded answers when the site is built.</p>
+        <p>Download the recorded answers to recompute the scores.</p>
         <a href="/docs/#quickstart">Run your first check <span aria-hidden="true">→</span></a>
       </div>
       <!-- hraness-site-footer -->

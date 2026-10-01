@@ -65,7 +65,7 @@ export function tryRunLines(run: TryRunState): TerminalLine[] {
 }
 
 export function TryRun({ run, describe, theme }: Readonly<{ run: TryRunState; describe: string; theme?: MockupTheme }>) {
-  return <TerminalFrame describe={describe} lines={tryRunLines(run)} theme={theme} title="clankdar" />;
+  return <TerminalFrame density="presentation" describe={describe} lines={tryRunLines(run)} theme={theme} title="clankdar" />;
 }
 
 export type VerifyFile = "original" | "tampered";
@@ -88,7 +88,7 @@ export function verifyLines(file: VerifyFile): TerminalLine[] {
 }
 
 export function Verify({ file, describe, theme }: Readonly<{ file: VerifyFile; describe: string; theme?: MockupTheme }>) {
-  return <TerminalFrame describe={describe} lines={verifyLines(file)} theme={theme} title="verify offline" />;
+  return <TerminalFrame density="presentation" describe={describe} lines={verifyLines(file)} theme={theme} title="verify offline" />;
 }
 
 function Verdict({ pass }: Readonly<{ pass: boolean }>) {
@@ -151,11 +151,16 @@ export function Result({ view, describe, theme }: Readonly<{ view: ResultView; d
     <div className="cdm-sheet">
       <p className="cdm-label">Signed result · {DEMO_RUN.context}</p>
       <p className="cdm-headline"><Verdict pass={DEMO_RUN.verdict.pass} /> {DEMO_RUN.verdict.passed} of {facts.policyPuzzles} right · {DEMO_RUN.verdict.required} needed</p>
-      <table className="cdm-table">
-        <thead><tr><th scope="col">Puzzle</th><th scope="col">Expected</th><th scope="col">Reply</th><th scope="col">Result</th></tr></thead>
-        <tbody>
+      <table className="cdm-table" role="table" aria-label="Puzzle results">
+        <thead role="rowgroup"><tr role="row"><th scope="col" role="columnheader">Puzzle</th><th scope="col" role="columnheader">Expected</th><th scope="col" role="columnheader">Reply</th><th scope="col" role="columnheader">Result</th></tr></thead>
+        <tbody role="rowgroup">
           {DEMO_RUN.puzzles.map((puzzle, index) => (
-            <tr key={puzzle.id}><td>{index + 1} · tier {puzzle.tier}</td><td><code>{puzzle.expected}</code></td><td><code>{puzzle.response}</code></td><td><Verdict pass={puzzle.pass} /></td></tr>
+            <tr key={puzzle.id} role="row">
+              <td role="cell"><span className="cdm-cell-label" aria-hidden="true">Puzzle</span><span>{index + 1} · <span className="cdm-tier">tier {puzzle.tier}</span></span></td>
+              <td role="cell"><span className="cdm-cell-label" aria-hidden="true">Expected</span><code>{puzzle.expected}</code></td>
+              <td role="cell"><span className="cdm-cell-label" aria-hidden="true">Reply</span><code>{puzzle.response}</code></td>
+              <td role="cell"><span className="cdm-cell-label" aria-hidden="true">Result</span><Verdict pass={puzzle.pass} /></td>
+            </tr>
           ))}
         </tbody>
       </table>

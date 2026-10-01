@@ -7,12 +7,10 @@ The [README](../README.md) explains the product and its ALGAL integration.
 ## Run the local benchmark
 
 The local benchmark compares responses under a declared suite and budget.
-It does not require a hosted invitation. Use **Bun 1.3.14**.
+It does not require a hosted invitation.
 
 ```console
 bun install --frozen-lockfile --ignore-scripts
-bun run check
-bun test                                        # determinism + answer verification
 bun bench --list                                # families and their tiers
 bun bench --adapter oracle --seeds 1-10 --out results/oracle-first.jsonl
 ```
@@ -22,11 +20,12 @@ a model score. `echo` returns the prompt. Real adapters receive only family,
 tier, and prompt, never the answer or seed. Results contain a run manifest,
 one JSONL record per attempt, and a summary by family, tier, cell, and seed.
 
-Model invocations **default to a dry run**:
+Model invocations default to a dry run. Set `MODEL` to the model ID accepted
+by your chosen endpoint, then inspect the planned run before executing it:
 
 ```console
-bun bench --adapter openai:gpt-4o-mini --tiers 0-3 --seeds 101-110
-bun bench --adapter openai:gpt-4o-mini --tiers 0-3 --seeds 101-110 \
+bun bench --adapter "openai:$MODEL" --tiers 0-3 --seeds 101-110
+bun bench --adapter "openai:$MODEL" --tiers 0-3 --seeds 101-110 \
   --execute --max-requests 200 --max-tokens 4096 --out results/model-first.jsonl
 ```
 
@@ -66,12 +65,13 @@ or what performed it.
 
 ```console
 CLANKDAR_BASE_URL=https://ai-gateway.vercel.sh/v1 bun calibrate \
-  --models openai/gpt-4.1,google/gemini-2.5-pro --seeds 101-110
+  --models "$MODELS" --seeds 101-110
 bun report results/my-run
 bun report site/benchmark/pilot-v0 --exclude gridpath,gridxf,hiddenfn,sequence
 bun bench/pilot.ts verify site/benchmark/pilot-v0
 ```
 
+Set `MODELS` to a comma-separated list of model IDs accepted by the endpoint.
 Calibration also defaults to a dry run. Add `--execute --max-requests N` and
 an optional `--out NEW-DIRECTORY` to enable model calls. Model IDs are passed
 unchanged to the provider (gateway IDs generally use `provider/model`). Output
@@ -111,9 +111,10 @@ seeing a candidate's results.
 
 ## Attestation and admission gates
 
-`clankdar-attest-v1` seals a fresh seed behind a commitment so a challenge
-instance cannot be pre-solved; `clankdar-gate-v1` builds admission sessions on
-top: N sealed challenges, one deadline, one signed verdict.
+`clankdar-attest-v1` commits to a fresh seed and reveals it in the signed
+result. A verifier can use that seed to reconstruct the challenge.
+`clankdar-gate-v1` combines several challenges into one session with a shared
+deadline and signed verdict.
 
 ```console
 bun bench/attest.ts keygen --out verifier.json
@@ -169,8 +170,8 @@ co-signing, and external anchoring remain unimplemented.
 `bun drift` turns probes into monitoring: `drift run` appends each signed
 admission to a series file, `drift report` aggregates per-cell pass bands,
 `drift baseline` pins a reference, and `drift compare` exits nonzero when a
-cell or the overall band drops past `--threshold`, so CI can catch silent model
-substitutions and regressions at a probed endpoint.
+cell or the overall band drops past `--threshold`, so CI can flag a decline in scores at a probed endpoint. A score change alone
+does not identify its cause.
 
 `clankdar-badge-v1` is the portable-credential layer on top: a respondent
 binds each gate session to its own Ed25519 key, then packs subject-bound
@@ -209,16 +210,14 @@ from R2. Issuance uses a bearer token and small D1 quota counters; completed
 results are immutable JSON objects. The [check contract](clankdar-checks-v1.md)
 describes the API and operating limits.
 
-The existing SQLite Durable Object actor/campaign implementation remains an
-optional legacy application with its records and routes preserved. It is not
-a prerequisite for issuing checks. See the [legacy guide](clankdar-hosted-v1.md).
+The optional [actor and campaign API](clankdar-hosted-v1.md) records scheduled
+checks and missed windows. It is separate from standalone checks.
 Private held-out pools, badges, and witness tools in this repository are reference
 capabilities; their presence does not imply integration into the atomic API.
 
 `clankdar-holdout-v1` covers issuer-private cells: `bun holdout gen` mints a
 pool of published generator cells re-parameterized by secret labels, and gate
-policies can name them as `h:family:tN`. The instance stream stays
-unpublished, so solvers cannot pre-compute or look it up; checkers holding
+policies can name them as `h:family:tN`. The label-to-instance mapping stays private. Checkers holding
 the pool replay fully; everyone else gets `ok` with `replayable:false`,
 meaning the signature and commitment verified but the score rests on the
 issuer's claim. Publishing the pool
@@ -253,46 +252,4 @@ secret challenges. Do not use it to issue production admission puzzles.
 Signed hashcash and standalone witness prototypes remain in
 [hraness/valhalla](https://github.com/hraness/valhalla/tree/main/prototypes/botcaptcha)
 and [prototypes/witness](https://github.com/hraness/valhalla/tree/main/prototypes/witness).
-Their historical paths are intentionally preserved. Future signed-challenge
-integration needs separate design, review, and live qualification.
-
-## Site and delivery
-
-```console
-bun run check:site
-python3 -m http.server 8765 --bind 127.0.0.1 --directory site/dist
-bun run check:browser --channel chrome
-```
-
-The browser check owns a separate ephemeral loopback server and fresh browser
-contexts. Use `bun x playwright install chromium` and omit `--channel chrome`
-when using Playwright's Chromium instead of installed Chrome. The six widths
-and two themes run as separate contexts, two at a time by default; pass
-`--concurrency 1` to run them one after another. Screenshots are
-retained in a new ignored `results/visual-*` directory. The site uses the pinned
-Hraness design kit's Paper palette, Lantern material, Nebula Sans and Instrument
-Serif, plus the canonical shared footer with no newsletter or support profile.
-Two small same-origin scripts run in the browser: the shared appearance
-controller and, on the homepage, the practice puzzle. Challenges, tables, and
-downloads remain usable without JavaScript.
-
-`bun run check` runs strict TypeScript checking, tests, archived-report replay,
-and the static build. `bun run check:browser` verifies responsive layout,
-appearance controls, native answer disclosure, same-origin resources, links,
-and browser errors. Deliver changes through a current-head pull request and
-its passing checks. Generated `site/dist/` stays untracked; published pilot
-artifacts are intentional source inputs, not private runtime results.
-
-Verify the linked Hraness `clankdar` project and domain before deploying:
-
-```console
-vercel deploy --prod --scope hraness
-```
-
-Keep `.vercel/` private. `vercel.json` preserves the restrictive CSP and redirects
-legacy `botcaptcha.dev` paths to `clankdar.com`. After deployment, verify routes,
-canonical URLs, assets, archive hashes, redirects, and security headers. Retain
-the existing project, domain, and previous production deployments for rollback.
-
-`site/generate-icon.py` regenerates the icon PNGs; their hashes live in
-`site/BRAND_ASSETS.md`.
+They are separate from Clankdar’s hosted API.
