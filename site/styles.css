@@ -1,4 +1,5 @@
 @import url("/design/syntax-highlighting.css");
+@import url("/design/typography.css");
 
 :root {
   --hraness-marketing-display-font: var(--font-text);

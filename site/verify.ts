@@ -7,6 +7,7 @@ import { POSTS } from "./blog/articles.ts";
 import { articleRelatedProducts } from "./portfolio-marks";
 import { ownedChromiumLaunchOptions, parseBrowserVerificationArgs, pinnedChromiumDefinition, verifyOwnedChromium } from "./browser-launch.ts";
 import { classifyVerificationRequest } from "./verification-network.ts";
+import { verifyPublicationLinks } from "./verify-publication-links.mjs";
 
 const values = parseBrowserVerificationArgs(process.argv.slice(2));
 const { concurrency } = values;
@@ -48,6 +49,7 @@ let browser: Browser | undefined;
 let activePage: Page | undefined;
 const errors: string[] = [];
 let checked = 0;
+const publicationLinks: { width: number; theme: string; path: string; groups: unknown[] }[] = [];
 let browserIdentity: { executable: string; browserVersion: string } | undefined;
 
 async function verifyChrome(page: Page, width: number): Promise<void> {
@@ -183,6 +185,12 @@ async function verifyContext(browser: Browser, width: number, theme: "light" | "
       if (path.startsWith("/blog/")) {
         await expect(page.locator(".plain-publication")).toHaveCount(1);
         if (path !== "/blog/") {
+          if (path === "/blog/introducing-clankdar" && (width === 390 || width === 1440)) {
+            publicationLinks.push({ width, theme, path, groups: await verifyPublicationLinks(page, [
+              { name: "article", selector: ".plain-publication__article-body a[href]:not([role='button'], [data-emphasis], [data-foil])" },
+              { name: "sources", selector: ".plain-publication__sources a[href]" },
+            ]) });
+          }
           const marks = page.locator(".plain-publication__related-mark");
           await expect(marks).toHaveCount(articleRelatedProducts.length);
           for (const [index, item] of articleRelatedProducts.entries()) {
@@ -286,7 +294,7 @@ try {
   await expect(page.locator('#method a[href$="/report.json"]')).toBeVisible();
   await noScript.close();
   expect(errors).toEqual([]);
-  const report = { capturedAt: new Date().toISOString(), origin, mode: values.production ? "production" : "local", consent: values.production ? "required-unaccepted" : "not-applicable-local", ...browserIdentity, pagesChecked: checked, widths, themes: ["light", "dark"], noScript: true, browserErrors: errors.length, screenshots };
+  const report = { capturedAt: new Date().toISOString(), origin, mode: values.production ? "production" : "local", consent: values.production ? "required-unaccepted" : "not-applicable-local", ...browserIdentity, pagesChecked: checked, widths, themes: ["light", "dark"], noScript: true, browserErrors: errors.length, publicationLinks, screenshots };
   writeFileSync(resolve(screenshots, "verification.json"), JSON.stringify(report, null, 2) + "\n");
   console.log(JSON.stringify(report, null, 2));
 } catch (error) {
