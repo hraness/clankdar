@@ -3,6 +3,8 @@ import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { articleProvenanceFromAdmission, articleProvenanceSentence, assertArticleAdmissions, isArticleIndexable } from "@hraness/design-kit";
 import { ADMISSIONS, POSTS } from "./articles.ts";
+import { articleRelatedProducts, portfolioMarkAssets } from "../portfolio-marks";
+import { relatedFor } from "../portfolio-copy";
 import { indexablePosts, renderBody, renderFeed, renderIndexPage, renderLlmsSection, renderPostPage, renderSitemap } from "./render.ts";
 
 const template = readFileSync(resolve(import.meta.dir, "page.html"), "utf8");
@@ -10,6 +12,23 @@ const indexable = POSTS.filter(post => isArticleIndexable(post.admission));
 const quarantined = POSTS.filter(post => post.admission.lifecycle === "quarantined");
 
 describe("blog", () => {
+  test("related product icons use the exact registry artwork from the same origin", () => {
+    const registryProducts = relatedFor("clankdar").slice(0, 3);
+    expect(registryProducts.length).toBeGreaterThan(0);
+    for (const [index, product] of registryProducts.entries()) {
+      const asset = portfolioMarkAssets[index]!;
+      expect(asset.svg).toBe(decodeURIComponent(product.mark.slice("data:image/svg+xml,".length)));
+      expect(articleRelatedProducts[index]!.mark).toBe(asset.href);
+      expect(asset.href).toMatch(/^\/marks\/portfolio\/[a-f0-9]{64}\.svg$/);
+      for (const post of POSTS) {
+        const html = renderPostPage(template, post);
+        expect(html).toContain(`src="${asset.href}"`);
+        expect(html).toContain('class="plain-publication__related-mark"');
+        expect(html).not.toContain('src="data:image/svg+xml,');
+      }
+    }
+  });
+
   test("every post has a valid admission record for its own route", () => {
     expect(() => assertArticleAdmissions(ADMISSIONS)).not.toThrow();
     for (const post of POSTS) {

@@ -4,6 +4,7 @@ import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { randomUUID } from "node:crypto";
 import { POSTS } from "./blog/articles.ts";
+import { articleRelatedProducts } from "./portfolio-marks";
 import { ownedChromiumLaunchOptions, parseBrowserVerificationArgs, pinnedChromiumDefinition, verifyOwnedChromium } from "./browser-launch.ts";
 import { classifyVerificationRequest } from "./verification-network.ts";
 
@@ -182,6 +183,13 @@ async function verifyContext(browser: Browser, width: number, theme: "light" | "
       if (path.startsWith("/blog/")) {
         await expect(page.locator(".plain-publication")).toHaveCount(1);
         if (path !== "/blog/") {
+          const marks = page.locator(".plain-publication__related-mark");
+          await expect(marks).toHaveCount(articleRelatedProducts.length);
+          for (const [index, item] of articleRelatedProducts.entries()) {
+            await expect(marks.nth(index)).toHaveAttribute("src", item.mark);
+            await expect.poll(() => marks.nth(index).evaluate((image) => image instanceof HTMLImageElement && image.complete && image.naturalWidth > 0)).toBe(true);
+          }
+          await page.locator(".plain-publication__related").screenshot({ path: resolve(screenshots, `${slug}-related-${width}-${theme}.png`) });
           await expect(page.locator(".plain-publication__byline")).toHaveText("By Hraness");
           const reviewer = POSTS.find(post => post.path === path.replace(/\/$/u, ""))?.admission.review?.reviewer;
           if (reviewer === undefined) throw new Error(`No review record for ${path}`);

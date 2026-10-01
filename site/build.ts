@@ -1,5 +1,6 @@
 import { withAnalytics } from "./analytics-site";
 import { renderMarketingCopy } from "./portfolio-copy";
+import { portfolioMarkAssets, portfolioMarkManifest } from "./portfolio-marks";
 import { cp, mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 import { dirname, resolve } from "node:path";
@@ -45,6 +46,9 @@ for (const name of ["styles.css", "icon.png", "icon-512.png", "apple-icon.png", 
 await cp(resolve(root, "../cloudflare/examples/check.mjs"), resolve(output, "clankdar-client.mjs"));
 await cp(resolve(root, "icons"), resolve(output, "icons"), { recursive: true });
 await cp(resolve(root, "marks"), resolve(output, "marks"), { recursive: true });
+await mkdir(resolve(output, "marks/portfolio"), { recursive: true });
+for (const asset of portfolioMarkAssets) await writeFile(resolve(output, asset.href.slice(1)), asset.svg);
+await writeFile(resolve(output, "marks/portfolio/manifest.json"), JSON.stringify(portfolioMarkManifest, null, 2) + "\n");
 const footerMarker = "<!-- hraness-site-footer -->";
 for (const page of pages) {
   let html = renderMarketingCopy(await readFile(resolve(root, page), "utf8"));

@@ -29,6 +29,9 @@
   cookieless analytics ingestion on us.i.posthog.com. Bundle analytics code first-party.
 - Load presentation only from the pinned `@hraness/design-kit` release and the
   pinned `@hraness/site-footer` release; never vendor or fork their files.
+- Preserve product marks in shared article cards. `site/portfolio-marks.ts`
+  generates same-origin SVG assets and provenance from the pinned portfolio;
+  do not omit icons or relax the CSP to accommodate embedded artwork.
 - Every page contains exactly one `<!-- hraness-site-footer -->` marker; the
   build fails otherwise. The footer is configured with
   `mailingList: { kind: "none" }` and no support profile.
