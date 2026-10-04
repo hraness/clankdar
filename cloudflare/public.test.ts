@@ -5,6 +5,8 @@ describe("public evidence pages", () => {
   test("keeps absent evidence absent and uses same-origin assets with a restrictive CSP", async () => {
     const response = renderActorProfile({ address: "clank1_test", publicKey: "public", evidence: { campaigns: 0 }, claims: {} });
     const html = await response.text();
+    expect(html).toContain('height="24">Clankdar</a>');
+    expect(html).toContain('aria-label="Clankdar home"');
     expect(html).toContain("No scheduled responses yet");
     expect(html).toContain("No capability results yet");
     expect(html).toContain("No campaigns yet");

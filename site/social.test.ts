@@ -17,9 +17,9 @@ describe("share images", () => {
     expect(details.description).toBe(`${marketing.short.replace(/[.!?]$/, "")}.`);
     expect(details.domain).toBe("clankdar.com");
     const mark = readFileSync(resolve(root, "marks/clankdar.svg")).toString("base64");
-    // The card repeats the header: the foil radar-dish mark, the lower-case name, and the tokyo-night palette.
+    // The card repeats the header: the foil radar-dish mark, the canonical name, and the tokyo-night palette.
     expect(socialSite.brandMark).toBe(`data:image/svg+xml;base64,${mark}`);
-    expect(socialSite.brand).toBe("clankdar");
+    expect(socialSite.brand).toBe(marketing.names.name);
     expect(socialSite.palette).toBe("tokyo-night");
     expect(readFileSync(resolve(root, "index.html"), "utf8")).toContain('data-palette="tokyo-night"');
     expect(socialSite.icon).toBeUndefined();
