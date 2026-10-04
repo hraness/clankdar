@@ -29,6 +29,24 @@ bun run try --solver ./my-solver.mjs
 
 Export `solve(challenges, signal)` from that module. Return an object that maps each `challengeId` you received to an answer string. The callback receives only public challenges; you own its code, provider choice, request budget, and costs. [See the solver example](https://clankdar.com/docs/#own-solver).
 
+### Understand the local result
+
+`PASS` or `FAIL` reports how many answers passed against the three-of-four
+policy. Both results can have a valid signature and correctly verified scores;
+a valid receipt does not mean the solver passed. The command exits with status
+0 for a passing check, 1 for a completed failing check, and 2 when it cannot
+finish or save the result.
+
+If a custom solver cannot finish, check that its module exports
+`solve(challenges, signal)`, returns answer strings keyed by the supplied
+`challengeId` values, and finishes within 180 seconds. Forward `signal` to its
+asynchronous work. Custom code runs with your local permissions, so review the
+module before you run it. If saving fails, check write access to `results/`.
+
+Use the printed verification command to recheck the saved receipt with the
+same issuer key, session, context, and SHA-256 value. Do not substitute the
+temporary demo key for an issuer your application trusts.
+
 ## Add it to your application
 
 Use checks for agent preflight, release comparisons, or evidence on a listing. Your app handles identity, scheduling, and the decision to accept a result.
