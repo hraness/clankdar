@@ -20,8 +20,8 @@ export const socialSite = defineSocialImageSite({
   // The shared card uses a full sentence; its wording is canonical marketing copy.
   description: `${marketing.short.replace(/[.!?]$/, "")}.`,
   domain: "clankdar.com",
-  // The header shows the radar-dish mark in foil beside the lower-case name.
-  brand: marketing.names.name.toLowerCase(),
+  // The header shows the radar-dish mark in foil beside the canonical name.
+  brand: marketing.names.name,
   brandMark: `data:image/svg+xml;base64,${mark.toString("base64")}`,
   // The site's html data-palette; the card takes its light-theme header and hero colours.
   palette: "tokyo-night",

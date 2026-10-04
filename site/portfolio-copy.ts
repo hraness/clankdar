@@ -17,7 +17,6 @@ export function renderPortfolioCopy(source: string, snapshot: { canonicalUrl?: s
   const fields: Readonly<Record<string, string | undefined>> = {
     NAME: copy.names.name, TITLE: `${copy.names.name} · ${copy.tagline}`,
     META: copy.meta, SHORT: copy.short, TAGLINE: copy.tagline, CATEGORY: copy.category,
-    NAME_LOWER: copy.names.name.toLowerCase(),
     HERO_HEADING: copy.hero.heading, HERO_SUMMARY: copy.hero.summary,
     HERO_START: words.slice(0, -3).join(" "), HERO_END: words.slice(-3).join(" "),
     PRIMARY_ACTION: copy.hero.primaryAction, SECONDARY_ACTION: copy.hero.secondaryAction,
