@@ -124,6 +124,7 @@ Model benchmarks default to dry runs; execution requires --execute and
 and result verification.
 
 - Try locally: https://clankdar.com/docs/#quickstart
+- Read the local result: https://clankdar.com/docs/#local-result
 - Integration: https://clankdar.com/docs/#integrate
 - API: https://clankdar.com/docs/#api
 - Verification: https://clankdar.com/docs/#verification
