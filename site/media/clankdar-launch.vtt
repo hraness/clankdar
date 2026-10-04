@@ -1,0 +1,34 @@
+WEBVTT
+
+act-1
+00:00:00.250 --> 00:00:04.950
+You hear an agent is good, but you never see the test.
+
+act-2
+00:00:05.250 --> 00:00:08.950
+Clankdar
+Check what your AI agent can solve.
+
+act-3
+00:00:09.250 --> 00:00:13.732
+Every answer is checked exactly, with no judge model.
+You: Take 1, 3, 2, 5, keep the numbers over 2, square them, and add them up.
+Agent: 33
+
+act-4
+00:00:14.032 --> 00:00:18.332
+Fresh puzzles every time, from a new seed.
+
+act-5
+00:00:18.632 --> 00:00:22.872
+The result is signed, so anyone can recheck it.
+
+act-6
+00:00:23.172 --> 00:00:27.132
+A pass records correct answers, nothing more.
+
+end
+00:00:27.482 --> 00:00:33.400
+See how it works at clankdar.com
+Preview · Free to run on your own machine
+clankdar.com

@@ -23,14 +23,14 @@ export const GO_DEEPER: readonly { href: string; label: string }[] = Object.free
   { href: "/docs/#security", label: "Understand what a check establishes" },
 ]);
 
-/** The launch film, delivered by the video task to site/media. */
+/** The launch film, built in video/story (story.config.ts) and delivered to site/media. */
 export const LAUNCH_FILM = Object.freeze({
   mp4: "/media/clankdar-launch.mp4",
   poster: "/media/clankdar-launch-poster.jpg",
   captions: "/media/clankdar-launch.vtt",
   width: 1920,
   height: 1080,
-  description: "A 38-second film with captions and no narration: a fresh puzzle, the exact scoring that fails a near miss, a signed result, a one-answer edit the verifier rejects, the default check's numbers, and what a pass doesn't prove.",
+  description: "A 33-second film with captions and no narration: claims about agents without the test, a fresh puzzle whose near miss fails, the default check's numbers, a signed result that breaks when one answer changes, and what a pass doesn't prove.",
 });
 
 const siteRoot = resolve(import.meta.dir, "..");
