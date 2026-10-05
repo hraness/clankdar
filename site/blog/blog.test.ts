@@ -40,7 +40,7 @@ describe("blog", () => {
     const aiReview = { reviewer: "Codex", reviewerType: "ai", reviewedOn: "2026-10-01" } as const;
     expect(() => assertArticleAdmissions([{ ...ADMISSIONS[0]!, review: { ...aiReview, reviewer: "Codex human review" } }])).toThrow();
     expect(() => assertArticleAdmissions([{ ...ADMISSIONS[0]!, review: aiReview, humanReview: aiReview }])).toThrow();
-    expect(indexable.map(post => post.slug)).toEqual(["introducing-clankdar", "how-clankdar-uses-algal"]);
+    expect(indexable.map(post => post.slug)).toEqual(["introducing-clankdar", "how-clankdar-uses-algal", "held-out-puzzles", "what-a-receipt-proves"]);
     expect(quarantined.map(post => post.slug)).toEqual([]);
   });
 
@@ -56,7 +56,8 @@ describe("blog", () => {
         expect(sentence).toBe(`Drafted with AI from the source code and reviewed by ${review.reviewer}, a human editor.`);
       } else {
         expect(sentence).toBe(`Drafted with AI from the source code and reviewed by ${review.reviewer}.`);
-        expect(html).not.toMatch(/human/i);
+        // The reviewer-name ban targets the provenance note, not ordinary body prose that may mention a human.
+        expect(sentence).not.toMatch(/human/i);
       }
       expect(html).toContain(`<link rel="canonical" href="https://clankdar.com${post.path}">`);
       expect(html).toContain('"@type":"BlogPosting"');
