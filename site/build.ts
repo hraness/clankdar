@@ -98,7 +98,7 @@ await writeFile(resolve(output, "benchmark/v2-calibration-0/profiles.json"), JSO
 await cp(fileURLToPath(import.meta.resolve("@hraness/site-footer/stylex.css")), resolve(output, "footer.css"));
 await cp(resolve(root, "launch/mockups.css"), resolve(output, "launch-mockups.css"));
 await cp(resolve(root, "media"), resolve(output, "media"), { recursive: true }).catch((error: NodeJS.ErrnoException) => { if (error.code !== "ENOENT") throw error; });
-const files = ["mockups.css", "plain-publication.css", "paper-theme.css", "palette-system.css", "palette-bridge.css", "syntax-highlighting.css", "product-marketing.css", "product-marketing-preset.css", "lantern-material.css", "appearance-menu.css", "status-page.css", "site-shell.css", "fonts.css"];
+const files = ["mockups.css", "plain-publication.css", "paper-theme.css", "palette-system.css", "palette-bridge.css", "syntax-highlighting.css", "product-marketing.css", "product-marketing-preset.css", "lantern-material.css", "appearance-menu.css", "status-page.css", "site-shell.css", "product-landscape.css", "fonts.css"];
 for (const name of files) await cp(resolve(kit, name), resolve(output, "design", name));
 await cp(resolve(kit, "fonts/nebula-sans"), resolve(output, "design/fonts/nebula-sans"), { recursive: true });
 await cp(resolve(kit, "fonts/instrument-serif"), resolve(output, "design/fonts/instrument-serif"), { recursive: true });
