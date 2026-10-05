@@ -20,5 +20,8 @@
   },
   "dependencies": {
     "@hraness/slopcamera": "3.7.0"
+  },
+  "overrides": {
+    "sharp": "0.35.5"
   }
 }
