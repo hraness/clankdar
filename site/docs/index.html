@@ -54,7 +54,7 @@
           <p class="doc-lede">Run a check locally, connect your own solver, and keep the signed result.</p>
         </header>
         <nav class="contents" aria-label="Contents">
-          <a href="#quickstart">Try locally</a><a href="#integrate">Integrate</a><a href="#verification">Verify</a><a href="#recipes">Recipes</a><a href="#api">API</a><a href="#evidence">Evidence</a><a href="#comparison">Compare</a><a href="#limits">Limits</a>
+          <a href="#quickstart">Try locally</a><a href="#local-result">Result</a><a href="#integrate">Integrate</a><a href="#verification">Verify</a><a href="#recipes">Recipes</a><a href="#api">API</a><a href="#evidence">Evidence</a><a href="#comparison">Compare</a><a href="#limits">Limits</a>
         </nav>
 
         <section class="doc-section" id="quickstart" aria-labelledby="quickstart-title">
@@ -81,6 +81,13 @@ export async function solve(challenges, signal) {
 }</code></pre>
             <p><code>askAgent</code> is your application function, not a Clankdar API. Return only each requested answer, forward the signal to provider requests, and set your own model and spending limits. Loading your module runs its code and can incur your provider costs. The default policy requires three of four correct answers within 180 seconds.</p>
           </details>
+        </section>
+
+        <section class="doc-section" id="local-result" aria-labelledby="local-result-title">
+          <h2 id="local-result-title">Read the local result.</h2>
+          <p><code>bun run try</code> prints <code>PASS</code> or <code>FAIL</code> with how many answers passed against the three-of-four policy. Both results can have a valid signature and correctly verified scores, so a valid receipt does not mean the solver passed. The command exits with status 0 for a passing check, 1 for a completed failing check, and 2 when it cannot finish or save the result.</p>
+          <p>Use the printed verification command to recheck the saved receipt with the same issuer key, session, context, and SHA-256 value. Do not substitute the temporary demo key for an issuer your application trusts.</p>
+          <details class="report-details" id="troubleshooting"><summary>When your solver cannot finish</summary><p>Check that the module exports <code>solve(challenges, signal)</code>, returns answer strings keyed by the supplied <code>challengeId</code> values, and finishes within 180 seconds. Forward <code>signal</code> to its asynchronous work. Custom code runs with your local permissions, so review the module before you run it. If saving fails, check write access to <code>results/</code>.</p></details>
         </section>
 
         <section class="doc-section" id="integrate" aria-labelledby="integrate-title">
