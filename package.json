@@ -52,7 +52,7 @@
     "react-dom": "19.2.3",
     "satori": "0.33.4",
     "typescript": "5.9.3",
-    "vitest": "5.0.3",
+    "vitest": "4.1.11",
     "wrangler": "4.131.1"
   },
   "imports": {
@@ -66,7 +66,7 @@
     "url": "https://github.com/hraness/clankdar.git"
   },
   "overrides": {
-    "@vitest/mocker": "5.0.3",
+    "@vitest/mocker": "4.1.11",
     "sharp": "0.35.4",
     "undici": "8.11.2"
   }
