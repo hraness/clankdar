@@ -39,6 +39,12 @@ const REVIEW = {
   reviewedOn: "2026-10-01",
 } as const;
 const LAUNCH_REVIEW = REVIEW;
+/** Ben Guo approved both posts unchanged in the 2026-10-04 portfolio editorial pass. */
+const HUMAN_REVIEW = {
+  reviewer: "Ben Guo",
+  reviewerType: "human-editor",
+  reviewedOn: "2026-10-04",
+} as const;
 
 function repo(repository: "clankdar" | "algal", file: string): string {
   return `https://github.com/hraness/${repository}/blob/main/${file}`;
@@ -105,7 +111,7 @@ export const POSTS: readonly BlogPost[] = [
       owner: "Hraness",
       drafting: "ai-from-source",
       review: LAUNCH_REVIEW,
-      humanReview: null,
+      humanReview: HUMAN_REVIEW,
       reassessOn: "2026-11-05",
       harmIfWrong: "A reader could treat a demo or suite-v2 score as an ALGAL model score, or rely on staging limits that have changed.",
       refreshTriggers: [
@@ -153,7 +159,7 @@ export const POSTS: readonly BlogPost[] = [
       owner: "Hraness",
       drafting: "ai-from-source",
       review: REVIEW,
-      humanReview: null,
+      humanReview: HUMAN_REVIEW,
       reassessOn: "2026-11-05",
       harmIfWrong: "A reader could trust a pinned evaluator claim or scoring rule that has since changed.",
       refreshTriggers: [
