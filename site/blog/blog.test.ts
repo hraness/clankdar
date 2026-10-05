@@ -34,21 +34,30 @@ describe("blog", () => {
     for (const post of POSTS) {
       expect(post.admission.href).toBe(post.path);
       expect(post.path).toBe(`/blog/${post.slug}`);
-      expect(post.admission.humanReview).toBeNull();
+      // A recorded human review names a person and never an AI reviewer.
+      if (post.admission.humanReview !== null) expect(post.admission.humanReview.reviewerType).not.toBe("ai");
     }
+    const aiReview = { reviewer: "Codex", reviewerType: "ai", reviewedOn: "2026-10-01" } as const;
+    expect(() => assertArticleAdmissions([{ ...ADMISSIONS[0]!, review: { ...aiReview, reviewer: "Codex human review" } }])).toThrow();
+    expect(() => assertArticleAdmissions([{ ...ADMISSIONS[0]!, review: aiReview, humanReview: aiReview }])).toThrow();
     expect(indexable.map(post => post.slug)).toEqual(["introducing-clankdar", "how-clankdar-uses-algal"]);
     expect(quarantined.map(post => post.slug)).toEqual([]);
   });
 
-  test("every post shows the Hraness byline and the recorded AI review", () => {
+  test("every post shows the Hraness byline and the review on record, naming only a human editor as human", () => {
     for (const post of POSTS) {
       const html = renderPostPage(template, post);
       expect(html).toContain('<span class="plain-publication__byline" data-author-kind="organization">By <a href="https://hraness.com" rel="author">Hraness</a></span>');
       const sentence = articleProvenanceSentence(articleProvenanceFromAdmission(post.admission));
-      expect(post.admission.review?.reviewerType).toBe("ai");
-      expect(sentence).toBe(`Drafted with AI from the source code and reviewed by ${post.admission.review!.reviewer}.`);
+      const review = post.admission.review!;
+      expect(["ai", "human-editor"]).toContain(review.reviewerType);
       expect(html).toContain(sentence);
-      expect(html).not.toMatch(/human/i);
+      if (review.reviewerType === "human-editor") {
+        expect(sentence).toBe(`Drafted with AI from the source code and reviewed by ${review.reviewer}, a human editor.`);
+      } else {
+        expect(sentence).toBe(`Drafted with AI from the source code and reviewed by ${review.reviewer}.`);
+        expect(html).not.toMatch(/human/i);
+      }
       expect(html).toContain(`<link rel="canonical" href="https://clankdar.com${post.path}">`);
       expect(html).toContain('"@type":"BlogPosting"');
       // The launch post reads as a thread of standalone beats, so only Markdown posts carry a contents list.
