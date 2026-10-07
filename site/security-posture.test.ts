@@ -6,6 +6,8 @@ const read = (path: string) => readFileSync(new URL(path, import.meta.url), "utf
 test("security.txt names a reporting route and has not expired", () => {
   const text = read("./well-known/security.txt");
   expect(text).toContain("Contact: https://github.com/hraness/clankdar/security/advisories/new");
+  expect(text).toContain("Contact: mailto:hraness@pm.me");
+  expect(text).toContain("Canonical: https://clankdar.com/.well-known/security.txt");
   const expires = /^Expires: (.+)$/m.exec(text)?.[1];
   expect(expires).toBeDefined();
   expect(Date.parse(expires as string)).toBeGreaterThan(Date.now());

@@ -2,7 +2,7 @@
 
 ## Report a vulnerability
 
-Use GitHub private vulnerability reporting: open [Report a vulnerability](https://github.com/hraness/clankdar/security/advisories/new) on this repository's Security tab. Please do not open a public issue or pull request for a suspected vulnerability.
+Use GitHub private vulnerability reporting: open [Report a vulnerability](https://github.com/hraness/clankdar/security/advisories/new) on this repository's Security tab. If GitHub reporting is unavailable, email [hraness@pm.me](mailto:hraness@pm.me). Please do not open a public issue or pull request for a suspected vulnerability.
 
 Include the affected file or URL, the steps to reproduce, and the impact you observed. We acknowledge reports within a few days and aim to ship a fix or a mitigation promptly after confirming the issue.
 
