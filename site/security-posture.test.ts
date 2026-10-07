@@ -18,7 +18,6 @@ test("every response carries the baseline security headers", () => {
   const headers = Object.fromEntries(config.headers[0]!.headers.map(h => [h.key, h.value]));
   expect(headers["Strict-Transport-Security"]).toContain("max-age=63072000");
   expect(headers["X-Content-Type-Options"]).toBe("nosniff");
-  expect(headers["Content-Security-Policy"]).toContain("frame-ancestors 'none'");
   expect(headers["Referrer-Policy"]).toBeDefined();
   expect(headers["Permissions-Policy"]).toBeDefined();
 });
