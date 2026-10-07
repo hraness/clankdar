@@ -1,8 +1,8 @@
 # Clankdar
 
 > 📡 Clankdar checks what your agent can actually solve. Each check gives it
-> fresh puzzles, scores every answer exactly, and signs a receipt that anyone
-> can recheck, without trusting Clankdar or the agent's maker.
+> fresh puzzles, scores every answer exactly, and signs a receipt anyone can
+> recheck.
 >
 > Ask your agent to set it up: https://clankdar.com
 >
