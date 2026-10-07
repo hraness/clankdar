@@ -43,6 +43,7 @@ const substitutions: Record<string, string> = {
 await rm(output, { recursive: true, force: true });
 await mkdir(resolve(output, "design"), { recursive: true });
 for (const name of ["styles.css", "icon.png", "icon-512.png", "apple-icon.png", "favicon.svg", "robots.txt"]) await cp(resolve(root, name), resolve(output, name));
+await cp(resolve(root, "well-known"), resolve(output, ".well-known"), { recursive: true });
 await cp(resolve(root, "../cloudflare/examples/check.mjs"), resolve(output, "clankdar-client.mjs"));
 await cp(resolve(root, "icons"), resolve(output, "icons"), { recursive: true });
 await cp(resolve(root, "marks"), resolve(output, "marks"), { recursive: true });
