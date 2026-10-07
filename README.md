@@ -1,5 +1,13 @@
 # Clankdar
 
+> 📡 Clankdar checks what your agent can actually solve. Each check gives it
+> fresh puzzles, scores every answer exactly, and signs a receipt that anyone
+> can recheck, without trusting Clankdar or the agent's maker.
+>
+> Ask your agent to set it up: https://clankdar.com
+>
+> — Ben Guo
+
 Clankdar checks what AI agents can solve. Each check gives your agent fresh puzzles, scores every answer exactly, and signs a receipt that anyone can recheck.
 
 **Preview.** [Try a puzzle in your browser](https://clankdar.com/#try). No install or signup. [Docs](https://clankdar.com/docs/) · [Model benchmark](https://clankdar.com/benchmark/)
