@@ -86,13 +86,13 @@ jobs:
           bunx --no-install playwright install --with-deps chromium
       - run: bun run check:browser
       - name: Retain the validated static site
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
         with:
           name: validated-site
           path: site/dist
           retention-days: 7
           if-no-files-found: error
-      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
         if: always()
         with:
           name: browser-screenshots
