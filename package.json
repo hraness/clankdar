@@ -40,7 +40,7 @@
     "@hraness/web-discovery": "github:hraness/web-discovery#v0.13.0"
   },
   "devDependencies": {
-    "@cloudflare/vitest-pool-workers": "0.22.0",
+    "@cloudflare/vitest-pool-workers": "0.23.0",
     "@hraness/posthog": "https://github.com/hraness/posthog/releases/download/v0.3.11/hraness-posthog-0.3.11.tgz",
     "@hraness/ui": "github:hraness/ui#v0.5.18",
     "@playwright/test": "1.58.2",
